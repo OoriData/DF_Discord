@@ -1,0 +1,10 @@
+**/__pycache__
+*.DS_Store
+*op.env
+*.env
+
+# aider
+.aider*
+ollama
+model
+ollama/deepseek-coder-v2:16b-lite-base-fp16

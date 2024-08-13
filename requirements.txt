@@ -1,0 +1,4 @@
+httpx
+discord
+utiloori
+pillow

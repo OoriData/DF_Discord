@@ -1,0 +1,8 @@
+services:
+  df_discord:
+    build:
+      context: .
+    image: df_discord
+    environment:
+      DF_API_HOST: ${DF_API_HOST}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}

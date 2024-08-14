@@ -22,6 +22,7 @@ API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+LOG_LEVEL = 2000
 
 SETTLEMENTS = None  # Declared as none before being set on Discord bot startup by on_ready()
 
@@ -117,8 +118,7 @@ class Desolate_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         '''Called when the bot is ready to start taking commands'''
-        print(ansi_color('Desolate Frontiers cog initialized, generating settlements cache...', 'yellow'))
-        # logging.log(msg='Desolate Frontiers cog initialized, generating settlements...', level=LOG_LEVEL)
+        logging.log(msg='Desolate Frontiers cog initialized, generating settlement cache...', level=LOG_LEVEL)
         global SETTLEMENTS
         SETTLEMENTS = []
         df_map = await self.get_map()
@@ -127,8 +127,7 @@ class Desolate_Cog(commands.Cog):
             for sett in row:
                 SETTLEMENTS.extend(sett['settlements'])
 
-        print(ansi_color('Settlement cache generated!', 'blue'))
-        # logging.log(msg='Settlements generated!', level=LOG_LEVEL)
+        logging.log(msg='Settlement cache generated!', level=LOG_LEVEL)
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def get_df_map(self, interaction: discord.Interaction):
@@ -216,6 +215,11 @@ class Desolate_Cog(commands.Cog):
             tile_info = tile_info.json()
 
         # TODO: handle multiple settlements eventually
+        # wtf does this mean
+        if not tile_info['settlements']:
+            await interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
+            return
+
         node_embed = discord.Embed(
             title=f'{tile_info['settlements'][0]['name']} vendors and services',
         )

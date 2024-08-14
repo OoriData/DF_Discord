@@ -131,7 +131,7 @@ def render_map(
 
                 draw.text(  # Annotate the settlement name with a black outline
                     xy=(text_x, text_y),
-                    text=f'{settlement_name}\n({x}, {y})',
+                    text=settlement_name,
                     fill='white',
                     font=font,
                     align='center',

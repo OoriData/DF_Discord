@@ -44,8 +44,8 @@ def render_map(
         tiles: list[dict],
         highlights: list[tuple]=None,
         lowlights: list[tuple]=None,
-        highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
-        lowlight_color=DEFAULT_LOWLIGHT_INLINE_COLOR
+        highlight_color=None,
+        lowlight_color=None
 ) -> Image:
     '''
     Renders the game map as an image using Pillow and overlays symbols on specified tiles. Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
@@ -57,6 +57,10 @@ def render_map(
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
+    if not highlight_color:
+        highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
+    if not lowlight_color:
+        lowlight_color = DEFAULT_LOWLIGHT_INLINE_COLOR
 
     # Calculate the size of the image
     rows = len(tiles)

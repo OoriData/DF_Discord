@@ -5,10 +5,11 @@ import                          httpx
 import                          asyncio
 import                          logging
 import                          textwrap
-import                          discord
+from typing              import Optional
 from datetime            import datetime, timezone
 from io                  import BytesIO
 
+import                          discord
 from discord             import app_commands
 from discord.ext         import commands
 from utiloori.ansi_color import ansi_color
@@ -38,28 +39,42 @@ class Desolate_Cog(commands.Cog):
     async def render_map(
             self,
             embed: discord.Embed,  # TODO: make this optional
-            highlighted: list[tuple[int]],
-            route: list[tuple[int]],
-            top_left: tuple[int]=None,
-            bottom_right: tuple[int]=None
+            highlighted: Optional[list[tuple[int]]]=None,
+            lowlighted: Optional[list[tuple[int]]]=None,
+            top_left: Optional[tuple[int]]=None,
+            bottom_right: Optional[tuple[int]]=None,
+            highlight_color: Optional[str]=None,
+            lowlight_color: Optional[str]=None
     ) -> discord.Embed:
         '''Renders map as an image and formats it into a discord'''
+        if top_left and bottom_right:
+            map_edges = {
+                'x_min': top_left[0],
+                'x_max': bottom_right[0],
+                'y_min': top_left[1],
+                'y_max': bottom_right[1]
+            }
+
+            # Adjust the highlight and lowlight coordinates based on the top-left corner
+            if highlighted:
+                highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+
+            if lowlighted:
+                lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
+        else:
+            map_edges = None
+
         try:
             async with httpx.AsyncClient(verify=False) as client:
                 response = await client.get(
                     url=f'{DF_API_HOST}/map/get',
-                    params={
-                        # 'x_min': 1,
-                        # 'x_max': 9,
-                        # 'y_min': 20,
-                        # 'y_max': 35
-                    }
+                    params=map_edges
                 )
                 if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
                     logging.log(level='INFO', msg='Error: 422 Unprocessable')
                 elif response.status_code == API_SUCCESS_CODE:
                     tiles = response.json()['tiles']
-                    rendered_map = render_map(tiles)
+                    rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
 
                     # Create a BytesIO object to save the image in memory
                     with BytesIO() as image_binary:
@@ -119,7 +134,7 @@ class Desolate_Cog(commands.Cog):
     async def get_df_map(self, interaction: discord.Interaction):
         try:
             embed = discord.Embed()
-            embed, image_file = await self.render_map(embed=embed)
+            embed, image_file = await self.render_map(embed, highlighted=[(8, 5)], lowlighted=[(9, 6)], top_left=(7, 4), bottom_right=(9, 6))
 
             embed.set_author(
                 name=interaction.user.name,

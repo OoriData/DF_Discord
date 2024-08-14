@@ -12,11 +12,10 @@ from io                  import BytesIO
 from discord             import app_commands
 from discord.ext         import commands
 from utiloori.ansi_color import ansi_color
-from PIL                 import Image, ImageDraw
 
-from body.df_discord     import vendor_views
-from body.df_discord     import discord_timestamp
-from body.df_discord.map_rendering  import render_map
+from discord_app                import vendor_views
+from discord_app                import discord_timestamp
+from discord_app.map_rendering  import render_map
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422

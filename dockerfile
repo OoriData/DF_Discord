@@ -33,8 +33,8 @@ RUN python3 -m venv $VIRTUALENV
 ENV PATH="$VIRTUALENV/bin:$PATH"
 
 # Copy the requirements.txt and constraints.txt files to the container
-COPY ./body/df_discord/requirements.txt ./requirements.txt
-COPY ./body/df_discord/constraints.txt ./constraints.txt
+COPY ./requirements.txt ./requirements.txt
+COPY ./constraints.txt ./constraints.txt
 
 RUN python -m pip install --upgrade pip
 
@@ -45,4 +45,4 @@ COPY . /home/df-discord/code/
 
 WORKDIR /home/df-discord/code
 
-CMD python -m body.df_discord.df_discord
+CMD python -m discord_app.df_discord

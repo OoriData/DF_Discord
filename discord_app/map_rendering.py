@@ -31,23 +31,31 @@ SETTLEMENT_COLORS = {
 }
 ERROR_COLOR = '#FF00FF'  # Error/default color
 
-HIGHLIGHT_OUTLINE_COLOR = '#FFFF00'  # color for the highlight outline
-HIGHLIGHT_OUTLINE_OFFSET = -1        # Number of pixels to offset the highlight outline
-HIGHLIGHT_OUTLINE_WIDTH = 9          # Thickness of the highlight outline
+DEFAULT_HIGHLIGHT_OUTLINE_COLOR = '#FFFF00'  # color for the highlight outline
+HIGHLIGHT_OUTLINE_OFFSET = -1                # Number of pixels to offset the highlight outline
+HIGHLIGHT_OUTLINE_WIDTH = 9                  # Thickness of the highlight outline
 
-LOWLIGHT_INLINE_COLOR = '#00FFFF'  # Purple color for lowlight inline
-LOWLIGHT_INLINE_OFFSET = 2         # Number of pixels to offset the lowlight inline
-LOWLIGHT_INLINE_WIDTH = 5          # Thickness of the lowlight inline
+DEFAULT_LOWLIGHT_INLINE_COLOR = '#00FFFF'  # Purple color for lowlight inline
+LOWLIGHT_INLINE_OFFSET = 2                 # Number of pixels to offset the lowlight inline
+LOWLIGHT_INLINE_WIDTH = 5                  # Thickness of the lowlight inline
 
 
-def render_map(tiles: list[dict], highlights: list[tuple]=None, lowlights: list[tuple]=None) -> Image:
+def render_map(
+        tiles: list[dict],
+        highlights: list[tuple]=None,
+        lowlights: list[tuple]=None,
+        highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
+        lowlight_color=DEFAULT_LOWLIGHT_INLINE_COLOR
+) -> Image:
     '''
-    Renders the game map as an image using Pillow and overlays symbols on specified tiles.
+    Renders the game map as an image using Pillow and overlays symbols on specified tiles. Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
     
     Parameters:
         tiles (list[list[Tile]]): The 2D list representing the game map.
         highlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be highlighted.
         lowlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be lowlighted.
+        highlight_color (str, optional): Color for the highlights. Defaults to yellow.
+        lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
 
     # Calculate the size of the image
@@ -76,27 +84,27 @@ def render_map(tiles: list[dict], highlights: list[tuple]=None, lowlights: list[
                 fill=color
             )
 
-            if lowlights and (x, y) in lowlights:  # Check if this tile is in the route
-                draw.rectangle(  # Draw an inline around the route tiles
+            if lowlights and (x, y) in lowlights:  # Check if this tile is in the lowlights
+                draw.rectangle(  # Draw an inline around the lowlight tile
                     [
                         x * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
                         y * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
                         (x + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET,
                         (y + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET
                     ],
-                    outline=LOWLIGHT_INLINE_COLOR,
+                    outline=lowlight_color,
                     width=LOWLIGHT_INLINE_WIDTH
                 )
 
             if highlights and (x, y) in highlights:  # Check if this tile is in the highlights
-                draw.rectangle(  # Draw an outline around the highlight tiles
+                draw.rectangle(  # Draw an outline around the highlight tile
                     [
                         x * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
                         y * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
                         (x + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET,
                         (y + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET
                     ],
-                    outline=HIGHLIGHT_OUTLINE_COLOR,
+                    outline=highlight_color,
                     width=HIGHLIGHT_OUTLINE_WIDTH
                 )
 
@@ -130,34 +138,13 @@ def render_map(tiles: list[dict], highlights: list[tuple]=None, lowlights: list[
     return map_img
 
 
-# ━━━━━━ ⬇ test map rendering ⬇ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# run with:
-# python -m body.map_rendering
-def to_dict(obj):
-    if isinstance(obj, dict):
-        return {k: to_dict(v) for k, v in obj.items()}
-    elif hasattr(obj, '__dict__'):
-        return {k: to_dict(v) for k, v in obj.__dict__.items()}
-    elif isinstance(obj, list):
-        return [to_dict(i) for i in obj]
-    elif isinstance(obj, tuple):
-        return tuple(to_dict(i) for i in obj)
-    else:
-        return obj
-
-
-if __name__ == '__main__':
-    from chassis.df_obj       import Map
-    from trunk.df_terrain     import NA_TERRAIN
-    from trunk.df_settlements import NA_SETTLEMENTS
-    from trunk.df_politics    import NA_POLITICS
-
-    df_map = Map.from_raw_lists(NA_TERRAIN, NA_SETTLEMENTS, NA_POLITICS)
-
-    df_map_JSON = to_dict(df_map)
+if __name__ == '__main__':  # run with: python -m body.df_discord.map_rendering
+    import json
+    with open('test_map_obj.json', 'r') as map_file:
+        df_map_JSON = json.load(map_file)
 
     highlight_locations = [(40, 40), (41, 41)]
-    route = [(4, 26), (5, 26), (6, 26)]
-    map_img = render_map(df_map_JSON['tiles'], highlight_locations, route)
+    lowlight_locations = [(4, 26), (5, 26), (6, 26)]
+    map_img = render_map(df_map_JSON['tiles'], highlight_locations, lowlight_locations, 'red')
 
     map_img.show()

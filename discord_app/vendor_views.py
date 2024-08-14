@@ -115,7 +115,6 @@ class VendorMenuView(discord.ui.View):
             menu_type = 'vehicle'
             vehicle_list = []
             for vehicle in current_vendor['vehicle_inventory']:
-                print(ansi_color(vehicle, 'purple'))
                 vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
                 vehicle_list.append(vehicle_str)
             displayable_vehicles = '\n'.join(vehicle_list)

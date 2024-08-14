@@ -28,3 +28,11 @@ def discord_timestamp(formatted_time: datetime, format_letter: str) -> str:
         return discord_format.format(format_letter)  # For relative time, no actual value formatting
     else:
         return discord_format
+
+DF_DISCORD_LOGO = '''\
+╔════════════════════════════════════════╗
+║ ┏┳┓┏━┓  ┏┳┓┳┏━┓┏━┓┏━┓┳━┓┏┳┓  ┏━┓┏━┓┏━┓ ║
+║  ┃┃┣┫    ┃┃┃┗━┓┃  ┃ ┃┣┳┛ ┃┃  ┣━┫┣━┛┣━┛ ║
+║ ╺┻┛┗    ━┻┛┻┗━┛┗━┛┗━┛┻┗━╺┻┛  ┻ ┻┻  ┻   ║
+╚════════════════════════════════════════╝
+'''

@@ -15,6 +15,9 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 # TODO: send message if user tries to iterate through menu with a length of zero
 # TODO: Add universal BackButtonView that just allows users to go back to the main vendor menu after they complete a transaction
 
+def format_int_with_commas(x):
+    return f'{x:,}'
+
 def vendor_services(vendor: dict):
     service_keys = {
         'fuel': 'Fuel Refilling',
@@ -73,7 +76,8 @@ class VendorMenuView(discord.ui.View):
         if self.current_embed is None:
             await interaction.response.send_message('Select a vendor to buy from', ephemeral=True, delete_after=10)
             return
-
+        
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         index = self.position
         current_vendor = self.menu[index]  # set variable for menu user is currently interacting with
         if current_vendor['cargo_inventory']:  # if the vendor has a cargo inventory
@@ -92,8 +96,9 @@ class VendorMenuView(discord.ui.View):
                     {displayable_cargo}
                 ''')
             )
+            convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
             menu_embed.set_author(
-                name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+                name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
             view = BuyView(
@@ -123,7 +128,7 @@ class VendorMenuView(discord.ui.View):
                 ''')
             )
             menu_embed.set_author(
-                name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+                name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
             view = BuyView(
@@ -141,9 +146,8 @@ class VendorMenuView(discord.ui.View):
                 title=current_vendor['name'],
                 description=('Vendor low on stock. Resources may be available here, but try coming back later.')
             )
-
             menu_embed.set_author(
-                name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+                name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
             await interaction.response.send_message(
@@ -165,7 +169,8 @@ class VendorMenuView(discord.ui.View):
         if self.current_embed is None:
             await interaction.response.send_message('Select a vendor to sell to', ephemeral=True, delete_after=10)
             return
-        
+
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         current_vendor = self.menu[self.position]
         user_convoy = self.user_info['convoys'][0]
         sell_embed = discord.Embed(
@@ -175,7 +180,7 @@ class VendorMenuView(discord.ui.View):
         )
         
         sell_embed.set_author(
-            name=f'{user_convoy['name']} | ${user_convoy['money']}',
+            name=f'{user_convoy['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -209,6 +214,7 @@ class VendorMenuView(discord.ui.View):
         '''Update embed to send user back and forth between list menu items.'''
         # TODO: give this method a 'menu_type' argument to make it dynamic
         # coming back to this later, chances are 'menu_type' can go entirely. it'd make more sense to create seperate menu views for each menu type.
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         index = self.position
         current_vendor = self.menu[index]
         item_embed = discord.Embed(
@@ -233,7 +239,7 @@ class VendorMenuView(discord.ui.View):
             )
         )
         item_embed.set_author(  # TODO: make a basic function for this, it would help reduce a few lines of code and would be easy.
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -299,6 +305,8 @@ class BuyView(discord.ui.View):
         if self.current_embed is None:
             await interaction.response.send_message('Select a cargo to buy from the vendor', ephemeral=True, delete_after=10)
             return
+        
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         index = self.position
         current_item = self.menu[index]
         user_info = await self.get_user_info(interaction.user.id)
@@ -339,7 +347,7 @@ class BuyView(discord.ui.View):
         item_embed.add_field(name='Mass', value=f'{current_item["mass"]} kilogram(s)')
 
         item_embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -404,17 +412,16 @@ class BuyView(discord.ui.View):
         if self.current_embed is None:
             await interaction.response.send_message('Select a vehicle to buy from the vendor', ephemeral=True, delete_after=10)
             return
+        
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         index = self.position
         current_vehicle = self.menu[index]
-
-        def format_int_with_commas(x):
-            return f'{x:,}'
 
         item_embed = discord.Embed(
             title=f'{current_vehicle["name"]}',
             description=textwrap.dedent(
                 f'''
-                ### ${format_int_with_commas(current_vehicle["value"])}
+                ### ${format_int_with_commas(current_vehicle["base_value"])}
                 - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
                 - Offroad Capability: **{current_vehicle["offroad_capability"]}**/100
                 - Top Speed: **{current_vehicle['top_speed']}**/100
@@ -427,7 +434,7 @@ class BuyView(discord.ui.View):
             )
         )
         item_embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
         view = VehicleConfirmView(
@@ -451,6 +458,7 @@ class BuyView(discord.ui.View):
 
     async def update_menu(self, interaction: discord.Interaction):
         '''Update menu based on whether user pressed back or next button'''
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         index = self.position
         current_item = self.menu[index]
         if self.menu_type == 'cargo':
@@ -495,9 +503,6 @@ class BuyView(discord.ui.View):
                 )
             )
 
-        def format_int_with_commas(x):
-            return f'{x:,}'
-
         if self.menu_type == 'vehicle':
             item_embed = discord.Embed(
                 title=f'{current_item["name"]}',
@@ -529,7 +534,7 @@ class BuyView(discord.ui.View):
             )
 
         item_embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -698,8 +703,9 @@ class CargoQuantityView(discord.ui.View):
                     '''
                 )
 
+            convoy_balance = format_int_with_commas(convoy_after['money'])
             embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_after['money']}',
+                name=f'{convoy_after['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
 
@@ -731,8 +737,9 @@ class CargoQuantityView(discord.ui.View):
                 title=f'You sold {self.quantity} {self.cargo_obj["name"]} to {self.vendor_obj["name"]}',
                 description=f'Your convoy made ${(cargo_obj['base_price']) * self.quantity} from the transaction.'
             )
+            convoy_balance = format_int_with_commas(convoy_after['money'])
             embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_after['money']}',
+                name=f'{convoy_after['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
 
@@ -873,8 +880,9 @@ class VehicleConfirmView(discord.ui.View):
                     description=f'*{vehicle_info['base_desc']}*'
                 )
 
+        convoy_balance = format_int_with_commas(convoy_after['money'])
         embed.set_author(
-            name=f'{convoy_after['name']} | ${convoy_after['money']}',
+            name=f'{convoy_after['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -950,9 +958,6 @@ class VehicleSellView(discord.ui.View):
         index = self.position
         current_vehicle = self.vehicle_menu[index]
 
-        def format_int_with_commas(x):
-            return f'{x:,}'
-
         embed = discord.Embed(
             title=f'{current_vehicle['name']}',
             description=textwrap.dedent(
@@ -970,9 +975,9 @@ class VehicleSellView(discord.ui.View):
                 '''
             )
         )
-        
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1030,8 +1035,10 @@ class SellSelectView(discord.ui.View):
             title=f'Selling resources to {self.vendor_obj['name']}',
             description='Use buttons to navigate selling menu',
         )
+
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1055,8 +1062,10 @@ class SellSelectView(discord.ui.View):
             title=f'Selling cargo to {self.vendor_obj['name']}',
             description='Use buttons to navigate selling menu',
         )
+
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1082,8 +1091,9 @@ class SellSelectView(discord.ui.View):
             description='Use buttons to navigate selling menu'
         )
 
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1266,8 +1276,9 @@ class CargoSellView(discord.ui.View):
         ''')
         )
         
+        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']}',
+            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1383,8 +1394,9 @@ class ResourceBuyButton(discord.ui.Button):
         elif self.parent_view.resource_type == 'fuel':
             embed.color = discord.Color.gold()
 
+        convoy_balance = format_int_with_commas(self.parent_view.user_info['convoys'][0]['money'])
         embed.set_author(
-            name=f'{convoy_after['name']} | ${convoy_after['money']}',
+            name=f'{convoy_after['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1425,8 +1437,9 @@ class ResourceSellButton(discord.ui.Button):
                 title=f'You sold {self.parent_view.quantity} {resource_type} to {vendor_response['name']}',
             )
 
+            convoy_balance = format_int_with_commas(convoy_after['money'])
             embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_after['money']}',
+                name=f'{convoy_after['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
             )
 

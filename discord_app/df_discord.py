@@ -24,6 +24,9 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 SETTLEMENTS = None  # Declared as none before being set on Discord bot startup by on_ready()
 
+def format_int_with_commas(x):
+    return f'{x:,}'
+
 class Desolate_Cog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -31,6 +34,50 @@ class Desolate_Cog(commands.Cog):
         self.ephemeral = True
 
         # self.all_settlements = {} # maybe
+
+    async def render_map(
+            self,
+            embed: discord.Embed,  # TODO: make this optional
+            highlighted: list[tuple[int]],
+            route: list[tuple[int]],
+            top_left: tuple[int]=None,
+            bottom_right: tuple[int]=None
+    ) -> discord.Embed:
+        '''Renders map as an image and formats it into a discord'''
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.get(
+                    url=f'{DF_API_HOST}/map/get',
+                    params={
+                        # 'x_min': 1,
+                        # 'x_max': 9,
+                        # 'y_min': 20,
+                        # 'y_max': 35
+                    }
+                )
+                if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
+                    logging.log(level='INFO', msg='Error: 422 Unprocessable')
+                elif response.status_code == API_SUCCESS_CODE:
+                    tiles = response.json()['tiles']
+                    rendered_map = render_map(tiles)
+
+                    # Create a BytesIO object to save the image in memory
+                    with BytesIO() as image_binary:
+                        rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
+                        image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
+
+                        file_name = 'map.png'
+                        img_file = discord.File(fp=image_binary, filename=file_name)  # Declare a discord.File object to include in the response
+
+                        embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
+
+                        return embed, img_file
+                        # Now all you have to do to apply this is:
+                        # await interaction.response.send_message(embed=embed, file=img_file)
+
+        except Exception as e:
+            msg = f'something went wrong rendering image: {e}'
+            logging.log(msg=msg, level='INFO')
 
     async def get_map(self):
         async with httpx.AsyncClient(verify=False) as client:
@@ -55,6 +102,8 @@ class Desolate_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         '''Called when the bot is ready to start taking commands'''
+        print(ansi_color('Desolate Frontiers cog initialized, generating settlements cache...', 'yellow'))
+        # logging.log(msg='Desolate Frontiers cog initialized, generating settlements...', level=LOG_LEVEL)
         global SETTLEMENTS
         SETTLEMENTS = []
         df_map = await self.get_map()
@@ -63,34 +112,20 @@ class Desolate_Cog(commands.Cog):
             for sett in row:
                 SETTLEMENTS.extend(sett['settlements'])
 
+        print(ansi_color('Settlement cache generated!', 'blue'))
+        # logging.log(msg='Settlements generated!', level=LOG_LEVEL)
+
     @app_commands.command(name='df-map', description='Show the full game map')
     async def get_df_map(self, interaction: discord.Interaction):
         try:
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.get(
-                    url=f'{DF_API_HOST}/map/get',
-                    params={
-                        # 'x_min': 1,
-                        # 'x_max': 9,
-                        # 'y_min': 20,
-                        # 'y_max': 35
-                    }
-                )
-                if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
-                    logging.log(level='INFO', msg='Error: 422 Unprocessable')
-                elif response.status_code == API_SUCCESS_CODE:
-                    tiles = response.json()['tiles']
-                    rendered_map = render_map(tiles)
+            embed = discord.Embed()
+            embed, image_file = await self.render_map(embed=embed)
 
-                    # Create a BytesIO object to save the image in memory
-                    with BytesIO() as image_binary:
-                        rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
-                        image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
-
-                        # Send the image as a Discord file
-                        await interaction.response.send_message(
-                            file=discord.File(fp=image_binary, filename='map.png')
-                        )
+            embed.set_author(
+                name=interaction.user.name,
+                icon_url=interaction.user.avatar.url
+            )
+            await interaction.response.send_message(embed=embed, file=image_file)
 
         except Exception as e:
             msg = f'something went wrong: {e}'
@@ -174,7 +209,8 @@ class Desolate_Cog(commands.Cog):
                 name=vendor['name'],
                 value=f'${vendor["money"]}'
             )
-        node_embed.set_author(name=f'{user_info['convoys'][0]['name']} | ${user_info['convoys'][0]['money']}', icon_url=interaction.user.avatar.url)
+        convoy_balance = format_int_with_commas(user_info['convoys'][0]['money'])
+        node_embed.set_author(name=f'{user_info['convoys'][0]['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
 
         view=vendor_views.VendorMenuView(
             interaction=interaction,
@@ -229,9 +265,10 @@ class Desolate_Cog(commands.Cog):
         )
 
         # convoy_embed.add_field()
+        convoy_balance = format_int_with_commas(convoy_info['money'])
         convoy_embed.set_footer(text=f'Created on {convoy_info['creation_date']}')
         convoy_embed.set_author(
-            name=f'{convoy_info['name']} | ${convoy_info['money']}',
+            name=f'{convoy_info['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
         await interaction.response.send_message(embed=convoy_embed)
@@ -269,23 +306,30 @@ class Desolate_Cog(commands.Cog):
 
             await interaction.response.send_message(embed=convoy_embed)
 
-    # # XXX: im useful don't delete me
-    # async def cities_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
-    #         self,
-    #         interaction: discord.Interaction,
-    #         current: str,
-    # ) -> list[app_commands.Choice[str]]:
-    #     setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS}  # NA_NODES is in a list; convert it into a dict
-    #     sett_names = [sett['name'] for sett in SETTLEMENTS]  # cities the users can select from
-    #     choices = [
-    #         app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
-    #         # for city in city_names if current.lower() in city.lower()
-    #         for sett_name in sett_names if current.lower() in sett_name.lower()
-    #     ]
-    #     return choices[:25]
+    # XXX: im useful don't delete me
+    async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
+            self,
+            interaction: discord.Interaction,
+            current: str,
+    ) -> list[app_commands.Choice[str]]:
+        # setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS}
+        # sett_names = [sett['name'] for sett in SETTLEMENTS]  # cities the users can select from
+
+        # OK so what's going on here is that discord.py does not like when the Choice.value is not a string, even though `value` has a type hint of `any`
+        # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled 
+        setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS}
+        sett_names = [sett['name'] for sett in SETTLEMENTS]  # cities the users can select from
+        print(ansi_color(setts_dict, 'green'))
+        choices = [
+            app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
+            for sett_name in sett_names if current.lower() in sett_name.lower()
+            # for city in city_names if current.lower() in city.lower()
+        ][:25]
+        return choices
 
     @app_commands.command(name='send-convoy', description='Send your convoy on a journey to a given city.')
-    async def send_convoy(self, interaction: discord.Interaction, x: int, y: int):
+    @app_commands.autocomplete(sett=settlements_autocomplete)
+    async def send_convoy(self, interaction: discord.Interaction, sett: str):
         async with httpx.AsyncClient(verify=False) as client:
             # Set up user info
             user_obj = await client.get(
@@ -296,6 +340,9 @@ class Desolate_Cog(commands.Cog):
             user_obj = user_obj.json()
 
             convoy_obj = user_obj['convoys'][0]
+            sett_coords = sett.split(',')  # can't believe discord for making me do it this way
+            x = int(sett_coords[0])  # XXX: sorry
+            y = int(sett_coords[1])
 
             # Now, find routes that user can take to destination
             route = await client.post(
@@ -330,28 +377,29 @@ class Desolate_Cog(commands.Cog):
                 return
 
             await interaction.response.send_message('Look at them gooooooo :D')
+            # await interaction.response.send_message(content=f'{sett_coords[0]}, {sett_coords[1]}')
 
     # XXX: this command likes to throw errors (53005) ~~because discord.py is stupid~~, they're ignorable
-    # @app_commands.command(name='get-node', description='Get a node object based on its ID')
-    # @app_commands.autocomplete(city=cities_autocomplete)
-    # async def get_node(self, interaction: discord.Interaction, city: str):
-        # city_int = int(city)  # convert node id back into integer so api can handle it
-        # async with httpx.AsyncClient(verify=False) as client:
-        #     response = await client.get(
-        #         f'{DF_API_HOST}/map/node/get',
-        #         params={'node_id': city_int}
-        #     )
-        #     node_info = response.json()
-        #     node_embed = discord.Embed(
-        #         title=f'Info for {node_info['name']}',
-        #         # XXX: pretty bad embed overall right now, but i wanna get to other stuff
-        #         description=textwrap.dedent(f'''
-        #             **Services**: {[vendor['name'] for vendor in node_info['vendors']]}
-        #         ''')
-        #     )  
-        # await interaction.response.send_message(embed=node_embed)
+    @app_commands.command(name='get-node', description='Get a node object based on its ID')
+    @app_commands.autocomplete(sett=settlements_autocomplete)
+    async def get_node(self, interaction: discord.Interaction, sett: str):
+        city_int = int(sett)  # convert node id back into integer so api can handle it
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.get(
+                f'{DF_API_HOST}/map/node/get',
+                params={'node_id': city_int}
+            )
+            node_info = response.json()
+            node_embed = discord.Embed(
+                title=f'Info for {node_info['name']}',
+                # XXX: pretty bad embed overall right now, but i wanna get to other stuff
+                description=textwrap.dedent(f'''
+                    **Services**: {[vendor['name'] for vendor in node_info['vendors']]}
+                ''')
+            )  
+        await interaction.response.send_message(embed=node_embed)
 
-        # await interaction.response.send_message(content=city)
+        await interaction.response.send_message(content=sett)
 
 def main():
     # Set up bot https://discord.com/developers/docs/topics/gateway#list-of-intents
@@ -371,6 +419,7 @@ def main():
         '''
         Called when the bot is ready to start taking commands
         '''
+        print('Syncing commands with command tree')
         await bot.tree.sync()
         # logging stuff would go here if we had logging and config setup
 

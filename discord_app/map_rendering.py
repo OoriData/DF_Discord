@@ -263,7 +263,7 @@ async def add_map_to_embed(
         bottom_right: Optional[tuple[int]]=None,
         highlight_color: Optional[str]=None,
         lowlight_color: Optional[str]=None
-) -> discord.Embed:
+) -> discord.Embed | discord.File:
     '''Renders map as an image and formats it into a Discord embed object, and also returns a image file'''
     if top_left and bottom_right:
         map_edges = {

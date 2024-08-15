@@ -152,6 +152,11 @@ def render_map(
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
+    if not highlight_color:
+        highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
+    if not lowlight_color:
+        lowlight_color = DEFAULT_LOWLIGHT_INLINE_COLOR
+
     def draw_tile_bg(x, y, tile):
         if tile['settlements']:
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)

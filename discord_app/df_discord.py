@@ -22,7 +22,7 @@ API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
-LOG_LEVEL = 2000
+LOG_LEVEL = 20000
 
 SETTLEMENTS = None  # Declared as none before being set on Discord bot startup by on_ready()
 

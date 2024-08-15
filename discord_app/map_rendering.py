@@ -123,7 +123,7 @@ POLITICAL_COLORS = {
 ERROR_COLOR = '#FF00FF'  # Error/default color
 
 POLITICAL_INLINE_OFFSET = 2                  # Number of pixels to offset the political inline
-POLITICAL_INLINE_WIDTH = 1                   # Thickness of the political inline
+POLITICAL_INLINE_WIDTH = 2                   # Thickness of the political inline
 
 DEFAULT_HIGHLIGHT_OUTLINE_COLOR = '#FFFF00'  # color for the highlight outline
 HIGHLIGHT_OUTLINE_OFFSET = -1                # Number of pixels to offset the highlight outline
@@ -156,7 +156,7 @@ def render_map(
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
         lowlight_color = DEFAULT_LOWLIGHT_INLINE_COLOR
-
+    
     def draw_tile_bg(x, y, tile):
         if tile['settlements']:
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
@@ -339,8 +339,8 @@ if __name__ == '__main__':
     highlight_locations = [(40, 40), (41, 41)]
     lowlight_locations = [(4, 26), (5, 26), (6, 26)]
     map_img = render_map(df_map_JSON['tiles'], highlight_locations, lowlight_locations, 'red')
+    map_img.show()
 
-    # small_map = truncate_2d_list(df_map_JSON['tiles'], (25, 19), (39, 33))
-    # map_img = render_map(small_map)
-
+    small_map = truncate_2d_list(df_map_JSON['tiles'], (25, 19), (39, 33))
+    map_img = render_map(small_map, [(3, 4)], [(5, 3)])
     map_img.show()

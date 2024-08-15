@@ -16,13 +16,17 @@ from utiloori.ansi_color import ansi_color
 
 from discord_app               import vendor_views
 from discord_app               import discord_timestamp
+from discord_app               import DF_DISCORD_LOGO as API_BANNER
 from discord_app.map_rendering import add_map_to_embed
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
-LOG_LEVEL = 20000
+
+logger = logging.getLogger('DF_Discord')
+logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
 SETTLEMENTS = None  # Declared as none before being set on Discord bot startup by on_ready()
 
@@ -43,7 +47,7 @@ class Desolate_Cog(commands.Cog):
             
             if map.status_code != API_SUCCESS_CODE:
                 msg = map.json()['detail']
-                logging.log(msg=f'Something went wrong generating map: {msg}', level='INFO')
+                logger.error(f'Something went wrong generating map: {msg}')
                 return
 
             return map.json()
@@ -60,7 +64,8 @@ class Desolate_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         '''Called when the bot is ready to start taking commands'''
-        logging.log(msg='Desolate Frontiers cog initialized, generating settlement cache...', level=LOG_LEVEL)
+        logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
+        logger.debug(ansi_color('Desolate Frontiers cog initialized, generating settlements cache...', 'yellow'))
         global SETTLEMENTS
         SETTLEMENTS = []
         df_map = await self.get_map()
@@ -69,7 +74,7 @@ class Desolate_Cog(commands.Cog):
             for sett in row:
                 SETTLEMENTS.extend(sett['settlements'])
 
-        logging.log(msg='Settlement cache generated!', level=LOG_LEVEL)
+        logger.debug(ansi_color('Settlement cache generated!', 'blue'))
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def get_df_map(self, interaction: discord.Interaction):
@@ -99,7 +104,7 @@ class Desolate_Cog(commands.Cog):
                     }
                 )
                 if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
-                    logging.log(level='INFO', msg='Error: 422 Unprocessable')
+                    logger.info('Error: 422 Unprocessable')
                 elif response.status_code == API_SUCCESS_CODE:
                     # user_id display will go away in Beta
                     await interaction.response.send_message(textwrap.dedent(f'''
@@ -126,7 +131,7 @@ class Desolate_Cog(commands.Cog):
                 f'{DF_API_HOST}/user/get_by_discord_id',
                 params={'discord_id': discord_id,}
             )
-            print(response.json())
+            logger.debug(response.json())
             if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
                 await interaction.response.send_message('User doesn\'t exist in database, or invalid user ID was passed.', ephemeral=True)
                 return
@@ -340,6 +345,7 @@ class Desolate_Cog(commands.Cog):
         # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled 
         setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS}
         sett_names = [sett['name'] for sett in SETTLEMENTS]  # cities the users can select from
+        logger.debug(ansi_color(setts_dict, 'green'))
         choices = [
             app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
             for sett_name in sett_names if current.lower() in sett_name.lower()
@@ -439,7 +445,7 @@ def main():
         '''
         Called when the bot is ready to start taking commands
         '''
-        print('Syncing commands with command tree')
+        logger.info('Syncing commands with command tree')
         await bot.tree.sync()
         # logging stuff would go here if we had logging and config setup
 

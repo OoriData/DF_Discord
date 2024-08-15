@@ -17,6 +17,8 @@ op run --env-file op_discord.env -- python -m discord_app.df_discord
 ### environment
 To run that discord bot in a test environment, your `op_discord.env` should look something like this:
 ```env
+LOG_LEVEL = "INFO"
+
 DF_API_HOST = "http://localhost:1337"
 
 DISCORD_TOKEN = "REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"
@@ -49,6 +51,8 @@ op run --env-file op_discord_prod.env -- docker compose -f compose.df_discord.ym
 ### environment
 In order to run that, you need an `op_discord_prod.env` should look something like this:
 ```env
+LOG_LEVEL = "INFO"
+
 DF_API_HOST = "http://sofola:1337"
 
 DISCORD_TOKEN = "op://Oori DevOps/Oori - Desolate Frontiers - Discord Bot/credential"

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 'Map image rendering functionality'
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageColor, ImageFont
 from io import BytesIO
 from typing import Optional
 
@@ -39,15 +39,98 @@ SETTLEMENT_COLORS = {
     'city-state': '#581B63',
     'military_base': '#800000'
 }
+POLITICAL_COLORS = {
+    0: '#00000000',   # Null (transparent)
+    1: '#00000000',   # Desolate plains
+    2: '#00000000',   # Desolate forest
+    3: '#00000000',   # Desolate desert
+    4: '#00000000',   # Desolate mountains
+    5: '#00000000',   # Desolate 
+    6: '#00000000',   # Desolate Swamp
+    9: '#00000000',   # Device Detonation Zone
+    10: '#D5A6BD',    # Chicago
+    11: '#D5A6BD',    # Indianapolis
+    13: '#D5A6BD',    # Detroit
+    14: '#D5A6BD',    # Cleveland
+    15: '#D5A6BD',    # Buffalo
+    19: '#D5A6BD',    # The Heartland
+    20: '#B4A7D6',    # Kansas City
+    21: '#B4A7D6',    # St. Louis
+    22: '#B4A7D6',    # Des Moines
+    29: '#B4A7D6',    # The Breadbasket
+    30: '#B6D7A8',    # Minneapolis
+    31: '#B6D7A8',    # Fargo
+    32: '#B6D7A8',    # Milwaukee
+    39: '#B6D7A8',    # Northern Lights
+    40: '#FFE599',    # New York
+    41: '#FFE599',    # Boston
+    42: '#FFE599',    # Philadelphia
+    49: '#FFE599',    # New New England
+    50: '#F6B26B',    # Nashville
+    51: '#F6B26B',    # Memphis
+    52: '#F6B26B',    # Knoxville
+    59: '#F6B26B',    # Greater Tennessee
+    60: '#E06666',    # Charlotte
+    61: '#E06666',    # Norfolk
+    62: '#E06666',    # Richmond
+    63: '#E06666',    # Minot AFB
+    64: '#E06666',    # Vandenberg AFB
+    69: '#E06666',    # Republic of the South Atlantic
+    70: '#38761E',    # Jacksonville
+    71: '#38761E',    # Tallahassee
+    72: '#38761E',    # Orlando
+    73: '#38761E',    # Miami
+    74: '#38761E',    # New Orleans
+    79: '#38761E',    # Gulf Cities
+    80: '#B45F05',    # Austin
+    81: '#B45F05',    # San Antonio
+    82: '#B45F05',    # Dallas
+    83: '#B45F05',    # Houston
+    85: '#B45F05',    # Oklahoma City
+    89: '#B45F05',    # Republic of Texas
+    90: '#0A5394',    # Denver
+    91: '#0A5394',    # Cheyenne
+    92: '#0A5394',    # Colorado Springs
+    99: '#0A5394',    # Front Range Collective
+    100: '#A61C00',   # Los Angeles
+    101: '#A61C00',   # San Diego
+    102: '#A61C00',   # Phoenix
+    103: '#A61C00',   # Tucson
+    109: '#A61C00',   # States of Solara
+    110: '#674EA7',   # San Francisco
+    111: '#674EA7',   # Fresno
+    112: '#674EA7',   # Sacramento
+    119: '#674EA7',   # The Golden Bay
+    120: '#BF9000',   # Seattle
+    121: '#BF9000',   # Portland
+    122: '#BF9000',   # Spokane
+    129: '#BF9000',   # Cascadia
+    130: '#783F04',   # Be'eldííl Dah Sinil
+    131: '#783F04',   # Ysleta
+    139: '#783F04',   # Desert Twins
+    140: '#FFF3CC',   # Las Vegas
+    141: '#FFF3CC',   # Boise Mountain Commune
+    142: '#FFF3CC',   # Salt Lake City
+    143: '#FFF3CC',   # Little Rock
+    144: '#FFF3CC',   # Birmingham
+    145: '#FFF3CC',   # Atlanta
+    146: '#FFF3CC',   # Charleston
+    170: '#FF0000',   # Badlanders
+    171: '#FF0000',   # Badland Outposts
+    172: '#FF0000'    # Appalacian Wastelanders
+}
 ERROR_COLOR = '#FF00FF'  # Error/default color
+
+POLITICAL_INLINE_OFFSET = 2                  # Number of pixels to offset the political inline
+POLITICAL_INLINE_WIDTH = 1                   # Thickness of the political inline
 
 DEFAULT_HIGHLIGHT_OUTLINE_COLOR = '#FFFF00'  # color for the highlight outline
 HIGHLIGHT_OUTLINE_OFFSET = -1                # Number of pixels to offset the highlight outline
 HIGHLIGHT_OUTLINE_WIDTH = 9                  # Thickness of the highlight outline
 
-DEFAULT_LOWLIGHT_INLINE_COLOR = '#00FFFF'  # Purple color for lowlight inline
-LOWLIGHT_INLINE_OFFSET = 2                 # Number of pixels to offset the lowlight inline
-LOWLIGHT_INLINE_WIDTH = 5                  # Thickness of the lowlight inline
+DEFAULT_LOWLIGHT_INLINE_COLOR = '#00FFFF'    # Purple color for lowlight inline
+LOWLIGHT_INLINE_OFFSET = 2                   # Number of pixels to offset the lowlight inline
+LOWLIGHT_INLINE_WIDTH = 5                    # Thickness of the lowlight inline
 
 
 def render_map(
@@ -58,7 +141,8 @@ def render_map(
         lowlight_color=None
 ) -> Image:
     '''
-    Renders the game map as an image using Pillow and overlays symbols on specified tiles. Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
+    Renders the game map as an image using Pillow and overlays symbols on specified tiles.
+    Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
     
     Parameters:
         tiles (list[list[Tile]]): The 2D list representing the game map.
@@ -98,8 +182,21 @@ def render_map(
                 fill=color
             )
 
+            political_color = POLITICAL_COLORS.get(tile['region'], ERROR_COLOR)
+            if ImageColor.getcolor(political_color, 'RGBA')[3] != 0:  # if the political color is not transparent
+                draw.rectangle(  # Draw a political inline around the tile
+                    [
+                        x * TILE_SIZE + POLITICAL_INLINE_OFFSET,
+                        y * TILE_SIZE + POLITICAL_INLINE_OFFSET,
+                        (x + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET,
+                        (y + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET
+                    ],
+                    outline=political_color,
+                    width=POLITICAL_INLINE_WIDTH
+                )
+
             if lowlights and (x, y) in lowlights:  # Check if this tile is in the lowlights
-                draw.rectangle(  # Draw an inline around the lowlight tile
+                draw.rectangle(  # Draw an inline around this tile if it's a lowlight
                     [
                         x * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
                         y * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
@@ -111,7 +208,7 @@ def render_map(
                 )
 
             if highlights and (x, y) in highlights:  # Check if this tile is in the highlights
-                draw.rectangle(  # Draw an outline around the highlight tile
+                draw.rectangle(  # Draw an outline around this tile if it's a highlight
                     [
                         x * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
                         y * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
@@ -137,11 +234,11 @@ def render_map(
                 
                 # Calculate the text position (centered on the tile below the current one)
                 text_x = x * TILE_SIZE + (TILE_SIZE - text_width) // 2
-                text_y = (y + 1) * TILE_SIZE + (TILE_SIZE - text_height) // 2
+                text_y = (y + 0.4) * TILE_SIZE + (TILE_SIZE - text_height) // 2
 
                 draw.text(  # Annotate the settlement name with a black outline
                     xy=(text_x, text_y),
-                    text=f'{settlement_name}\n({x}, {y})',
+                    text=settlement_name,
                     fill='white',
                     font=font,
                     align='center',
@@ -208,7 +305,21 @@ async def add_map_to_embed(
         msg = f'something went wrong rendering image: {e}'
         logging.log(msg=msg, level='INFO')
 
-if __name__ == '__main__':  # run with: python -m body.df_discord.map_rendering
+
+def truncate_2d_list(matrix, top_left, bottom_right):
+    'just a "zoom" function for testing with'
+    x1, y1 = top_left
+    x2, y2 = bottom_right
+
+    # Check bounds to avoid IndexError
+    if x1 < 0 or y1 < 0 or x2 >= len(matrix[0]) or y2 >= len(matrix):
+        raise ValueError('Coordinates are out of bounds')
+
+    # Extract the submatrix
+    return [row[x1:x2 + 1] for row in matrix[y1:y2 + 1]]
+
+
+if __name__ == '__main__':
     import json
     with open('test_map_obj.json', 'r') as map_file:
         df_map_JSON = json.load(map_file)
@@ -216,5 +327,8 @@ if __name__ == '__main__':  # run with: python -m body.df_discord.map_rendering
     highlight_locations = [(40, 40), (41, 41)]
     lowlight_locations = [(4, 26), (5, 26), (6, 26)]
     map_img = render_map(df_map_JSON['tiles'], highlight_locations, lowlight_locations, 'red')
+
+    # small_map = truncate_2d_list(df_map_JSON['tiles'], (25, 19), (39, 33))
+    # map_img = render_map(small_map)
 
     map_img.show()

@@ -135,8 +135,8 @@ LOWLIGHT_INLINE_WIDTH = 5                    # Thickness of the lowlight inline
 
 def render_map(
         tiles: list[dict],
-        highlights: list[tuple]=None,
-        lowlights: list[tuple]=None,
+        highlights: list[tuple] = None,
+        lowlights: list[tuple] = None,
         highlight_color=None,
         lowlight_color=None
 ) -> Image:
@@ -145,12 +145,13 @@ def render_map(
     Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
     
     Parameters:
-        tiles (list[list[Tile]]): The 2D list representing the game map.
+        tiles (list[list[dict]]): The 2D list representing the game map.
         highlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be highlighted.
         lowlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be lowlighted.
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
+
     if not highlight_color:
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
@@ -166,85 +167,99 @@ def render_map(
     map_img = Image.new('RGB', (width, height), GRID_COLOR)
     draw = ImageDraw.Draw(map_img)
 
-    for y, row in enumerate(tiles):  # Draw each tile with a slight reduction in size for the grid size
-        for x, tile in enumerate(row):
-            if tile['settlements']:  # if the tile has a settlement
-                color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
-            else:
-                color = TILE_COLORS.get(tile['terrain_difficulty'], ERROR_COLOR)
-            draw.rectangle(
+    def draw_tile(x, y, tile):
+        if tile['settlements']:
+            color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
+        else:
+            color = TILE_COLORS.get(tile['terrain_difficulty'], ERROR_COLOR)
+        draw.rectangle(
+            [
+                x * TILE_SIZE + GRID_SIZE,
+                y * TILE_SIZE + GRID_SIZE,
+                (x + 1) * TILE_SIZE - GRID_SIZE,
+                (y + 1) * TILE_SIZE - GRID_SIZE
+            ],
+            fill=color
+        )
+
+    def draw_political_inline(x, y, political_color):
+        if ImageColor.getcolor(political_color, 'RGBA')[3] != 0:  # if the political color is not transparent
+            draw.rectangle(  # Draw a political inline around the tile
                 [
-                    x * TILE_SIZE + GRID_SIZE,
-                    y * TILE_SIZE + GRID_SIZE,
-                    (x + 1) * TILE_SIZE - GRID_SIZE,
-                    (y + 1) * TILE_SIZE - GRID_SIZE
+                    x * TILE_SIZE + POLITICAL_INLINE_OFFSET,
+                    y * TILE_SIZE + POLITICAL_INLINE_OFFSET,
+                    (x + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET,
+                    (y + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET
                 ],
-                fill=color
+                outline=political_color,
+                width=POLITICAL_INLINE_WIDTH
             )
 
-            political_color = POLITICAL_COLORS.get(tile['region'], ERROR_COLOR)
-            if ImageColor.getcolor(political_color, 'RGBA')[3] != 0:  # if the political color is not transparent
-                draw.rectangle(  # Draw a political inline around the tile
-                    [
-                        x * TILE_SIZE + POLITICAL_INLINE_OFFSET,
-                        y * TILE_SIZE + POLITICAL_INLINE_OFFSET,
-                        (x + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET,
-                        (y + 1) * TILE_SIZE - POLITICAL_INLINE_OFFSET
-                    ],
-                    outline=political_color,
-                    width=POLITICAL_INLINE_WIDTH
-                )
+    def draw_highlight(x, y):
+        if highlights and (x, y) in highlights:  # Check if this tile is in the highlights
+            draw.rectangle(  # Draw an outline around this tile if it's a highlight
+                [
+                    x * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
+                    y * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
+                    (x + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET,
+                    (y + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET
+                ],
+                outline=highlight_color,
+                width=HIGHLIGHT_OUTLINE_WIDTH
+            )
 
-            if lowlights and (x, y) in lowlights:  # Check if this tile is in the lowlights
-                draw.rectangle(  # Draw an inline around this tile if it's a lowlight
-                    [
-                        x * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
-                        y * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
-                        (x + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET,
-                        (y + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET
-                    ],
-                    outline=lowlight_color,
-                    width=LOWLIGHT_INLINE_WIDTH
-                )
+    def draw_lowlight(x, y):
+        if lowlights and (x, y) in lowlights:  # Check if this tile is in the lowlights
+            draw.rectangle(  # Draw an inline around this tile if it's a lowlight
+                [
+                    x * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
+                    y * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,
+                    (x + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET,
+                    (y + 1) * TILE_SIZE - LOWLIGHT_INLINE_OFFSET
+                ],
+                outline=lowlight_color,
+                width=LOWLIGHT_INLINE_WIDTH
+            )
 
-            if highlights and (x, y) in highlights:  # Check if this tile is in the highlights
-                draw.rectangle(  # Draw an outline around this tile if it's a highlight
-                    [
-                        x * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
-                        y * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
-                        (x + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET,
-                        (y + 1) * TILE_SIZE - HIGHLIGHT_OUTLINE_OFFSET
-                    ],
-                    outline=highlight_color,
-                    width=HIGHLIGHT_OUTLINE_WIDTH
-                )
+    def annotate_settlements(x, y, tile):
+        if tile['settlements']:
+            settlement = tile['settlements'][0]  # Assume only one settlement per tile
+            settlement_name = settlement['name']
 
-    for y, row in enumerate(tiles):  # Annotate the settlements after drawing the tiles
+            # Load a default font
+            font = ImageFont.load_default(size=FONT_SIZE)
+
+            # Calculate the text bounding box
+            bbox = draw.textbbox((0, 0), settlement_name, font=font)
+            text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+            # Calculate the text position (centered on the tile below the current one)
+            text_x = x * TILE_SIZE + (TILE_SIZE - text_width) // 2
+            text_y = (y + 0.4) * TILE_SIZE + (TILE_SIZE - text_height) // 2
+
+            draw.text(  # Annotate the settlement name with a black outline
+                xy=(text_x, text_y),
+                text=settlement_name,
+                fill='white',
+                font=font,
+                align='center',
+                stroke_width=FONT_OUTLINE_SIZE,
+                stroke_fill=GRID_COLOR
+            )
+
+    # Render the map
+    for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
-            if tile['settlements']:
-                settlement = tile['settlements'][0]  # Assume only one settlement per tile
-                settlement_name = settlement['name']
+            draw_tile(x, y, tile)
+            political_color = POLITICAL_COLORS.get(tile['region'], ERROR_COLOR)
+            draw_political_inline(x, y, political_color)
+            draw_lowlight(x, y)
+            draw_highlight(x, y)
 
-                # Load a default font
-                font = ImageFont.load_default(size=FONT_SIZE)
-
-                # Calculate the text bounding box
-                bbox = draw.textbbox((0, 0), settlement_name, font=font)
-                text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
-                
-                # Calculate the text position (centered on the tile below the current one)
-                text_x = x * TILE_SIZE + (TILE_SIZE - text_width) // 2
-                text_y = (y + 0.4) * TILE_SIZE + (TILE_SIZE - text_height) // 2
-
-                draw.text(  # Annotate the settlement name with a black outline
-                    xy=(text_x, text_y),
-                    text=settlement_name,
-                    fill='white',
-                    font=font,
-                    align='center',
-                    stroke_width=FONT_OUTLINE_SIZE,
-                    stroke_fill=GRID_COLOR
-                )
+    # Annotate settlements after drawing the tiles
+    for y, row in enumerate(tiles):
+        for x, tile in enumerate(row):
+            annotate_settlements(x, y, tile)
 
     return map_img
 

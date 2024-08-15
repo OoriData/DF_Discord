@@ -277,6 +277,7 @@ class BuyView(discord.ui.View):
         self.previous_embed = previous_embed
 
         self.current_embed = None
+        self.recipient = None
 
         # Logic to decide which buttons are added to the view
         
@@ -366,9 +367,11 @@ class BuyView(discord.ui.View):
                         await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
                         return
                     recipient_info = response.json()
+                    self.recipient = recipient_info
                     recipient_name = recipient_info['name']
                     delivery_reward = current_item['delivery_reward']
             else:
+                self.recipient = None
                 recipient_name = 'None'
                 delivery_reward = 'None'
             image_file = None
@@ -398,40 +401,6 @@ class BuyView(discord.ui.View):
                 )
             )
 
-            convoy_x = self.user_info['convoys'][0]['x']
-            convoy_y = self.user_info['convoys'][0]['y']
-
-            min_x = None  # West most x coordinate
-            max_x = None  # East most x coordinate
-            min_y = None  # North most y coordinate
-            max_y = None  # South most y coordinate
-            
-            # Replace 56 with recipient['x'] and 17 with recipient['y']
-            # Declaring minimum and maximum x coordinates
-            if convoy_x < 56:
-                min_x = convoy_x
-                max_x = 56
-            else:
-                min_x = 56
-                max_x = convoy_x
-            
-            # Declaring minimum and maximum y coordinates
-            if convoy_y < 17:
-                min_y = convoy_y
-                max_y = 17
-            else:
-                min_y = 17
-                max_y = convoy_y
-
-            if current_item['recipient']:
-                item_embed, image_file = await add_map_to_embed(
-                    embed = item_embed,
-                    highlighted = [(convoy_x, convoy_y)],
-                    lowlighted = [(56, 17)],  # XXX: placeholder numbers
-                    top_left = [(min_x, min_y)],
-                    bottom_right = [(max_x, max_y)]
-                )
-
         if self.menu_type == 'vehicle':
             item_embed = discord.Embed(
                 title=f'{current_item["name"]}',
@@ -451,7 +420,7 @@ class BuyView(discord.ui.View):
             )
             
             item_embed.add_field(name='Wear', value=current_item['wear'])
-            item_embed.add_field(name='Armor Points', value=f'{current_item["ap"]}/100')
+            item_embed.add_field(name='Armor Points', value=f'{current_item["ap"]}/{current_item['max_ap']}')
             item_embed.add_field(name='Offroad Capability', value=f'{current_item["offroad_capability"]}/100')
 
             item_embed.set_footer(
@@ -710,10 +679,10 @@ class ResourceQuantityView(discord.ui.View):
         elif self.trade_type == 'sell':
             self.add_item(ResourceSellButton(self, label='Sell Resource', style=discord.ButtonStyle.green, custom_id='sell_resource'))
 
-        self.add_item(QuantityButton(self, item=self.resource_type, label='-5', style=discord.ButtonStyle.gray, custom_id='-5'))
+        self.add_item(QuantityButton(self, item=self.resource_type, label='-10', style=discord.ButtonStyle.gray, custom_id='-10'))
         self.add_item(QuantityButton(self, item=self.resource_type, label='-1', style=discord.ButtonStyle.gray, custom_id='-1'))
         self.add_item(QuantityButton(self, item=self.resource_type, label='+1', style=discord.ButtonStyle.gray, custom_id='1'))
-        self.add_item(QuantityButton(self, item=self.resource_type, label='+5', style=discord.ButtonStyle.gray, custom_id='5'))
+        self.add_item(QuantityButton(self, item=self.resource_type, label='+10', style=discord.ButtonStyle.gray, custom_id='10'))
         
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='back_button')
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -1556,15 +1525,46 @@ class MapButton(discord.ui.Button):
             ''')
         )
 
-        x_padding = 16
-        y_padding = 9
+        if self.parent_view.recipient:
+            recipient_info = self.parent_view.recipient
+            recipient_x = recipient_info['x']
+            recipient_y = recipient_info['y']
 
-        map_embed, image_file = await add_map_to_embed(
-            embed=embed,
-            highlighted=[(vendor_x, vendor_y)],
-            top_left=(vendor_x - x_padding, vendor_y - y_padding),
-            bottom_right=(vendor_x + x_padding, vendor_y + y_padding),
-        )
+            if vendor_x < recipient_x:
+                min_x = vendor_x
+                max_x = recipient_x
+            else:
+                min_x = recipient_x
+                max_x = vendor_x
+            
+            # Declaring minimum and maximum y coordinates
+            if vendor_y < recipient_y:
+                min_y = vendor_y
+                max_y = recipient_y
+            else:
+                min_y = recipient_y
+                max_y = vendor_y
+                
+            x_padding = 5
+            y_padding = 5
+
+            map_embed, image_file = await add_map_to_embed(
+                embed=embed,
+                highlighted=[(vendor_x, vendor_y)],
+                lowlighted=[(recipient_x, recipient_y)],
+                top_left=(min_x - x_padding, min_y - y_padding),
+                bottom_right=(max_x + x_padding, max_y + y_padding),
+            )
+        else:
+            x_padding = 16
+            y_padding = 9
+
+            map_embed, image_file = await add_map_to_embed(
+                embed=embed,
+                highlighted=[(vendor_x, vendor_y)],
+                top_left=(vendor_x - x_padding, vendor_y - y_padding),
+                bottom_right=(vendor_x + x_padding, vendor_y + y_padding),
+            )
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
 

@@ -273,12 +273,12 @@ class Desolate_Cog(commands.Cog):
             
             convoy_embed.description = vehicles_str
 
-            convoy_embed.add_field(name='Fuel', value=convoy_json['fuel'])
+            convoy_embed.add_field(name='Fuel', value=f'{convoy_json['fuel']:.1f}')
             convoy_embed.add_field(name='Water', value=convoy_json['water'])
             convoy_embed.add_field(name='Food', value=convoy_json['food'])
 
             convoy_embed.set_author(
-                name=f'{convoy_json['name']} | ${convoy_json['money']}',
+                name=f'{convoy_json['name']} | ${format_int_with_commas(convoy_json['money'])}',
                 icon_url=interaction.user.avatar.url
             )
 
@@ -299,6 +299,16 @@ class Desolate_Cog(commands.Cog):
                     y = journey['route_y'][pos]
                     route_tiles.append((x, y))
                     pos += 1
+
+
+                async with httpx.AsyncClient(verify=False) as client:
+                    destination = await client.get(
+                        f'{DF_API_HOST}/map/tile/get',
+                        params={'x': journey['dest_x'], 'y': journey['dest_y']}
+                    )
+                    destination = destination.json()
+
+                    convoy_embed.add_field(name='Convoy Destination', value=destination['settlements'][0]['name'])
 
                 convoy_embed, image_file = await add_map_to_embed(
                     embed=convoy_embed,

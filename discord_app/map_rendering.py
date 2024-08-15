@@ -15,7 +15,7 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 
 TILE_SIZE = 32         # Pixels
 GRID_SIZE = 2          # Number of pixels to reduce each side of the tile
-FONT_SIZE = 12         # Pixels(?)
+FONT_SIZE = 12         # Pixels
 FONT_OUTLINE_SIZE = 2  # Pixels
 FONT = ImageFont.load_default(size=FONT_SIZE)  # Load a default font
 

@@ -255,30 +255,65 @@ class Desolate_Cog(commands.Cog):
 
             convoy_json = response.json()
 
+
             convoy_embed = discord.Embed(
                 color=discord.Color.green(),
                 title=f'{convoy_json['name']} Information'
             )
+
+            vehicles_list = []
+            vehicles_str = '**Convoy\'s Vehicles:**\n'
             if convoy_json['vehicles']:
-                for item in convoy_json['vehicles']:
-                    convoy_embed.add_field(name=item['name'], value=f'${item["value"]}')
+                for vehicle in convoy_json['vehicles']:
+                    vehicles_list.append(f'- {vehicle['name']}')
+                    # convoy_embed.add_field(name=item['name'], value=f'${item["value"]}')
+                vehicles_str += '\n'.join(vehicles_list)
             else:
-                convoy_embed.description = 'No vehicles in convoy. Buy one by using /vendors and navigating one of your city\'s dealerships.'
+                vehicles_str = '*No vehicles in convoy. Buy one by using /vendors and navigating one of your city\'s dealerships.*'
+            
+            convoy_embed.description = vehicles_str
+
+            convoy_embed.add_field(name='Fuel', value=convoy_json['fuel'])
+            convoy_embed.add_field(name='Water', value=convoy_json['water'])
+            convoy_embed.add_field(name='Food', value=convoy_json['food'])
+
+            convoy_embed.set_author(
+                name=f'{convoy_json['name']} | ${convoy_json['money']}',
+                icon_url=interaction.user.avatar.url
+            )
 
             convoy_x = convoy_json['x']
             convoy_y = convoy_json['y']
 
-            padding = 8
+            x_padding = 16
+            y_padding = 9
 
-            top_left = (convoy_x - padding, convoy_y - padding)
-            bottom_right = (convoy_x + padding, convoy_y + padding)
+            top_left = (convoy_x - x_padding, convoy_y - y_padding)
+            bottom_right = (convoy_x + x_padding, convoy_y + y_padding)
 
-            convoy_embed, image_file = await add_map_to_embed(
-                embed=convoy_embed,
-                highlighted=[(convoy_x, convoy_y)],
-                top_left=top_left,
-                bottom_right=bottom_right
-            )
+            if convoy_json['journey']:
+                journey = convoy_json['journey']
+                route_tiles = []  # a list of tuples
+                pos = 0  # bad way to do it but i'll fix later
+                for x in journey['route_x']:
+                    y = journey['route_y'][pos]
+                    route_tiles.append((x, y))
+                    pos += 1
+
+                convoy_embed, image_file = await add_map_to_embed(
+                    embed=convoy_embed,
+                    highlighted=[(convoy_x, convoy_y)],
+                    lowlighted=route_tiles,
+                    top_left=top_left,
+                    bottom_right=bottom_right
+                )
+            else:
+                convoy_embed, image_file = await add_map_to_embed(
+                    embed=convoy_embed,
+                    highlighted=[(convoy_x, convoy_y)],
+                    top_left=top_left,
+                    bottom_right=bottom_right
+                )
 
             await interaction.response.send_message(embed=convoy_embed, file=image_file)
 
@@ -295,7 +330,6 @@ class Desolate_Cog(commands.Cog):
         # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled 
         setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS}
         sett_names = [sett['name'] for sett in SETTLEMENTS]  # cities the users can select from
-        print(ansi_color(setts_dict, 'green'))
         choices = [
             app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
             for sett_name in sett_names if current.lower() in sett_name.lower()

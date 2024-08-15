@@ -5,6 +5,7 @@ import discord
 import os
 import httpx
 import textwrap
+from discord_app.map_rendering import add_map_to_embed
 
 from utiloori.ansi_color import ansi_color
 
@@ -115,7 +116,6 @@ class VendorMenuView(discord.ui.View):
             menu_type = 'vehicle'
             vehicle_list = []
             for vehicle in current_vendor['vehicle_inventory']:
-                print(ansi_color(vehicle, 'purple'))
                 vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
                 vehicle_list.append(vehicle_str)
             displayable_vehicles = '\n'.join(vehicle_list)
@@ -468,16 +468,18 @@ class BuyView(discord.ui.View):
                         f'{DF_API_HOST}/vendor/get',
                         params={'vendor_id': current_item['recipient']}
                     )
+
                     if response.status_code != API_SUCCESS_CODE:
                         msg = response.json()['detail']
                         await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
                         return
-                    response_json = response.json()
-                    recipient = response_json['name']
+                    recipient_info = response.json()
+                    recipient_name = recipient_info['name']
                     delivery_reward = current_item['delivery_reward']
             else:
-                recipient = 'None'
+                recipient_name = 'None'
                 delivery_reward = 'None'
+            image_file = None
             item_embed = discord.Embed(
                 title=current_item['name'],
                 description=textwrap.dedent(
@@ -485,11 +487,12 @@ class BuyView(discord.ui.View):
                     *{current_item['base_desc']}*
 
                     - Base Price: **${current_item['base_price']}**
-                    - Recipient: **{recipient}**
+                    - Recipient: **{recipient_name}**
                     - Delivery Reward: **{delivery_reward}**
                     '''
                 )
             )
+
             
             item_embed.add_field(name='Quantity', value=current_item["quantity"])
             item_embed.add_field(name='Volume', value=f'{current_item["volume"]} liter(s)')
@@ -502,6 +505,40 @@ class BuyView(discord.ui.View):
                 '''
                 )
             )
+
+            convoy_x = self.user_info['convoys'][0]['x']
+            convoy_y = self.user_info['convoys'][0]['y']
+
+            min_x = None  # West most x coordinate
+            max_x = None  # East most x coordinate
+            min_y = None  # North most y coordinate
+            max_y = None  # South most y coordinate
+            
+            # Replace 56 with recipient['x'] and 17 with recipient['y']
+            # Declaring minimum and maximum x coordinates
+            if convoy_x < 56:
+                min_x = convoy_x
+                max_x = 56
+            else:
+                min_x = 56
+                max_x = convoy_x
+            
+            # Declaring minimum and maximum y coordinates
+            if convoy_y < 17:
+                min_y = convoy_y
+                max_y = 17
+            else:
+                min_y = 17
+                max_y = convoy_y
+
+            if current_item['recipient']:
+                item_embed, image_file = await add_map_to_embed(
+                    embed = item_embed,
+                    highlighted = [(convoy_x, convoy_y)],
+                    lowlighted = [(56, 17)],  # XXX: placeholder numbers
+                    top_left = [(min_x, min_y)],
+                    bottom_right = [(max_x, max_y)]
+                )
 
         if self.menu_type == 'vehicle':
             item_embed = discord.Embed(
@@ -540,7 +577,10 @@ class BuyView(discord.ui.View):
 
         self.current_embed = item_embed
         
-        await interaction.response.edit_message(embed=item_embed)
+        if current_item['recipient']:
+            await interaction.response.edit_message(embed=item_embed, attachments=image_file)
+        else:
+            await interaction.response.edit_message(embed=item_embed)
 
 
 class ResourceView(discord.ui.View):

@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: UNLICENSED
 'Map image rendering functionality'
 from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+from typing import Optional
+
+import discord
+import logging
+import httpx
+import os
+API_SUCCESS_CODE = 200
+API_UNPROCESSABLE_ENTITY_CODE = 422
+DF_API_HOST = os.environ.get('DF_API_HOST')
 
 TILE_SIZE = 32         # Pixels
 GRID_SIZE = 2          # Number of pixels to reduce each side of the tile
@@ -141,6 +151,62 @@ def render_map(
 
     return map_img
 
+async def add_map_to_embed(
+        embed: discord.Embed,  # TODO: make this optional
+        highlighted: Optional[list[tuple[int]]]=None,
+        lowlighted: Optional[list[tuple[int]]]=None,
+        top_left: Optional[tuple[int]]=None,
+        bottom_right: Optional[tuple[int]]=None,
+        highlight_color: Optional[str]=None,
+        lowlight_color: Optional[str]=None
+) -> discord.Embed:
+    '''Renders map as an image and formats it into a Discord embed object, and also returns a image file'''
+    if top_left and bottom_right:
+        map_edges = {
+            'x_min': top_left[0],
+            'x_max': bottom_right[0],
+            'y_min': top_left[1],
+            'y_max': bottom_right[1]
+        }
+
+        # Adjust the highlight and lowlight coordinates based on the top-left corner
+        if highlighted:
+            highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+
+        if lowlighted:
+            lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
+    else:
+        map_edges = None
+
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.get(
+                url=f'{DF_API_HOST}/map/get',
+                params=map_edges
+            )
+            if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
+                logging.log(level='INFO', msg='Error: 422 Unprocessable')
+            elif response.status_code == API_SUCCESS_CODE:
+                tiles = response.json()['tiles']
+                rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
+
+                # Create a BytesIO object to save the image in memory
+                with BytesIO() as image_binary:
+                    rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
+                    image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
+
+                    file_name = 'map.png'
+                    img_file = discord.File(fp=image_binary, filename=file_name)  # Declare a discord.File object to include in the response
+
+                    embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
+
+                    return embed, img_file
+                    # Now all you have to do to apply this is:
+                    # await interaction.response.send_message(embed=embed, file=img_file)
+
+    except Exception as e:
+        msg = f'something went wrong rendering image: {e}'
+        logging.log(msg=msg, level='INFO')
 
 if __name__ == '__main__':  # run with: python -m body.df_discord.map_rendering
     import json

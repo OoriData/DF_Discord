@@ -14,9 +14,9 @@ from discord             import app_commands
 from discord.ext         import commands
 from utiloori.ansi_color import ansi_color
 
-from discord_app                import vendor_views
-from discord_app                import discord_timestamp
-from discord_app.map_rendering  import render_map
+from discord_app               import vendor_views
+from discord_app               import discord_timestamp
+from discord_app.map_rendering import add_map_to_embed
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -36,64 +36,6 @@ class Desolate_Cog(commands.Cog):
         self.ephemeral = True
 
         # self.all_settlements = {} # maybe
-
-    async def render_map(
-            self,
-            embed: discord.Embed,  # TODO: make this optional
-            highlighted: Optional[list[tuple[int]]]=None,
-            lowlighted: Optional[list[tuple[int]]]=None,
-            top_left: Optional[tuple[int]]=None,
-            bottom_right: Optional[tuple[int]]=None,
-            highlight_color: Optional[str]=None,
-            lowlight_color: Optional[str]=None
-    ) -> discord.Embed:
-        '''Renders map as an image and formats it into a discord'''
-        if top_left and bottom_right:
-            map_edges = {
-                'x_min': top_left[0],
-                'x_max': bottom_right[0],
-                'y_min': top_left[1],
-                'y_max': bottom_right[1]
-            }
-
-            # Adjust the highlight and lowlight coordinates based on the top-left corner
-            if highlighted:
-                highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
-
-            if lowlighted:
-                lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
-        else:
-            map_edges = None
-
-        try:
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.get(
-                    url=f'{DF_API_HOST}/map/get',
-                    params=map_edges
-                )
-                if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
-                    logging.log(level='INFO', msg='Error: 422 Unprocessable')
-                elif response.status_code == API_SUCCESS_CODE:
-                    tiles = response.json()['tiles']
-                    rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
-
-                    # Create a BytesIO object to save the image in memory
-                    with BytesIO() as image_binary:
-                        rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
-                        image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
-
-                        file_name = 'map.png'
-                        img_file = discord.File(fp=image_binary, filename=file_name)  # Declare a discord.File object to include in the response
-
-                        embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
-
-                        return embed, img_file
-                        # Now all you have to do to apply this is:
-                        # await interaction.response.send_message(embed=embed, file=img_file)
-
-        except Exception as e:
-            msg = f'something went wrong rendering image: {e}'
-            logging.log(msg=msg, level='INFO')
 
     async def get_map(self):
         async with httpx.AsyncClient(verify=False) as client:
@@ -133,7 +75,7 @@ class Desolate_Cog(commands.Cog):
     async def get_df_map(self, interaction: discord.Interaction):
         try:
             embed = discord.Embed()
-            embed, image_file = await self.render_map(embed, highlighted=[(8, 5)], lowlighted=[(9, 6)], top_left=(7, 4), bottom_right=(9, 6))
+            embed, image_file = await add_map_to_embed(embed)
 
             embed.set_author(
                 name=interaction.user.name,
@@ -297,13 +239,13 @@ class Desolate_Cog(commands.Cog):
     async def my_convoys(self, interaction: discord.Interaction):
         async with httpx.AsyncClient(verify=False) as client:
             # First, get user ID from discord_id
-            convoy_info = await self.get_user_by_discord(discord_id=interaction.user.id)
+            user_info = await self.get_user_by_discord(discord_id=interaction.user.id)
 
             # TODO: Remove the parameter from this command and make it easy for the user
             # Maybe just make a separate /convoys command that brings up a nice menu
             response = await client.get(
                 f'{DF_API_HOST}/convoy/get',
-                params={'convoy_id': convoy_info['convoys'][0]['convoy_id']}
+                params={'convoy_id': user_info['convoys'][0]['convoy_id']}
             )
 
             if response.status_code != API_SUCCESS_CODE:
@@ -323,7 +265,22 @@ class Desolate_Cog(commands.Cog):
             else:
                 convoy_embed.description = 'No vehicles in convoy. Buy one by using /vendors and navigating one of your city\'s dealerships.'
 
-            await interaction.response.send_message(embed=convoy_embed)
+            convoy_x = convoy_json['x']
+            convoy_y = convoy_json['y']
+
+            padding = 8
+
+            top_left = (convoy_x - padding, convoy_y - padding)
+            bottom_right = (convoy_x + padding, convoy_y + padding)
+
+            convoy_embed, image_file = await add_map_to_embed(
+                embed=convoy_embed,
+                highlighted=[(convoy_x, convoy_y)],
+                top_left=top_left,
+                bottom_right=bottom_right
+            )
+
+            await interaction.response.send_message(embed=convoy_embed, file=image_file)
 
     # XXX: im useful don't delete me
     async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one

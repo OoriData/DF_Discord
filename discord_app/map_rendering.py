@@ -17,6 +17,7 @@ TILE_SIZE = 32         # Pixels
 GRID_SIZE = 2          # Number of pixels to reduce each side of the tile
 FONT_SIZE = 12         # Pixels(?)
 FONT_OUTLINE_SIZE = 2  # Pixels
+FONT = ImageFont.load_default(size=FONT_SIZE)  # Load a default font
 
 GRID_COLOR = '#202020'   # Background grid color
 TILE_COLORS = {
@@ -137,8 +138,8 @@ def render_map(
         tiles: list[dict],
         highlights: list[tuple] = None,
         lowlights: list[tuple] = None,
-        highlight_color=None,
-        lowlight_color=None
+        highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
+        lowlight_color=DEFAULT_LOWLIGHT_INLINE_COLOR
 ) -> Image:
     '''
     Renders the game map as an image using Pillow and overlays symbols on specified tiles.
@@ -151,27 +152,12 @@ def render_map(
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
-
-    if not highlight_color:
-        highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
-    if not lowlight_color:
-        lowlight_color = DEFAULT_LOWLIGHT_INLINE_COLOR
-
-    # Calculate the size of the image
-    rows = len(tiles)
-    cols = len(tiles[0])
-    width = cols * TILE_SIZE
-    height = rows * TILE_SIZE
-
-    # Create a new image with a white background
-    map_img = Image.new('RGB', (width, height), GRID_COLOR)
-    draw = ImageDraw.Draw(map_img)
-
-    def draw_tile(x, y, tile):
+    def draw_tile_bg(x, y, tile):
         if tile['settlements']:
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
         else:
             color = TILE_COLORS.get(tile['terrain_difficulty'], ERROR_COLOR)
+
         draw.rectangle(
             [
                 x * TILE_SIZE + GRID_SIZE,
@@ -182,7 +168,9 @@ def render_map(
             fill=color
         )
 
-    def draw_political_inline(x, y, political_color):
+    def draw_political_inline(x, y, tile):
+        political_color = POLITICAL_COLORS.get(tile['region'], ERROR_COLOR)
+
         if ImageColor.getcolor(political_color, 'RGBA')[3] != 0:  # if the political color is not transparent
             draw.rectangle(  # Draw a political inline around the tile
                 [
@@ -226,11 +214,8 @@ def render_map(
             settlement = tile['settlements'][0]  # Assume only one settlement per tile
             settlement_name = settlement['name']
 
-            # Load a default font
-            font = ImageFont.load_default(size=FONT_SIZE)
-
             # Calculate the text bounding box
-            bbox = draw.textbbox((0, 0), settlement_name, font=font)
+            bbox = draw.textbbox((0, 0), settlement_name, font=FONT)
             text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
             # Calculate the text position (centered on the tile below the current one)
@@ -241,23 +226,30 @@ def render_map(
                 xy=(text_x, text_y),
                 text=settlement_name,
                 fill='white',
-                font=font,
+                font=FONT,
                 align='center',
                 stroke_width=FONT_OUTLINE_SIZE,
                 stroke_fill=GRID_COLOR
             )
 
-    # Render the map
-    for y, row in enumerate(tiles):
+    # Calculate the size of the image
+    rows = len(tiles)
+    cols = len(tiles[0])
+    width = cols * TILE_SIZE
+    height = rows * TILE_SIZE
+
+    # Create a new image with the grid color as the background
+    map_img = Image.new('RGB', (width, height), GRID_COLOR)
+    draw = ImageDraw.Draw(map_img)
+
+    for y, row in enumerate(tiles):  # Render the map
         for x, tile in enumerate(row):
-            draw_tile(x, y, tile)
-            political_color = POLITICAL_COLORS.get(tile['region'], ERROR_COLOR)
-            draw_political_inline(x, y, political_color)
+            draw_tile_bg(x, y, tile)
+            draw_political_inline(x, y, tile)
             draw_lowlight(x, y)
             draw_highlight(x, y)
 
-    # Annotate settlements after drawing the tiles
-    for y, row in enumerate(tiles):
+    for y, row in enumerate(tiles):  # Annotate settlements after drawing the tiles
         for x, tile in enumerate(row):
             annotate_settlements(x, y, tile)
 

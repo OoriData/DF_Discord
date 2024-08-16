@@ -38,6 +38,63 @@ def vendor_services(vendor: dict):
 
     return services
 
+class BackButtonView(discord.ui.View):
+    ''' A menu for a button that sends users back to the previous view. '''
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            previous_embed: discord.Embed,
+            previous_view: discord.ui.View
+    ):
+        super().__init__(timeout=120)
+        self.interaction = interaction
+        self.previous_embed = previous_embed
+        self.previous_view = previous_view
+
+    @discord.ui.button(label='Back to Vendors', style=discord.ButtonStyle.green, custom_id='back_button')
+    async def back_button(self, interaction: discord.Interaction, button: discord.Button):
+        await interaction.response.defer()
+        async with httpx.AsyncClient(verify=False) as client:
+            user_info = await client.get(
+                f'{DF_API_HOST}/user/get_by_discord_id',
+                params={'discord_id': interaction.user.id}
+            )
+            user_info = user_info.json()
+
+            user_convoy = user_info['convoys'][0]
+
+            tile_info = await client.get(
+                f'{DF_API_HOST}/map/tile/get',
+                params={'x': user_convoy['x'], 'y': user_convoy['y']}
+            )
+            tile_info = tile_info.json()
+
+        # TODO: handle multiple settlements eventually
+        # wtf does this mean
+        if not tile_info['settlements']:
+            await interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
+            return
+
+        node_embed = discord.Embed(
+            title=f'{tile_info['settlements'][0]['name']} vendors and services',
+        )
+        for vendor in tile_info['settlements'][0]['vendors']:
+            node_embed.add_field(
+                name=vendor['name'],
+                value=f'${vendor["money"]}'
+            )
+        convoy_balance = format_int_with_commas(user_info['convoys'][0]['money'])
+        node_embed.set_author(name=f'{user_info['convoys'][0]['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
+
+        view=VendorMenuView(
+            interaction=interaction,
+            user_info=user_info,
+            menu=tile_info['settlements'][0]['vendors'],
+            menu_type='vendor'
+        )
+        await interaction.followup.send(embed=node_embed, view=view)
+        # await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
+
 class VendorMenuView(discord.ui.View):
     '''
     Main view for selecting and viewing vendors. 
@@ -293,7 +350,7 @@ class BuyView(discord.ui.View):
         if len(resources) > 0:
             self.add_item(BuyResourceButton(
                 self,
-                label='Buy Resource',
+                label='Buy Resources',
                 style=discord.ButtonStyle.green,
                 custom_id='buy_resources'
             ))
@@ -546,6 +603,7 @@ class CargoQuantityView(discord.ui.View):
 
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='back_button')
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.previous_embed.remove_footer()
         await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
 
     # TODO: Implement dynamic button strategy used when buying resources
@@ -607,7 +665,7 @@ class CargoQuantityView(discord.ui.View):
                 icon_url=interaction.user.avatar.url
             )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self,))
 
     @discord.ui.button(label='Sell Cargo', style=discord.ButtonStyle.green, custom_id='sell_cargo')
     async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -641,11 +699,11 @@ class CargoQuantityView(discord.ui.View):
                 icon_url=interaction.user.avatar.url
             )
 
-            await interaction.response.edit_message(embed=embed, view=None)
+            await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
 class ResourceQuantityView(discord.ui.View):
     '''
-    Final button menu for buying from, and selling resources to vendors. Contains quantity buttons so user can decide
+    Final button menu for buying from, and selling resources to `vendors`. Contains quantity buttons so user can decide
     how much of a resource to sell or buy, and contains the final button that makes the API call to buy or sell the resource.
 
     - Appears when `ResourceButton` is pressed (button of `ResourceSelectView`)
@@ -686,6 +744,7 @@ class ResourceQuantityView(discord.ui.View):
         
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='back_button')
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.previous_embed.remove_footer()
         await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
 
 # TODO: Also need to implement Sell vehicle view
@@ -743,7 +802,7 @@ class VehicleConfirmView(discord.ui.View):
                     }
                 )
                 if response.status_code != API_SUCCESS_CODE:
-                    msg = f'Something went wrong: {response.json()['details']}'
+                    msg = f'Something went wrong: {response.json()}'
                     await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
                     return
                 convoy_after = response.json()
@@ -784,7 +843,7 @@ class VehicleConfirmView(discord.ui.View):
             icon_url=interaction.user.avatar.url
         )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
 class VehicleSellView(discord.ui.View):
     '''
@@ -1231,13 +1290,18 @@ class BuyResourceButton(discord.ui.Button):
             title=f'Shopping for resources at {vendor['name']}',
             description='Use buttons to navigate the buy menu'
         )
+        
+        if self.parent_view.current_embed:  # If the parent view has a current embed, mainly for saving positions if iterating through a menu
+            previous_embed = self.parent_view.current_embed
+        else:
+            previous_embed = embed
 
         view = ResourceSelectView(
             interaction = discord.Interaction,
             user_info = self.parent_view.user_info,
             vendor_obj = vendor,
             trade_type = 'buy',
-            previous_embed = embed,
+            previous_embed = previous_embed,
             previous_view = self.parent_view,
         )
 
@@ -1458,16 +1522,16 @@ class ResourceBuyButton(discord.ui.Button):
         elif self.parent_view.resource_type == 'fuel':
             embed.color = discord.Color.gold()
 
-        convoy_balance = format_int_with_commas(self.parent_view.user_info['convoys'][0]['money'])
+        convoy_balance = format_int_with_commas(convoy_after['money'])
         embed.set_author(
             name=f'{convoy_after['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
 class ResourceSellButton(discord.ui.Button):
-    def __init__(self, parent_view, label: str, style: discord.ButtonStyle, custom_id: str):
+    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
 
@@ -1507,7 +1571,9 @@ class ResourceSellButton(discord.ui.Button):
                 icon_url=interaction.user.avatar.url
             )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        self.parent_view.previous_embed.remove_footer()  # Remove the footer 
+
+        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
 class MapButton(discord.ui.Button):
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):

@@ -32,9 +32,7 @@ def vendor_services(vendor: dict):
     services = []
     for key in list(service_keys.keys()):
         if vendor[key]:
-            services.append((service_keys[key], '**Available!**'))
-        else:
-            services.append((service_keys[key], '~~Unavailable~~'))
+            services.append((service_keys[key], '✅ **Available!**'))
 
     return services
 
@@ -288,13 +286,7 @@ class VendorMenuView(discord.ui.View):
             )
 
         # display stuff
-        item_embed.set_footer(
-            text=textwrap.dedent(f'''
-            Vendor Balance: ${self.menu[index]['money']}
-            Page [{index + 1} / {len(self.menu)}]
-            '''
-            )
-        )
+        item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
         item_embed.set_author(  # TODO: make a basic function for this, it would help reduce a few lines of code and would be easy.
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -373,7 +365,7 @@ class BuyView(discord.ui.View):
 
         self.add_item(MapButton(
             self,
-            label='Map',
+            label='Destination Map (appears in new message)',
             style=discord.ButtonStyle.blurple,
             custom_id='map'
             )
@@ -450,13 +442,7 @@ class BuyView(discord.ui.View):
             item_embed.add_field(name='Volume', value=f'{current_item["volume"]} liter(s)')
             item_embed.add_field(name='Mass', value=f'{current_item["mass"]} kilogram(s)')
 
-            item_embed.set_footer(
-                text=textwrap.dedent(f'''
-                Vendor Balance: ${self.vendor_obj['money']}
-                Page [{index + 1} / {len(self.menu)}]
-                '''
-                )
-            )
+            item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
         if self.menu_type == 'vehicle':
             item_embed = discord.Embed(
@@ -480,13 +466,7 @@ class BuyView(discord.ui.View):
             item_embed.add_field(name='Armor Points', value=f'{current_item["ap"]}/{current_item['max_ap']}')
             item_embed.add_field(name='Offroad Capability', value=f'{current_item["offroad_capability"]}/100')
 
-            item_embed.set_footer(
-                text=textwrap.dedent(f'''
-                Vendor Balance: ${self.vendor_obj['money']}
-                Page [{index + 1} / {len(self.menu)}]
-                '''
-                )
-            )
+            item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
         item_embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
@@ -651,13 +631,11 @@ class CargoQuantityView(discord.ui.View):
                     *{cargo_obj['base_desc']}*
                 ''')
             else:
-                embed.description = textwrap.dedent(
-                    f'''
+                embed.description = textwrap.dedent(f'''
                     Cargo has been added to your convoy.
 
                     *{cargo_obj['base_desc']}*
-                    '''
-                )
+                ''')
 
             convoy_balance = format_int_with_commas(convoy_after['money'])
             embed.set_author(
@@ -810,7 +788,7 @@ class VehicleConfirmView(discord.ui.View):
             # convoy_after = response.json()
             embed = discord.Embed(
                 title=f'You sold your convoy\'s {self.vehicle['name']}',
-                description=f'Money added to your convoy: ${self.vehicle['value']}'
+                description=f'Money gained: ${self.vehicle['value']}'
             )
             # except Exception
 
@@ -1239,13 +1217,7 @@ class CargoSellView(discord.ui.View):
             icon_url=interaction.user.avatar.url
         )
 
-        embed.set_footer(
-            text=textwrap.dedent(f'''
-            Vendor Balance: ${self.vendor_obj['money']}
-            Page [{index + 1} / {len(self.sellable_cargo)}]
-            '''
-            )
-        )
+        embed.set_footer(text=f'Page [{index + 1} / {len(self.sellable_cargo)}]')
         self.current_embed = embed
         # self.previous_embed = embed
         await interaction.response.edit_message(embed=embed)
@@ -1612,8 +1584,8 @@ class MapButton(discord.ui.Button):
                 min_y = recipient_y
                 max_y = vendor_y
                 
-            x_padding = 5
-            y_padding = 5
+            x_padding = 3
+            y_padding = 3
 
             map_embed, image_file = await add_map_to_embed(
                 embed=embed,

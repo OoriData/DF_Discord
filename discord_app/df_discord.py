@@ -146,7 +146,7 @@ class Desolate_Cog(commands.Cog):
                 convoys: `{', '.join([f'{convoy["name"]}' for convoy in user_info['convoys']])}`
             '''))
 
-    @app_commands.command(name='vendors', description='Open the Desolate Frontiers buy menu')
+    @app_commands.command(name='df-vendors', description='Open the Desolate Frontiers buy menu')
     async def df_buy(self, interaction: discord.Interaction):
         await interaction.response.defer()
         async with httpx.AsyncClient(verify=False) as client:
@@ -173,11 +173,7 @@ class Desolate_Cog(commands.Cog):
         node_embed = discord.Embed(
             title=f'{tile_info['settlements'][0]['name']} vendors and services',
         )
-        for vendor in tile_info['settlements'][0]['vendors']:
-            node_embed.add_field(
-                name=vendor['name'],
-                value=f'${vendor["money"]}'
-            )
+        node_embed.description = '\n'.join([f'- {vendor['name']}' for vendor in tile_info['settlements'][0]['vendors']])
         convoy_balance = format_int_with_commas(user_info['convoys'][0]['money'])
         node_embed.set_author(name=f'{user_info['convoys'][0]['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
 
@@ -228,9 +224,7 @@ class Desolate_Cog(commands.Cog):
         convoy_embed = discord.Embed(
             color=discord.Color.green(),
             title=f'Welcome to the Desolate Frontiers, {interaction.user.name}.',
-            description=textwrap.dedent('''
-            **Convoy Information**
-            ''')
+            description='**Convoy Information**'
         )
 
         # convoy_embed.add_field()
@@ -243,7 +237,7 @@ class Desolate_Cog(commands.Cog):
         await interaction.response.send_message(embed=convoy_embed)
 
     
-    @app_commands.command(name='get-convoy', description='Bring up a menu with information pertaining to your convoys')
+    @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
     async def my_convoys(self, interaction: discord.Interaction):
         await interaction.response.defer()
         async with httpx.AsyncClient(verify=False) as client:
@@ -282,23 +276,21 @@ class Desolate_Cog(commands.Cog):
             
             convoy_embed.description = vehicles_str
 
-            convoy_embed.add_field(name='Fuel', value=f'{convoy_json['fuel']:.1f}')
-            convoy_embed.add_field(name='Water', value=convoy_json['water'])
-            convoy_embed.add_field(name='Food', value=convoy_json['food'])
-
             convoy_embed.set_author(
                 name=f'{convoy_json['name']} | ${format_int_with_commas(convoy_json['money'])}',
                 icon_url=interaction.user.avatar.url
             )
 
+            convoy_embed.add_field(name='Fuel ⛽️', value=f'**{convoy_json['fuel']:.2f}**\n/{convoy_json['max_fuel']:.2f}')
+            convoy_embed.add_field(name='Water 💧', value=f'**{convoy_json['water']:.2f}**\n/{convoy_json['max_water']:.2f}')
+            convoy_embed.add_field(name='Food 🥪', value=f'**{convoy_json['food']:.2f}**\n/{convoy_json['max_food']:.2f}')
+
+            convoy_embed.add_field(name='Fuel Efficiency', value=f'**{convoy_json['fuel_efficiency']:.0f}**\n/100')
+            convoy_embed.add_field(name='Top Speed', value=f'**{convoy_json['top_speed']:.0f}**\n/100')
+            convoy_embed.add_field(name='Offroad Capability', value=f'**{convoy_json['offroad_capability']:.0f}**\n/100')
+
             convoy_x = convoy_json['x']
             convoy_y = convoy_json['y']
-
-            x_padding = 16
-            y_padding = 9
-
-            top_left = (convoy_x - x_padding, convoy_y - y_padding)
-            bottom_right = (convoy_x + x_padding, convoy_y + y_padding)
 
             if convoy_json['journey']:
                 journey = convoy_json['journey']
@@ -309,24 +301,57 @@ class Desolate_Cog(commands.Cog):
                     route_tiles.append((x, y))
                     pos += 1
 
-
                 async with httpx.AsyncClient(verify=False) as client:
                     destination = await client.get(
                         f'{DF_API_HOST}/map/tile/get',
                         params={'x': journey['dest_x'], 'y': journey['dest_y']}
                     )
                     destination = destination.json()
+                    convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n(formerly) USA')
 
-                    convoy_embed.add_field(name='Convoy Destination', value=destination['settlements'][0]['name'])
+                    progress_percent = (convoy_json['journey']['progress'] / len(convoy_json['journey']['route_x'])) * 100
+                    progress_in_km = convoy_json['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
+                    convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km')
+
+                    convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(convoy_json['journey']['eta'], 't')}**\n{discord_timestamp(convoy_json['journey']['eta'], 'R')}')
+
+                origin_x = journey['origin_x']
+                origin_y = journey['origin_y']
+                destination_x = journey['dest_x']
+                destination_y = journey['dest_y']
+
+                if origin_x < destination_x:
+                    min_x = origin_x
+                    max_x = destination_x
+                else:
+                    min_x = destination_x
+                    max_x = origin_x
+                
+                # Declaring minimum and maximum y coordinates
+                if origin_y < destination_y:
+                    min_y = origin_y
+                    max_y = destination_y
+                else:
+                    min_y = destination_y
+                    max_y = origin_y
+                    
+                x_padding = 3
+                y_padding = 3
 
                 convoy_embed, image_file = await add_map_to_embed(
                     embed=convoy_embed,
                     highlighted=[(convoy_x, convoy_y)],
                     lowlighted=route_tiles,
-                    top_left=top_left,
-                    bottom_right=bottom_right
+                    top_left=(min_x - x_padding, min_y - y_padding),
+                    bottom_right=(max_x + x_padding, max_y + y_padding),
                 )
             else:
+                x_padding = 16
+                y_padding = 9
+
+                top_left = (convoy_x - x_padding, convoy_y - y_padding)
+                bottom_right = (convoy_x + x_padding, convoy_y + y_padding)
+
                 convoy_embed, image_file = await add_map_to_embed(
                     embed=convoy_embed,
                     highlighted=[(convoy_x, convoy_y)],

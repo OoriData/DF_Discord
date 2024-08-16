@@ -64,6 +64,7 @@ class Desolate_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         '''Called when the bot is ready to start taking commands'''
+        logger.info(ansi_color(f'API {DF_API_HOST}', 'purple'))
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
         logger.debug(ansi_color('Desolate Frontiers cog initialized, generating settlements cache...', 'yellow'))
         global SETTLEMENTS
@@ -78,6 +79,7 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def get_df_map(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         try:
             embed = discord.Embed()
             embed, image_file = await add_map_to_embed(embed)
@@ -86,11 +88,11 @@ class Desolate_Cog(commands.Cog):
                 name=interaction.user.name,
                 icon_url=interaction.user.avatar.url
             )
-            await interaction.response.send_message(embed=embed, file=image_file)
+            await interaction.followup.send(embed=embed, file=image_file)
 
         except Exception as e:
             msg = f'something went wrong: {e}'
-            await interaction.response.send_message(msg)
+            await interaction.followup.send(msg)
     
     @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     async def new_user(self, interaction: discord.Interaction):
@@ -146,6 +148,7 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='vendors', description='Open the Desolate Frontiers buy menu')
     async def df_buy(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         async with httpx.AsyncClient(verify=False) as client:
             user_info = await client.get(
                 f'{DF_API_HOST}/user/get_by_discord_id',
@@ -184,7 +187,7 @@ class Desolate_Cog(commands.Cog):
             menu=tile_info['settlements'][0]['vendors'],
             menu_type='vendor'
         )
-        await interaction.response.send_message(embed=node_embed, view=view)
+        await interaction.followup.send(embed=node_embed, view=view)
 
     @app_commands.command(name='new-convoy', description='Create a new convoy')
     async def new_convoy(self, interaction: discord.Interaction, convoy_name: str=None):  # starting_location will be changed to a multi choice entry
@@ -242,6 +245,7 @@ class Desolate_Cog(commands.Cog):
     
     @app_commands.command(name='get-convoy', description='Bring up a menu with information pertaining to your convoys')
     async def my_convoys(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         async with httpx.AsyncClient(verify=False) as client:
             # First, get user ID from discord_id
             user_info = await self.get_user_by_discord(discord_id=interaction.user.id)
@@ -330,7 +334,7 @@ class Desolate_Cog(commands.Cog):
                     bottom_right=bottom_right
                 )
 
-            await interaction.response.send_message(embed=convoy_embed, file=image_file)
+            await interaction.followup.send(embed=convoy_embed, file=image_file)
 
     # XXX: im useful don't delete me
     async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one

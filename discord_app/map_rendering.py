@@ -135,7 +135,7 @@ LOWLIGHT_INLINE_WIDTH = 5                    # Thickness of the lowlight inline
 
 
 def render_map(
-        tiles: list[dict],
+        tiles: list[list[dict]],
         highlights: list[tuple] = None,
         lowlights: list[tuple] = None,
         highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
@@ -260,6 +260,7 @@ def render_map(
 
     return map_img
 
+
 async def add_map_to_embed(
         embed: discord.Embed,  # TODO: make this optional
         highlighted: Optional[list[tuple[int]]]=None,
@@ -294,28 +295,27 @@ async def add_map_to_embed(
                 params=map_edges
             )
             if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
-                logging.log(level='INFO', msg='Error: 422 Unprocessable')
+                raise RuntimeError('Error: 422 Unprocessable')
             elif response.status_code == API_SUCCESS_CODE:
                 tiles = response.json()['tiles']
                 rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
 
-                # Create a BytesIO object to save the image in memory
-                with BytesIO() as image_binary:
+                with BytesIO() as image_binary:  # Create a BytesIO object to save the image in memory
                     rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
                     image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
 
                     file_name = 'map.png'
                     img_file = discord.File(fp=image_binary, filename=file_name)  # Declare a discord.File object to include in the response
 
-                    embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
+                embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
 
-                    return embed, img_file
-                    # Now all you have to do to apply this is:
-                    # await interaction.response.send_message(embed=embed, file=img_file)
+                return embed, img_file
+                # Now all you have to do to apply this is:
+                # await interaction.response.send_message(embed=embed, file=img_file)
 
     except Exception as e:
         msg = f'something went wrong rendering image: {e}'
-        logging.log(msg=msg, level='INFO')
+        raise RuntimeError(msg)
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):

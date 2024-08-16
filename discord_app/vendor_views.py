@@ -1515,6 +1515,7 @@ class MapButton(discord.ui.Button):
         self.parent_view = parent_view
     
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         vendor_x = self.parent_view.vendor_obj['x']
         vendor_y = self.parent_view.vendor_obj['y']
         embed = discord.Embed(
@@ -1568,7 +1569,8 @@ class MapButton(discord.ui.Button):
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=map_embed,
             file=image_file,
-            ephemeral=True)
+            ephemeral=True
+        )

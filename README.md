@@ -11,7 +11,7 @@
 To run the Desolate Frontiers Discord frontend, you can use this command (from the root folder):
 ```sh
 source $HOME/.local/venv/df_discord/bin/activate
-op run --env-file op_discord.env -- python -m discord_app.df_discord
+op run --env-file op_discord.env --no-masking -- python -m discord_app.df_discord
 ```
 
 ### environment
@@ -45,7 +45,7 @@ pip install -U -r requirements.txt -c constraints.txt
 ## Containerization
 You should be able to build a docker container for the Desolate Frontiers Discord Frontend with this command:
 ```sh
-op run --env-file op_discord_prod.env -- docker compose -f compose.df_discord.yml up -d --build
+op run --env-file op_discord_prod.env --no-masking -- docker compose -f compose.df_discord.yml up -d --build
 ```
 
 ### environment

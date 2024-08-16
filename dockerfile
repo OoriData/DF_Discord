@@ -1,9 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-
-# Took advice from https://pythonspeed.com/articles/base-image-python-docker-images/
-# Also, seems to be a known issue with Docker on Apple Silicon Macs.
-# Issues finding gcc unless you specify the architecture for the image
 FROM python:3.12-slim
 
 # Combine commands in one RUN instruction to minimize # of layers in the file system, saving disk space.

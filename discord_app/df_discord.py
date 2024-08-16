@@ -14,7 +14,7 @@ from discord             import app_commands
 from discord.ext         import commands
 from utiloori.ansi_color import ansi_color
 
-from discord_app               import vendor_views
+from discord_app               import vendor_views, convoy_views
 from discord_app               import discord_timestamp
 from discord_app               import DF_DISCORD_LOGO as API_BANNER
 from discord_app.map_rendering import add_map_to_embed
@@ -382,9 +382,10 @@ class Desolate_Cog(commands.Cog):
         ][:25]
         return choices
 
-    @app_commands.command(name='send-convoy', description='Send your convoy on a journey to a given city.')
+    @app_commands.command(name='df-send-convoy', description='Send your convoy on a journey to a given city.')
     @app_commands.autocomplete(sett=settlements_autocomplete)
     async def send_convoy(self, interaction: discord.Interaction, sett: str):
+        await interaction.response.defer()
         async with httpx.AsyncClient(verify=False) as client:
             # Set up user info
             user_obj = await client.get(
@@ -410,29 +411,102 @@ class Desolate_Cog(commands.Cog):
             )
             if route.status_code != API_SUCCESS_CODE:
                 msg = route.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
+                await interaction.followup.send(content=msg)
                 return
             
             # alpha lol
             # print('json:')
             # print(route.json())
-            route = route.json()[0]
+            route_plus_misc = route.json()[0]
 
-            journey = await client.patch(
-                f'{DF_API_HOST}/convoy/send',
-                params={
-                    'convoy_id': convoy_obj['convoy_id'],
-                    'journey_id': route['journey']['journey_id']
-                }
+            # First, get user ID from discord_id
+
+            convoy_embed = discord.Embed(
+                color=discord.Color.green(),
+                title=f'{convoy_obj['name']} Information'
             )
 
-            if journey.status_code != API_SUCCESS_CODE:
-                msg = route.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
+            vehicles_list = []
+            vehicles_str = '**Convoy\'s Vehicles:**\n'
+            if convoy_obj['vehicles']:
+                for vehicle in convoy_obj['vehicles']:
+                    vehicles_list.append(f'- {vehicle['name']}')
+                    # convoy_embed.add_field(name=item['name'], value=f'${item["value"]}')
+                vehicles_str += '\n'.join(vehicles_list)
+            else:
+                vehicles_str = '*No vehicles in convoy. Buy one by using /vendors and navigating one of your city\'s dealerships.*'
+            
+            convoy_embed.description = vehicles_str
 
-            await interaction.response.send_message('Look at them gooooooo :D')
-            # await interaction.response.send_message(content=f'{sett_coords[0]}, {sett_coords[1]}')
+            convoy_embed.set_author(
+                name=f'{convoy_obj['name']} | ${format_int_with_commas(convoy_obj['money'])}',
+                icon_url=interaction.user.avatar.url
+            )
+
+            convoy_embed.add_field(name='Fuel ⛽️', value=f'**{convoy_obj['fuel']:.2f}**\n/{convoy_obj['max_fuel']:.2f}')
+            convoy_embed.add_field(name='Water 💧', value=f'**{convoy_obj['water']:.2f}**\n/{convoy_obj['max_water']:.2f}')
+            convoy_embed.add_field(name='Food 🥪', value=f'**{convoy_obj['food']:.2f}**\n/{convoy_obj['max_food']:.2f}')
+
+            convoy_embed.add_field(name='Fuel Expense', value=f'**{route_plus_misc['fuel_expense']:.2f}**')
+            convoy_embed.add_field(name='Water Expense', value=f'**{route_plus_misc['water_expense']:.2f}**')
+            convoy_embed.add_field(name='Food Expense', value=f'**{route_plus_misc['food_expense']:.2f}**')
+
+            convoy_x = convoy_obj['x']
+            convoy_y = convoy_obj['y']
+
+            route_tiles = []  # a list of tuples
+            pos = 0  # bad way to do it but i'll fix later
+            for x in route_plus_misc['journey']['route_x']:
+                y = route_plus_misc['journey']['route_y'][pos]
+                route_tiles.append((x, y))
+                pos += 1
+
+            destination = await client.get(
+                f'{DF_API_HOST}/map/tile/get',
+                params={'x': route_plus_misc['journey']['dest_x'], 'y': route_plus_misc['journey']['dest_y']}
+            )
+            destination = destination.json()
+            convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n(formerly) USA')
+
+            # progress_percent = (convoy_obj['journey']['progress'] / len(convoy_obj['journey']['route_x'])) * 100
+            # progress_in_km = convoy_obj['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
+            # convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km')
+
+            # convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(convoy_obj['journey']['eta'], 't')}**\n{discord_timestamp(convoy_obj['journey']['eta'], 'R')}')
+
+            origin_x = route_plus_misc['journey']['origin_x']
+            origin_y = route_plus_misc['journey']['origin_y']
+            destination_x = route_plus_misc['journey']['dest_x']
+            destination_y = route_plus_misc['journey']['dest_y']
+
+            if origin_x < destination_x:
+                min_x = origin_x
+                max_x = destination_x
+            else:
+                min_x = destination_x
+                max_x = origin_x
+            
+            # Declaring minimum and maximum y coordinates
+            if origin_y < destination_y:
+                min_y = origin_y
+                max_y = destination_y
+            else:
+                min_y = destination_y
+                max_y = origin_y
+                
+            x_padding = 3
+            y_padding = 3
+
+            convoy_embed, image_file = await add_map_to_embed(
+                embed=convoy_embed,
+                highlighted=[(convoy_x, convoy_y)],
+                lowlighted=route_tiles,
+                top_left=(min_x - x_padding, min_y - y_padding),
+                bottom_right=(max_x + x_padding, max_y + y_padding),
+            )
+
+            await interaction.followup.send(embed=convoy_embed, file=image_file, view=convoy_views.SendConvoyConfirmView(interaction, convoy_obj=convoy_obj, route=route_plus_misc))
+
 
     # XXX: this command likes to throw errors (53005) ~~because discord.py is stupid~~, they're ignorable
     @app_commands.command(name='get-node', description='Get a node object based on its ID')

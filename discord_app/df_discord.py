@@ -282,18 +282,21 @@ class Desolate_Cog(commands.Cog):
             
             convoy_embed.description = vehicles_str
 
-            convoy_embed.add_field(name='Fuel', value=f'{convoy_json['fuel']:.1f}')
-            convoy_embed.add_field(name='Water', value=convoy_json['water'])
-            convoy_embed.add_field(name='Food', value=convoy_json['food'])
-
             convoy_embed.set_author(
                 name=f'{convoy_json['name']} | ${format_int_with_commas(convoy_json['money'])}',
                 icon_url=interaction.user.avatar.url
             )
 
+            convoy_embed.add_field(name='Fuel ⛽️', value=f'**{convoy_json['fuel']:.2f}**\n/{convoy_json['max_fuel']:.2f}')
+            convoy_embed.add_field(name='Water 💧', value=f'**{convoy_json['water']:.2f}**\n/{convoy_json['max_water']:.2f}')
+            convoy_embed.add_field(name='Food 🥪', value=f'**{convoy_json['food']:.2f}**\n/{convoy_json['max_food']:.2f}')
+
+            convoy_embed.add_field(name='Fuel Efficiency', value=f'**{convoy_json['fuel_efficiency']}**\n/100')
+            convoy_embed.add_field(name='Top Speed', value=f'**{convoy_json['top_speed']:.2f}**\n/100')
+            convoy_embed.add_field(name='Offroad Capability', value=f'**{convoy_json['offroad_capability']:.2f}**\n/100')
+
             convoy_x = convoy_json['x']
             convoy_y = convoy_json['y']
-
             x_padding = 16
             y_padding = 9
 
@@ -316,8 +319,13 @@ class Desolate_Cog(commands.Cog):
                         params={'x': journey['dest_x'], 'y': journey['dest_y']}
                     )
                     destination = destination.json()
+                    convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**')  # TODO: add newline and then the territory name of the destination
 
-                    convoy_embed.add_field(name='Convoy Destination', value=destination['settlements'][0]['name'])
+                    progress_percent = convoy_json['journey']['progress'] / len(convoy_json['journey']['route_x'])
+                    progress_in_km = convoy_json['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
+                    convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.2f}%**\n{progress_in_km}')
+
+                    convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(convoy_json['journey']['eta'], 't')}**\n({discord_timestamp(convoy_json['journey']['eta'], 'R')})')
 
                 convoy_embed, image_file = await add_map_to_embed(
                     embed=convoy_embed,

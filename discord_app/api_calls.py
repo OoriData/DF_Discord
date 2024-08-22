@@ -34,7 +34,7 @@ async def get_tile(x: int, y: int) -> dict:
                 'y': y
             }
         )
-    
+
     check_code(response)
     return response.json()
 

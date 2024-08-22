@@ -1,13 +1,14 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
+import                                os
+import                                textwrap
 
-import discord
-import os
-import httpx
-import textwrap
+import                                discord
+
+from utiloori.ansi_color       import ansi_color
+
+from discord_app               import api_calls
 from discord_app.map_rendering import add_map_to_embed
-
-from utiloori.ansi_color import ansi_color
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -15,9 +16,6 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 # TODO: send message if user tries to iterate through menu with a length of zero
 # TODO: Add universal BackButtonView that just allows users to go back to the main vendor menu after they complete a transaction
-
-def format_int_with_commas(x):
-    return f'{x:,}'
 
 def vendor_services(vendor: dict):
     service_keys = {
@@ -52,20 +50,19 @@ class BackButtonView(discord.ui.View):
     @discord.ui.button(label='Back to Vendors', style=discord.ButtonStyle.green, custom_id='back_button')
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.defer()
-        async with httpx.AsyncClient(verify=False) as client:
-            user_info = await client.get(
-                f'{DF_API_HOST}/user/get_by_discord_id',
-                params={'discord_id': interaction.user.id}
-            )
-            user_info = user_info.json()
 
-            user_convoy = user_info['convoys'][0]
-
-            tile_info = await client.get(
-                f'{DF_API_HOST}/map/tile/get',
-                params={'x': user_convoy['x'], 'y': user_convoy['y']}
+        try:
+            user_info = await api_calls.get_user_by_discord(
+                discord_id=interaction.user.id
             )
-            tile_info = tile_info.json()
+
+            tile_info = await api_calls.get_tile(
+                x=user_info['convoys'][0]['x'],
+                y=user_info['convoys'][0]['y']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         # TODO: handle multiple settlements eventually
         # wtf does this mean
@@ -79,9 +76,9 @@ class BackButtonView(discord.ui.View):
         for vendor in tile_info['settlements'][0]['vendors']:
             node_embed.add_field(
                 name=vendor['name'],
-                value=f'${vendor["money"]}'
+                value=f'${vendor['money']}'
             )
-        convoy_balance = format_int_with_commas(user_info['convoys'][0]['money'])
+        convoy_balance = f'{user_info['convoys'][0]['money']:,}'
         node_embed.set_author(name=f'{user_info['convoys'][0]['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
 
         view=VendorMenuView(
@@ -133,7 +130,7 @@ class VendorMenuView(discord.ui.View):
             await interaction.response.send_message('Select a vendor to buy from', ephemeral=True, delete_after=10)
             return
         
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         index = self.position
         current_vendor = self.menu[index]  # set variable for menu user is currently interacting with
         if current_vendor['cargo_inventory']:  # if the vendor has a cargo inventory
@@ -147,12 +144,13 @@ class VendorMenuView(discord.ui.View):
 
             menu_embed = discord.Embed(
                 title=current_vendor['name'],
-                description=textwrap.dedent(f'''
+                description=textwrap.dedent(f'''\
                     Available for Purchase:
                     {displayable_cargo}
+                    **Use the arrows to select the item you want to buy**'
                 ''')
             )
-            convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+            convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
             menu_embed.set_author(
                 name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
                 icon_url=interaction.user.avatar.url
@@ -177,7 +175,7 @@ class VendorMenuView(discord.ui.View):
 
             menu_embed = discord.Embed(
                 title=current_vendor['name'],
-                description=textwrap.dedent(f'''
+                description=textwrap.dedent(f'''\
                     Available for Purchase:
                     {displayable_vehicles}
                 ''')
@@ -225,7 +223,7 @@ class VendorMenuView(discord.ui.View):
             await interaction.response.send_message('Select a vendor to sell to', ephemeral=True, delete_after=10)
             return
 
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         current_vendor = self.menu[self.position]
         user_convoy = self.user_info['convoys'][0]
         sell_embed = discord.Embed(
@@ -269,7 +267,7 @@ class VendorMenuView(discord.ui.View):
         '''Update embed to send user back and forth between list menu items.'''
         # TODO: give this method a 'menu_type' argument to make it dynamic
         # coming back to this later, chances are 'menu_type' can go entirely. it'd make more sense to create seperate menu views for each menu type.
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         index = self.position
         current_vendor = self.menu[index]
         item_embed = discord.Embed(
@@ -286,7 +284,7 @@ class VendorMenuView(discord.ui.View):
             )
 
         # display stuff
-        item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
+        item_embed.set_footer(text=f'Vendor [{index + 1} / {len(self.menu)}]')
         item_embed.set_author(  # TODO: make a basic function for this, it would help reduce a few lines of code and would be easy.
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -373,15 +371,6 @@ class BuyView(discord.ui.View):
     
     # menu_types = ['vendor', 'vehicle', 'cargo', 'food', 'resource']
 
-    async def get_user_info(self, discord_id):
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(
-                f'{DF_API_HOST}/user/get_by_discord_id',
-                params = {'discord_id': self.interaction.user.id}
-            )
-
-            return response.json()
-
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='back_button')
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.edit_message(view=self.previous_menu, embed=self.previous_embed)
@@ -400,25 +389,16 @@ class BuyView(discord.ui.View):
 
     async def update_menu(self, interaction: discord.Interaction):
         '''Update menu based on whether user pressed back or next button'''
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         index = self.position
         current_item = self.menu[index]
         if self.menu_type == 'cargo':
             if current_item['recipient']:
-                async with httpx.AsyncClient(verify=False) as client:
-                    response = await client.get(
-                        f'{DF_API_HOST}/vendor/get',
-                        params={'vendor_id': current_item['recipient']}
-                    )
+                recipient_dict = await api_calls.get_vendor(current_item['recipient'])
 
-                    if response.status_code != API_SUCCESS_CODE:
-                        msg = response.json()['detail']
-                        await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                        return
-                    recipient_info = response.json()
-                    self.recipient = recipient_info
-                    recipient_name = recipient_info['name']
-                    delivery_reward = current_item['delivery_reward']
+                self.recipient = recipient_dict
+                recipient_name = recipient_dict['name']
+                delivery_reward = current_item['delivery_reward']
             else:
                 self.recipient = None
                 recipient_name = 'None'
@@ -426,45 +406,40 @@ class BuyView(discord.ui.View):
             image_file = None
             item_embed = discord.Embed(
                 title=current_item['name'],
-                description=textwrap.dedent(
-                    f'''
+                description=textwrap.dedent(f'''\
                     *{current_item['base_desc']}*
 
                     - Base Price: **${current_item['base_price']}**
                     - Recipient: **{recipient_name}**
                     - Delivery Reward: **{delivery_reward}**
-                    '''
-                )
+                ''')
             )
 
-            
-            item_embed.add_field(name='Quantity', value=current_item["quantity"])
-            item_embed.add_field(name='Volume', value=f'{current_item["volume"]} liter(s)')
-            item_embed.add_field(name='Mass', value=f'{current_item["mass"]} kilogram(s)')
+            item_embed.add_field(name='Quantity', value=current_item['quantity'])
+            item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
+            item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
         if self.menu_type == 'vehicle':
             item_embed = discord.Embed(
-                title=f'{current_item["name"]}',
-                description=textwrap.dedent(
-                    f'''
-                    ### ${format_int_with_commas(current_item["value"])}
+                title=f'{current_item['name']}',
+                description=textwrap.dedent(f'''\
+                    ### ${current_item['value']:,}
                     - Fuel Efficiency: **{current_item['base_fuel_efficiency']}**/100
-                    - Offroad Capability: **{current_item["offroad_capability"]}**/100
+                    - Offroad Capability: **{current_item['offroad_capability']}**/100
                     - Top Speed: **{current_item['top_speed']}**/100
                     - Cargo Capacity: **{current_item['cargo_capacity']}** liter(s)
                     - Weight Capacity: **{current_item['weight_capacity']}** kilogram(s)
                     - Towing Capacity: **{current_item['towing_capacity']}** kilogram(s)
 
                     *{current_item['base_desc']}*
-                    '''
-                )
+                ''')
             )
             
             item_embed.add_field(name='Wear', value=current_item['wear'])
-            item_embed.add_field(name='Armor Points', value=f'{current_item["ap"]}/{current_item['max_ap']}')
-            item_embed.add_field(name='Offroad Capability', value=f'{current_item["offroad_capability"]}/100')
+            item_embed.add_field(name='Armor Points', value=f'{current_item['ap']}/{current_item['max_ap']}')
+            item_embed.add_field(name='Offroad Capability', value=f'{current_item['offroad_capability']}/100')
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
@@ -589,95 +564,83 @@ class CargoQuantityView(discord.ui.View):
     # TODO: Implement dynamic button strategy used when buying resources
     @discord.ui.button(label='Buy Cargo', style=discord.ButtonStyle.green, custom_id='buy_cargo')
     async def buy_button(self, interaction: discord.Interaction, button: discord.Button):
-        cargo_obj = self.cargo_obj
-        user_info = self.user_info
-        async with httpx.AsyncClient(verify=False) as client:
-            # API call to buy cargo item from vendor
-            response = await client.patch(
-                f'{DF_API_HOST}/vendor/cargo/buy',
-                params={
-                    'vendor_id': self.vendor_obj['vendor_id'],
-                    'convoy_id': user_info['convoys'][0]['convoy_id'],
-                    'cargo_id': cargo_obj['cargo_id'],
-                    'quantity': self.quantity
-                }
+        # API call to buy cargo item from vendor
+        try:
+            convoy_after_dict = await api_calls.buy_cargo(
+                vendor_id=self.vendor_obj['vendor_id'],
+                convoy_id=self.user_info['convoys'][0]['convoy_id'],
+                cargo_id=self.cargo_obj['cargo_id'],
+                quantity=self.quantity
             )
-            if response.status_code != API_SUCCESS_CODE:
-                msg = response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
-            convoy_after = response.json()
-            # set up buy embed for editing and display for user
-            embed = discord.Embed(
-                title = f'You bought {self.quantity} {cargo_obj["name"]}',
-                description=f'Your convoy made ${(cargo_obj['base_price'] * self.quantity)} from the transaction',  # XXX: do some about this
-                color=discord.Color.green()
+        # set up buy embed for editing and display for user
+        embed = discord.Embed(
+            title = f'You bought {self.quantity} {self.cargo_obj['name']}',
+            description=f'Your convoy made ${(self.cargo_obj['base_price'] * self.quantity)} from the transaction',  # XXX: do some about this
+            color=discord.Color.green()
+        )
+
+        # if the cargo has a recipient, say so in the buy embed
+        if self.cargo_obj['recipient']:
+            # API call to get recipient vendor's info
+            dest_vendor_dict = await api_calls.get_vendor(vendor_id=self.cargo_obj['recipient'])
+
+            # recipient_id = cargo_obj['recipient']
+            recipient = dest_vendor_dict['name']
+            embed.description = textwrap.dedent(f'''\
+                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}**
+                                                    
+                *{self.cargo_obj['base_desc']}*
+            ''')
+        else:
+            embed.description = textwrap.dedent(f'''\
+                Cargo has been added to your convoy.
+
+                *{self.cargo_obj['base_desc']}*
+            ''')
+
+        convoy_balance = f'{convoy_after_dict['money']:,}'
+        embed.set_author(
+            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        await interaction.response.edit_message(
+            embed=embed,
+            view=BackButtonView(
+                interaction=interaction,
+                previous_embed=self.previous_embed,
+                previous_view=self
             )
-
-            # if the cargo has a recipient, say so in the buy embed
-            if cargo_obj['recipient']:
-                # API call to get recipient vendor's info
-                vendor_response = await client.get(
-                    f'{DF_API_HOST}/vendor/get',
-                    params={'vendor_id': cargo_obj['recipient']}
-                )
-                vendor_obj = vendor_response.json()
-                # recipient_id = cargo_obj['recipient']
-                recipient = vendor_obj['name']
-                embed.description = textwrap.dedent(f'''
-                    Deliver it to {recipient} for a cash reward of $**{cargo_obj['delivery_reward']}**
-                                                        
-                    *{cargo_obj['base_desc']}*
-                ''')
-            else:
-                embed.description = textwrap.dedent(f'''
-                    Cargo has been added to your convoy.
-
-                    *{cargo_obj['base_desc']}*
-                ''')
-
-            convoy_balance = format_int_with_commas(convoy_after['money'])
-            embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_balance}',
-                icon_url=interaction.user.avatar.url
-            )
-
-        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self,))
+        )
 
     @discord.ui.button(label='Sell Cargo', style=discord.ButtonStyle.green, custom_id='sell_cargo')
     async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
-        cargo_obj = self.cargo_obj
-        # user_info = self.user_info
-        async with httpx.AsyncClient(verify=False) as client:
-            sell_response = await client.patch(
-                f'{DF_API_HOST}/vendor/cargo/sell',
-                params={
-                    'vendor_id': self.vendor_obj['vendor_id'],
-                    'convoy_id': self.user_info['convoys'][0]['convoy_id'],
-                    'cargo_id': self.cargo_obj['cargo_id'],
-                    'vehicle_id': self.cargo_obj['vehicle_id'],
-                    'quantity': self.quantity
-                }
+        try:
+            convoy_after_dict = await api_calls.sell_cargo(
+                vendor_id=self.vendor_obj['vendor_id'],
+                convoy_id=self.user_info['convoys'][0]['convoy_id'],
+                cargo_id=self.cargo_obj['cargo_id'],
+                quantity=self.quantity
             )
-            if sell_response.status_code != API_SUCCESS_CODE:
-                msg = sell_response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
-            
-            convoy_after = sell_response.json()
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
-            embed = discord.Embed(
-                title=f'You sold {self.quantity} {self.cargo_obj["name"]} to {self.vendor_obj["name"]}',
-                description=f'Your convoy made ${(cargo_obj['base_price']) * self.quantity} from the transaction.'
-            )
-            convoy_balance = format_int_with_commas(convoy_after['money'])
-            embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_balance}',
-                icon_url=interaction.user.avatar.url
-            )
+        embed = discord.Embed(
+            title=f'You sold {self.quantity} {self.cargo_obj['name']} to {self.vendor_obj['name']}',
+            description=f'Your convoy made ${(self.cargo_obj['base_price']) * self.quantity} from the transaction.'
+        )
+        convoy_balance = f'{convoy_after_dict['money']:,}'
+        embed.set_author(
+            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
 
-            await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
+        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
 class ResourceQuantityView(discord.ui.View):
     '''
@@ -766,56 +729,41 @@ class VehicleConfirmView(discord.ui.View):
     @discord.ui.button(label='Confirm', style=discord.ButtonStyle.green, custom_id='confirm')
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         '''Confirm button for selling and buying vehicles'''
-        convoy_id = self.user_info['convoys'][0]['convoy_id']
-
-        if self.trade_type == 'sell':
-        # TODO: Trying to sell a vehicle will most likely throw an error becuase there's still cargo in it; we need error handling
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.patch(
-                    f'{DF_API_HOST}/vendor/vehicle/sell',
-                    params={
-                        'vendor_id': self.vendor_obj['vendor_id'],
-                        'convoy_id': convoy_id,
-                        'vehicle_id': self.vehicle['vehicle_id']
-                    }
+        if self.trade_type == 'sell':  # XXX: Trying to sell a vehicle will most likely throw an error becuase there's still cargo in it; we need error handling
+            try:
+                convoy_after = await api_calls.sell_vehicle(
+                    vendor_id=self.vendor_obj['vendor_id'],
+                    convoy_id=self.user_info['convoys'][0]['convoy_id'],
+                    vehicle_id=self.vehicle['vehicle_id']
                 )
-                if response.status_code != API_SUCCESS_CODE:
-                    msg = f'Something went wrong: {response.json()}'
-                    await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                    return
-                convoy_after = response.json()
+            except RuntimeError as e:
+                await interaction.response.send_message(content=e, ephemeral=True)
+                return
 
-            # convoy_after = response.json()
             embed = discord.Embed(
                 title=f'You sold your convoy\'s {self.vehicle['name']}',
                 description=f'Money gained: ${self.vehicle['value']}'
             )
-            # except Exception
 
         elif self.trade_type == 'buy':
             vehicle_info = self.vehicle
             # API call to buy vehicle from vendor
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.patch(
-                    f'{DF_API_HOST}/vendor/vehicle/buy',
-                    params={
-                        'vendor_id': self.vendor_obj['vendor_id'],
-                        'convoy_id': convoy_id,
-                        'vehicle_id': vehicle_info['vehicle_id']
-                    }
+            try:
+                convoy_after = await api_calls.buy_vehicle(
+                    vendor_id=self.vendor_obj['vendor_id'],
+                    convoy_id=self.user_info['convoys'][0]['convoy_id'],
+                    vehicle_id=self.vehicle['vehicle_id']
                 )
-                if response.status_code != API_SUCCESS_CODE:
-                    msg = response.json()['detail']
-                    await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                    return
+            except RuntimeError as e:
+                await interaction.response.send_message(content=e, ephemeral=True)
+                return
 
-                convoy_after = response.json()
-                embed = discord.Embed(
-                    title=f'Your convoy\'s new vehicle: {vehicle_info['name']}',
-                    description=f'*{vehicle_info['base_desc']}*'
-                )
+            embed = discord.Embed(
+                title=f'Your convoy\'s new vehicle: {vehicle_info['name']}',
+                description=f'*{vehicle_info['base_desc']}*'
+            )
 
-        convoy_balance = format_int_with_commas(convoy_after['money'])
+        convoy_balance = f'{convoy_after['money']:,}'
         embed.set_author(
             name=f'{convoy_after['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -895,29 +843,26 @@ class VehicleSellView(discord.ui.View):
 
         embed = discord.Embed(
             title=f'{current_vehicle['name']}',
-            description=textwrap.dedent(
-                # FIXME: add wear and other values that aren't in this embed
-                f'''
-                ### ${format_int_with_commas(current_vehicle["value"])}
+            description=textwrap.dedent(f'''\
+                ### ${current_vehicle['value']:,}
                 - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
-                - Offroad Capability: **{current_vehicle["offroad_capability"]}**/100
+                - Offroad Capability: **{current_vehicle['offroad_capability']}**/100
                 - Top Speed: **{current_vehicle['top_speed']}**/100
                 - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liter(s)
                 - Weight Capacity: **{current_vehicle['weight_capacity']}** kilogram(s)
                 - Towing Capacity: **{current_vehicle['towing_capacity']}** kilogram(s)
 
                 *{current_vehicle['base_desc']}*
-                '''
-            )
+            ''')  # FIXME: add wear and other values that aren't in this embed
         )
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
         embed.set_footer(
-            text=textwrap.dedent(f'''
+            text=textwrap.dedent(f'''\
             Page [{index + 1} / {len(self.vehicle_menu)}]
             '''
             )
@@ -971,7 +916,7 @@ class SellSelectView(discord.ui.View):
             description='Use buttons to navigate selling menu',
         )
 
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -998,7 +943,7 @@ class SellSelectView(discord.ui.View):
             description='Use buttons to navigate selling menu',
         )
 
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -1026,7 +971,7 @@ class SellSelectView(discord.ui.View):
             description='Use buttons to navigate selling menu'
         )
 
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -1158,60 +1103,34 @@ class CargoSellView(discord.ui.View):
         await self.update_menu(interaction)
 
     async def update_menu(self, interaction: discord.Interaction):
-        # def format_int_with_commas(x):  # unused for now, but will be necessary when displaying large money values, i'll get around to it.
-        #     return f'{x:,}'
-        
         index = self.position
         sell_item = self.sellable_cargo[index]
-        if sell_item['recipient']:
-            # API call to get recipient's vendor info
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.get(
-                    f'{DF_API_HOST}/vendor/get',
-                    params={'vendor_id': sell_item['recipient']}
-                )
-
-                if response.status_code != API_SUCCESS_CODE:
-                    msg = response.json()['detail']
-                    await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                    return
+        if sell_item['recipient']:  # API call to get recipient's vendor info
+            vendor_dict = await api_calls.get_vendor(vendor_id=sell_item['recipient'])
                 
-                recipient = response.json()
-                
-                recipient = recipient['name']
-                delivery_reward = sell_item['delivery_reward']
-        else:
+            recipient = vendor_dict['name']
+            delivery_reward = sell_item['delivery_reward']
+        else:  # No recipient, no worries
             recipient = 'None'
             delivery_reward = 'None'
 
         # API call to get vehicle
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(
-                f'{DF_API_HOST}/vehicle/get',
-                params={'vehicle_id': sell_item['vehicle_id']}
-            )
-            if response.status_code != API_SUCCESS_CODE:
-                msg = response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
+        cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=sell_item['vehicle_id'])
 
-        response = response.json()
-        cargo_vehicle = response['name']
         embed = discord.Embed(
             title=self.sellable_cargo[index]['name'],
-            description=textwrap.dedent(
-            f'''
-            *{sell_item['base_desc']}*
+            description=textwrap.dedent(f'''\
+                *{sell_item['base_desc']}*
 
-            - Base (sell) Price: **${sell_item['base_price']}**
-            - Recipient: **{recipient}**
-            - Delivery Reward: **{delivery_reward}**
-            - Belongs to: **{cargo_vehicle}**
-            - Cargo quantity: **{sell_item['quantity']}**
-        ''')
+                - Base (sell) Price: **${sell_item['base_price']}**
+                - Recipient: **{recipient}**
+                - Delivery Reward: **{delivery_reward}**
+                - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                - Cargo quantity: **{sell_item['quantity']}**
+            ''')
         )
-        
-        convoy_balance = format_int_with_commas(self.user_info['convoys'][0]['money'])
+
+        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         embed.set_author(
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
@@ -1234,32 +1153,20 @@ class BuyResourceButton(discord.ui.Button):
         self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        # get vendor information
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(
-                f'{DF_API_HOST}/vendor/get',
-                params={'vendor_id': self.parent_view.vendor_obj['vendor_id']}
-            )
-            if response.status_code != API_SUCCESS_CODE:
-                msg = response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
-        vendor = response.json()
-
-        # make list of buttons depending on which resources are available at this vendor
+        # Make list of buttons depending on which resources are available at this vendor
         buttons = []
-        if vendor['food']:
+        if self.parent_view.vendor_obj['food']:
             buttons.append('food')
-        if vendor['water']:
+        if self.parent_view.vendor_obj['water']:
             buttons.append('water')
-        if vendor['fuel']:
+        if self.parent_view.vendor_obj['fuel']:
             buttons.append('fuel')
         
         if len(buttons) == 0:
-            await interaction.response.send_message(content=f'{vendor['name']} has no resource services', ephemeral=True, delete_after=10)
+            await interaction.response.send_message(content=f'{self.parent_view.vendor_obj['name']} has no resource services', ephemeral=True, delete_after=10)
 
         embed = discord.Embed(
-            title=f'Shopping for resources at {vendor['name']}',
+            title=f'Shopping for resources at {self.parent_view.vendor_obj['name']}',
             description='Use buttons to navigate the buy menu'
         )
         
@@ -1271,7 +1178,7 @@ class BuyResourceButton(discord.ui.Button):
         view = ResourceSelectView(
             interaction = discord.Interaction,
             user_info = self.parent_view.user_info,
-            vendor_obj = vendor,
+            vendor_obj = self.parent_view.vendor_obj,
             trade_type = 'buy',
             previous_embed = previous_embed,
             previous_view = self.parent_view,
@@ -1293,45 +1200,32 @@ class BuyCargoButton(discord.ui.Button):
             await interaction.response.send_message('Select a cargo to buy from the vendor', ephemeral=True, delete_after=10)
             return
         
-        convoy_balance = format_int_with_commas(self.parent_view.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
         index = self.parent_view.position
         current_item = self.parent_view.menu[index]
         user_info = await self.parent_view.get_user_info(interaction.user.id)
-        if current_item['recipient']:  # If the cargo has a recipient, get the recipient's info to display to user
-            async with httpx.AsyncClient(verify=False) as client:
-                response = await client.get(
-                    f'{DF_API_HOST}/vendor/get',
-                    params={'vendor_id': current_item['recipient']}
-                )
-                if response.status_code != API_SUCCESS_CODE:
-                    msg = response.json()['detail']
-                    await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                    return
+        cargo_description = textwrap.dedent(f'''\
+            *{current_item['base_desc']}*
 
-                vendor = response.json()
-                
-                recipient = vendor['name']
-                delivery_reward = current_item['delivery_reward']
-        else:
-            # and the rest is easy display stuff :D
-            recipient = 'None'
-            delivery_reward = 'None'
+            - Base Price: **${current_item['base_price']}**
+        ''')
+
+        if current_item['recipient']:  # If the cargo has a recipient, get the recipient's info to display to user
+            recipient_vendor = await api_calls.get_vendor(vendor_id=current_item['recipient'])
+
+            cargo_description += textwrap.dedent(f'''\
+                - Recipient: **{recipient_vendor['name']}**
+                - Delivery Reward: **{current_item['delivery_reward']}**
+            ''')
+
         item_embed = discord.Embed(
             title=current_item['name'],
-            description=textwrap.dedent(
-                f'''
-                *{current_item['base_desc']}*
-
-                - Base Price: **${current_item['base_price']}**
-                - Recipient: **{recipient}**
-                - Delivery Reward: **{delivery_reward}**
-                '''
-            )
+            description=cargo_description
         )
     
-        item_embed.add_field(name='Quantity', value=current_item["quantity"])
-        item_embed.add_field(name='Volume', value=f'{current_item["volume"]} liter(s)')
-        item_embed.add_field(name='Mass', value=f'{current_item["mass"]} kilogram(s)')
+        item_embed.add_field(name='Quantity', value=current_item['quantity'])
+        item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
+        item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
 
         item_embed.set_author(
             name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
@@ -1361,30 +1255,38 @@ class BuyVehicleButton(discord.ui.Button):
             await interaction.response.send_message('Select a vehicle to buy from the vendor', ephemeral=True, delete_after=10)
             return
         
-        convoy_balance = format_int_with_commas(self.parent_view.user_info['convoys'][0]['money'])
+        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
         index = self.parent_view.position
         current_vehicle = self.parent_view.menu[index]
 
-        item_embed = discord.Embed(
-            title=f'{current_vehicle["name"]}',
-            description=textwrap.dedent(
-                f'''
-                ### ${format_int_with_commas(current_vehicle["base_value"])}
-                - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
-                - Offroad Capability: **{current_vehicle["offroad_capability"]}**/100
-                - Top Speed: **{current_vehicle['top_speed']}**/100
-                - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liter(s)
-                - Weight Capacity: **{current_vehicle['weight_capacity']}** kilogram(s)
-                - Towing Capacity: **{current_vehicle['towing_capacity']}** kilogram(s)
+        vehicle_description = textwrap.dedent(f'''\
+            ### ${current_vehicle['base_value']:,}
+            - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
+            - Offroad Capability: **{current_vehicle['offroad_capability']}**/100
+            - Top Speed: **{current_vehicle['top_speed']}**/100
+            - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liters
+            - Weight Capacity: **{current_vehicle['weight_capacity']}** kilograms
+        ''')
 
-                *{current_vehicle['base_desc']}*
-                '''
-            )
+        if current_vehicle['towing_capacity']:
+            vehicle_description += textwrap.dedent(f'''\
+                - Towing Capacity: **{current_vehicle['towing_capacity']}** kilograms
+            ''')
+
+        vehicle_description += textwrap.dedent(f'''\
+                                               
+            *{current_vehicle['base_desc']}*
+        ''')
+
+        item_embed = discord.Embed(
+            title=f'{current_vehicle['name']}',
+            description=vehicle_description
         )
         item_embed.set_author(
             name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
+
         view = VehicleConfirmView(
             interaction=interaction,
             user_info=self.parent_view.user_info,
@@ -1456,8 +1358,8 @@ class CargoSellButton(discord.ui.Button):
         cargo_obj = self.parent_view.cargo_obj
         user_info = self.parent_view.user_info
 
-        async with httpx.AsyncClient(verify=False) as client:
-            pass
+        # async with httpx.AsyncClient(verify=False) as client:
+        #     pass
 
 class ResourceBuyButton(discord.ui.Button):
     def __init__(self, parent_view, label: str, style: discord.ButtonStyle, custom_id: str):
@@ -1466,23 +1368,18 @@ class ResourceBuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         user_info = self.parent_view.user_info
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.patch(
-                f'{DF_API_HOST}/vendor/resource/buy',
-                params={
-                    'vendor_id': self.parent_view.vendor_obj['vendor_id'],
-                    'convoy_id': user_info['convoys'][0]['convoy_id'],
-                    'resource_type': self.parent_view.resource_type,
-                    'quantity': self.parent_view.quantity
-                }
+
+        try:
+            convoy_after = await api_calls.buy_resource(
+                vendor_id=self.parent_view.vendor_obj['vendor_id'],
+                convoy_id=user_info['convoys'][0]['convoy_id'],
+                resource_type=self.parent_view.resource_type,
+                quantity=self.parent_view.quantity
             )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
-            if response.status_code != API_SUCCESS_CODE:
-                msg = response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
-
-        convoy_after = response.json()
         embed = discord.Embed(
             title=f'You refilled {self.parent_view.quantity} {self.parent_view.resource_type} for your convoy',
             # description=f'The transaction cost your convoy ${(self.parent_view.quantity * 30)}'
@@ -1494,9 +1391,8 @@ class ResourceBuyButton(discord.ui.Button):
         elif self.parent_view.resource_type == 'fuel':
             embed.color = discord.Color.gold()
 
-        convoy_balance = format_int_with_commas(convoy_after['money'])
         embed.set_author(
-            name=f'{convoy_after['name']} | ${convoy_balance}',
+            name=f'{convoy_after['name']} | ${convoy_after['money']:,}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -1510,38 +1406,26 @@ class ResourceSellButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         user_info = self.parent_view.user_info
         resource_type = self.parent_view.resource_type
-        async with httpx.AsyncClient(verify=False) as client:
-            sell_response = await client.patch(
-                f'{DF_API_HOST}/vendor/resource/sell',
-                params={
-                    'vendor_id': self.parent_view.vendor_obj['vendor_id'],
-                    'convoy_id': user_info['convoys'][0]['convoy_id'],
-                    'resource_type': self.parent_view.resource_type,
-                    'quantity': self.parent_view.quantity
-                }
-            )
 
-            if sell_response.status_code != API_SUCCESS_CODE:
-                msg = sell_response.json()['detail']
-                await interaction.response.send_message(content=msg, ephemeral=True, delete_after=10)
-                return
-
-            convoy_after = sell_response.json()
-            vendor_response = await client.get(
-                f'{DF_API_HOST}/vendor/get',
-                params={'vendor_id': self.parent_view.vendor_obj['vendor_id']}
+        try:
+            convoy_after = await api_calls.sell_resource(
+                vendor_id=self.parent_view.vendor_obj['vendor_id'],
+                convoy_id=user_info['convoys'][0]['convoy_id'],
+                resource_type=self.parent_view.resource_type,
+                quantity=self.parent_view.quantity
             )
-            vendor_response = vendor_response.json()
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
-            embed = discord.Embed(
-                title=f'You sold {self.parent_view.quantity} {resource_type} to {vendor_response['name']}',
-            )
+        embed = discord.Embed(
+            title=f'You sold {self.parent_view.quantity} {resource_type} to {self.parent_view.vendor_obj['name']}',
+        )
 
-            convoy_balance = format_int_with_commas(convoy_after['money'])
-            embed.set_author(
-                name=f'{convoy_after['name']} | ${convoy_balance}',
-                icon_url=interaction.user.avatar.url
-            )
+        embed.set_author(
+            name=f'{convoy_after['name']} | ${convoy_after['money']:,}',
+            icon_url=interaction.user.avatar.url
+        )
 
         self.parent_view.previous_embed.remove_footer()  # Remove the footer 
 

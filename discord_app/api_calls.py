@@ -236,3 +236,25 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
 
     check_code(response)
     return response.json()
+
+
+async def get_unseen_dialogue_for_user(user_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            f'{DF_API_HOST}/dialogue/get_user_unseen_messages',
+            params={'user_id': user_id}
+        )
+
+    check_code(response)
+    return response.json()
+
+
+async def mark_dialogue_as_seen(user_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            f'{DF_API_HOST}/dialogue/mark_user_dialogues_as_seen',
+            params={'user_id': user_id}
+        )
+
+    check_code(response)
+    return response.json()

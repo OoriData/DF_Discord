@@ -10,7 +10,7 @@ from io                        import BytesIO
 
 import                                discord
 from discord                   import app_commands
-from discord.ext               import commands
+from discord.ext               import commands, tasks
 
 from utiloori.ansi_color       import ansi_color
 
@@ -48,8 +48,10 @@ class Desolate_Cog(commands.Cog):
         for row in df_map['tiles']:
             for sett in row:
                 SETTLEMENTS_CACHE.extend(sett['settlements'])
-
         logger.debug(ansi_color('Settlement cache generated!', 'blue'))
+
+        # Start the notifier up so that it periodically checks for notifications
+        self.notifier.start()
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def get_df_map(self, interaction: discord.Interaction):
@@ -195,7 +197,11 @@ class Desolate_Cog(commands.Cog):
         dest_x, dest_y = map(int, sett.split(','))  # Get the destination coords out of the autocomplete
 
         # Now, find routes that user can take to destination
-        route_choices = await api_calls.find_route(convoy_dict['convoy_id'], dest_x, dest_y)
+        try:
+            route_choices = await api_calls.find_route(convoy_dict['convoy_id'], dest_x, dest_y)
+        except RuntimeError as e:
+            await interaction.followup.send(content=e, ephemeral=True)
+            return
         prospective_journey_plus_misc = route_choices[0]
 
         convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict, prospective_journey_plus_misc)
@@ -209,6 +215,42 @@ class Desolate_Cog(commands.Cog):
                 prospective_journey_dict=prospective_journey_plus_misc['journey']
             )
         )
+
+    @tasks.loop(minutes=1)
+    async def notifier(self):
+        guild: discord.Guild = self.bot.get_guild(1119003654800822302)
+        notification_channel: discord.guild.GuildChannel = self.bot.get_channel(1205228905431306250)
+
+        df_users = guild.members
+
+        for df_user in df_users:
+            try:
+                user_dict = await api_calls.get_user_by_discord(df_user.id)
+
+                if user_dict:
+                    try:
+                        dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(user_dict['user_id'])
+
+                        if dialogue_dicts:
+                            ping_deets = [
+                                message['content']
+                                for dialogue in dialogue_dicts
+                                for message in dialogue['messages']
+                            ]
+                            ping = '\n- '
+                            ping +='\n- '.join(ping_deets)
+                            ping += f'\n<@{df_user.id}>'
+
+                            await notification_channel.send(ping)
+
+                            await api_calls.mark_dialogue_as_seen(user_dict['user_id'])
+                    except RuntimeError as e:
+                        logger.debug(f'user is not registered: {e}')
+                        continue
+
+            except RuntimeError as e:
+                logger.debug(f'user is not registered: {e}')
+                continue
 
 
 def main():
@@ -233,6 +275,7 @@ def main():
     asyncio.run(startup())
 
     bot.run(bot.DISCORD_TOKEN)
+
 
 if __name__ == '__main__':
     main()

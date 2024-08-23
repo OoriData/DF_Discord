@@ -6,5 +6,8 @@ services:
       context: .
     image: df_discord
     environment:
+      LOG_LEVEL: ${LOG_LEVEL}
       DF_API_HOST: ${DF_API_HOST}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DF_GUILD_ID: ${DF_GUILD_ID}
+      DF_CHANNEL_ID: ${DF_CHANNEL_ID}

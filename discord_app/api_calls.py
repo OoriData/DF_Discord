@@ -22,6 +22,7 @@ async def get_map() -> dict:
             f'{DF_API_HOST}/map/get'
         )
 
+    check_code(response)
     return response.json()
 
 

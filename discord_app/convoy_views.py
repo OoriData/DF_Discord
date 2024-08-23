@@ -7,16 +7,21 @@ import                                textwrap
 
 import                                discord
 import                                httpx
+import                                logging
 
 from discord_app               import discord_timestamp
 from discord_app               import api_calls
 from discord_app.map_rendering import add_map_to_embed
+from utiloori.ansi_color       import ansi_color
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+
+logger = logging.getLogger('DF_Discord')
+logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
 
 async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_misc=None) -> discord.Embed:
@@ -203,3 +208,230 @@ class SendConvoyConfirmView(discord.ui.View):
         confirmed_journey_dict = await api_calls.send_convoy(self.convoy_dict['convoy_id'], self.prospective_journey_dict['journey_id'])
 
         await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to see their progress)')  # TODO: send more information than just 'look at them go'
+
+class ConvoyView(discord.ui.View):
+    ''' Overarching convoy button menu '''
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            convoy_dict: dict
+    ):
+        super().__init__(timeout=120)  # TODO: Add view timeout as a configurable option
+
+        self.interaction = interaction
+        self.convoy_dict = convoy_dict
+
+    @discord.ui.button(label='Vehicles', style=discord.ButtonStyle.blurple, custom_id='vehicles')
+    async def vehicles_button(self, interaction: discord.Interaction, button: discord.Button):
+        ''' Send VehicleView object '''
+        await interaction.response.edit_message(view=VehicleView(interaction=interaction, convoy_dict=self.convoy_dict))
+
+    @discord.ui.button(label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo')
+    async def cargo_button(self, interaction: discord.Interaction, button: discord.Button):
+        ''' Send VehicleView object '''
+        await interaction.response.edit_message(view=CargoView(interaction=interaction, convoy_dict=self.convoy_dict))
+
+class VehicleView(discord.ui.View):
+    ''' Overarching convoy button menu '''
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            convoy_dict: dict
+    ):
+        super().__init__(timeout=120)
+
+        self.interaction = interaction
+        self.convoy_dict = convoy_dict
+        self.position = -1
+
+    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        vehicle_menu = self.convoy_dict['vehicles']
+        self.position = (self.position - 1) % len(vehicle_menu)
+        await self.update_menu(interaction, vehicle_menu=vehicle_menu)
+
+    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        vehicle_menu = self.convoy_dict['vehicles']
+        self.position = (self.position + 1) % len(vehicle_menu)
+        await self.update_menu(interaction, vehicle_menu=vehicle_menu)
+
+    # Completely stolen code from vendor_views, but if it aint broke don't fix it!
+    # also maybe make it into a global function!
+    async def update_menu(self, interaction: discord.Interaction, vehicle_menu: list):
+        index = self.position
+        current_vehicle = vehicle_menu[index]
+
+        embed = discord.Embed(
+            title=f'{current_vehicle['name']}',
+            description=textwrap.dedent(f'''\
+                ### ${current_vehicle['value']:,}
+                - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
+                - Offroad Capability: **{current_vehicle['offroad_capability']}**/100
+                - Top Speed: **{current_vehicle['top_speed']}**/100
+                - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liter(s)
+                - Weight Capacity: **{current_vehicle['weight_capacity']}** kilogram(s)
+                - Towing Capacity: **{current_vehicle['towing_capacity']}** kilogram(s)
+
+                *{current_vehicle['base_desc']}*
+            ''')  # FIXME: add wear and other values that aren't in this embed
+        )
+        convoy_balance = f'{self.convoy_dict['money']:,}'
+        embed.set_author(
+            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        embed.set_footer(
+            text=textwrap.dedent(f'''\
+            Page [{index + 1} / {len(vehicle_menu)}]
+            '''
+            )
+        )
+
+        self.current_embed = embed
+
+        await interaction.response.edit_message(embed=embed, attachments=[])
+
+
+class CargoView(discord.ui.View):
+    ''' Overarching convoy button menu '''
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            convoy_dict: dict,
+    ):
+        super().__init__(timeout=120)
+
+        self.interaction = interaction
+        self.convoy_dict = convoy_dict
+
+        self.position = -1
+
+    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        cargo_menu = self.convoy_dict['all_cargo']
+        self.position = (self.position - 1) % len(cargo_menu)
+        await self.update_menu(interaction, cargo_menu=cargo_menu)
+
+    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        cargo_menu = self.convoy_dict['all_cargo']
+        self.position = (self.position + 1) % len(cargo_menu)
+        await self.update_menu(interaction, cargo_menu=cargo_menu)
+
+
+    async def update_menu(self, interaction: discord.Interaction, cargo_menu: dict):
+        index = self.position
+        cargo_item = cargo_menu[index]
+        if cargo_item['recipient']:  # API call to get recipient's vendor info
+            recipient_info = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
+                
+            recipient = recipient_info
+            delivery_reward = cargo_item['delivery_reward']
+
+            self.mapbutton = MapButton(convoy_info = self.convoy_dict, recipient_info = recipient, label = 'Map (Recipient)', style = discord.ButtonStyle.green, custom_id='map_button')
+            self.add_item(self.mapbutton)
+            # await interaction.response.edit_message(view=self)  # Will cry because interaction has already been responded to before, even though its an """EDIT"""_MESSAGE
+            
+        else:  # No recipient, no worries
+            recipient = 'None'
+            delivery_reward = 'None'
+            try:
+                if self.mapbutton:
+                    self.remove_item(self.mapbutton)
+            except AttributeError as e:
+                msg = 'MapButton is not in CargoView; skipping...'
+                logger.debug(msg=msg)
+                pass
+            
+        # API call to get vehicle
+        cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+
+        embed = discord.Embed(
+            title = cargo_menu[index]['name'],
+            description=textwrap.dedent(f'''\
+                *{cargo_item['base_desc']}*
+
+                - Base (sell) Price: **${cargo_item['base_price']}**
+                - Recipient: **{recipient}**
+                - Delivery Reward: **{delivery_reward}**
+                - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                - Cargo quantity: **{cargo_item['quantity']}**
+            ''')
+        )
+
+        convoy_balance = f'{self.convoy_dict['money']:,}'
+        embed.set_author(
+            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        embed.set_footer(text=f'Page [{index + 1} / {len(cargo_menu)}]')
+        self.current_embed = embed
+        await interaction.response.edit_message(embed=embed, view=self, attachments=[])
+    
+class MapButton(discord.ui.Button):
+    def __init__(self, convoy_info: dict, recipient_info: dict, label: str, style: discord.ButtonStyle, custom_id: str):
+        super().__init__(label=label, custom_id=custom_id, style=style)
+        self.convoy_info = convoy_info
+        self.recipient_info = recipient_info
+    
+    async def callback(self, interaction: discord.Interaction):
+
+        convoy_x = self.convoy_info['x']
+        convoy_y = self.convoy_info['y']
+
+        recipient_x = self.recipient_info['x']
+        recipient_y = self.recipient_info['y']
+
+        embed = discord.Embed(
+            title=f'Map relative to {self.convoy_info['name']}',
+            description=textwrap.dedent('''
+                🟨 - Your convoy's location
+                🟦 - Recipient vendor's location
+            ''')
+        )
+
+        # Declaring minimum and maximum y coordinates
+        if convoy_x < recipient_x:
+            min_x = convoy_x
+            max_x = recipient_x
+        else:
+            min_x = recipient_x
+            max_x = convoy_x
+        
+        if convoy_y < recipient_y:
+            min_y = convoy_y
+            max_y = recipient_y
+        else:
+            min_y = recipient_y
+            max_y = convoy_y
+            
+        x_padding = 3
+        y_padding = 3
+
+        map_embed, image_file = await add_map_to_embed(
+            embed=embed,
+            highlighted=[(convoy_x, convoy_y)],
+            lowlighted=[(recipient_x, recipient_y)],
+            top_left=(min_x - x_padding, min_y - y_padding),
+            bottom_right=(max_x + x_padding, max_y + y_padding),
+        )
+            # x_padding = 16
+            # y_padding = 9
+
+            # map_embed, image_file = await add_map_to_embed(
+            #     embed=embed,
+            #     highlighted=[(vendor_x, vendor_y)],
+            #     top_left=(vendor_x - x_padding, vendor_y - y_padding),
+            #     bottom_right=(vendor_x + x_padding, vendor_y + y_padding),
+            # )
+
+        map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
+
+        await interaction.followup.send(
+            embed=map_embed,
+            file=image_file,
+            ephemeral=True
+        )

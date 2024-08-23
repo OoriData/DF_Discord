@@ -1203,7 +1203,7 @@ class BuyCargoButton(discord.ui.Button):
         convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
         index = self.parent_view.position
         current_item = self.parent_view.menu[index]
-        user_info = await self.parent_view.get_user_info(interaction.user.id)
+        user_info = self.parent_view.user_info
         cargo_description = textwrap.dedent(f'''\
             *{current_item['base_desc']}*
 

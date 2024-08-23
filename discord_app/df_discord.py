@@ -151,7 +151,7 @@ class Desolate_Cog(commands.Cog):
     
     @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
     async def my_convoys(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        # await interaction.response.defer()
 
         # First, get user ID from discord_id
         user_dict = await api_calls.get_user_by_discord(interaction.user.id)
@@ -160,9 +160,24 @@ class Desolate_Cog(commands.Cog):
 
         convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
 
-        await interaction.followup.send(embed=convoy_embed, file=image_file)
+        await interaction.response.send_message(
+            embed = convoy_embed,
+            file = image_file,
+            view = convoy_views.ConvoyView(
+                interaction = interaction,
+                convoy_dict = convoy_dict
+            )
+        )
+        
+        # await interaction.followup.send(
+        #     embed = convoy_embed,
+        #     file = image_file,
+        #     view = convoy_views.ConvoyView(
+        #         interaction = interaction,
+        #         convoy_dict = convoy_dict
+        #     )
+        # )
 
-    # XXX: im useful don't delete me
     async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
             self,
             interaction: discord.Interaction,
@@ -209,6 +224,7 @@ class Desolate_Cog(commands.Cog):
                 prospective_journey_dict=prospective_journey_plus_misc['journey']
             )
         )
+
 
 
 def main():

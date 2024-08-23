@@ -22,6 +22,9 @@ LOG_LEVEL = "INFO"
 DF_API_HOST = "http://localhost:1337"
 
 DISCORD_TOKEN = "REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"
+
+DF_GUILD_ID = "1119003654800822302"    # oori dev server
+DF_CHANNEL_ID = "1179194033923432578"  # #bot-attic
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")
 
@@ -53,8 +56,11 @@ In order to run that, you need an `op_discord_prod.env` should look something li
 ```env
 LOG_LEVEL = "INFO"
 
-DF_API_HOST = "http://sofola:1337"
+DF_API_HOST = "http://70.90.116.204:8001"
 
 DISCORD_TOKEN = "op://Oori DevOps/Oori - Desolate Frontiers - Discord Bot/credential"
+
+DF_GUILD_ID = "1225943320078057582"    # Desolate Frontiers server
+DF_CHANNEL_ID = "1225943321067917406"  # #df-notifications
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")

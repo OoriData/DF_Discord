@@ -21,6 +21,8 @@ from discord_app.map_rendering import add_map_to_embed
 DF_API_HOST = os.environ.get('DF_API_HOST')
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+DF_GUILD_ID = int(os.environ.get('DF_GUILD_ID'))
+DF_CHANNEL_ID = int(os.environ.get('DF_CHANNEL_ID'))
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
@@ -218,8 +220,8 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def notifier(self):
-        guild: discord.Guild = self.bot.get_guild(1119003654800822302)
-        notification_channel: discord.guild.GuildChannel = self.bot.get_channel(1205228905431306250)
+        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
 
         df_users = guild.members
 

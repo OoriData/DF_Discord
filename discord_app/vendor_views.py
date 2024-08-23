@@ -417,7 +417,7 @@ class BuyView(discord.ui.View):
 
             item_embed.add_field(name='Quantity', value=current_item['quantity'])
             item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
-            item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
+            item_embed.add_field(name='Weight', value=f'{current_item['weight']} kilogram(s)')
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
@@ -1227,7 +1227,7 @@ class BuyCargoButton(discord.ui.Button):
     
         item_embed.add_field(name='Quantity', value=current_item['quantity'])
         item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
-        item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
+        item_embed.add_field(name='Weight', value=f'{current_item['weight']} kilogram(s)')
 
         item_embed.set_author(
             name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',

@@ -565,6 +565,7 @@ class CargoQuantityView(discord.ui.View):
     @discord.ui.button(label='Buy Cargo', style=discord.ButtonStyle.green, custom_id='buy_cargo')
     async def buy_button(self, interaction: discord.Interaction, button: discord.Button):
         # API call to buy cargo item from vendor
+        convoy_before_money = self.user_info['convoys'][0]['money']
         try:
             convoy_after_dict = await api_calls.buy_cargo(
                 vendor_id=self.vendor_obj['vendor_id'],
@@ -575,11 +576,12 @@ class CargoQuantityView(discord.ui.View):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
 
         # set up buy embed for editing and display for user
         embed = discord.Embed(
             title = f'You bought {self.quantity} {self.cargo_obj['name']}',
-            description=f'Your convoy made ${(self.cargo_obj['base_price'] * self.quantity)} from the transaction',  # XXX: do some about this
+            description=f'Your convoy made ${delta_cash} from the transaction',
             color=discord.Color.green()
         )
 

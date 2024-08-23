@@ -33,18 +33,17 @@ class Desolate_Cog(commands.Cog):
         self.message_history_limit = 1
         self.ephemeral = True
 
-        # self.all_settlements = {} # maybe
-        
     @commands.Cog.listener()
     async def on_ready(self):
         '''Called when the bot is ready to start taking commands'''
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
         logger.debug(ansi_color('Desolate Frontiers cog initialized, generating settlements cache...', 'yellow'))
+
         global SETTLEMENTS_CACHE
         SETTLEMENTS_CACHE = []
-        df_map = await api_calls.get_map()
 
+        df_map = await api_calls.get_map()
         for row in df_map['tiles']:
             for sett in row:
                 SETTLEMENTS_CACHE.extend(sett['settlements'])
@@ -62,12 +61,13 @@ class Desolate_Cog(commands.Cog):
                 name=interaction.user.name,
                 icon_url=interaction.user.avatar.url
             )
+
             await interaction.followup.send(embed=embed, file=image_file)
 
         except Exception as e:
             msg = f'something went wrong: {e}'
             await interaction.followup.send(msg)
-    
+
     @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     async def new_user(self, interaction: discord.Interaction):
         try:
@@ -108,16 +108,15 @@ class Desolate_Cog(commands.Cog):
         tile_dict = await api_calls.get_tile(user_convoy['x'], user_convoy['y'])
 
         # TODO: handle multiple settlements eventually
-        # wtf does this mean
+
         if not tile_dict['settlements']:
             await interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
             return
 
-        settlement_embed = discord.Embed(
-            title=f'{tile_dict['settlements'][0]['name']} vendors',
-        )
+        settlement_embed = discord.Embed(title=f'{tile_dict['settlements'][0]['name']} vendors',)
         settlement_embed.description = '\n'.join([f'- {vendor['name']}' for vendor in tile_dict['settlements'][0]['vendors']])
         settlement_embed.description += '\n**Use the arrows to select the vendor you want to interact with**'
+
         convoy_balance = f'{user_dict['money']:,}'
         settlement_embed.set_author(name=f'{user_convoy['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
 
@@ -127,6 +126,7 @@ class Desolate_Cog(commands.Cog):
             menu=tile_dict['settlements'][0]['vendors'],
             menu_type='vendor'
         )
+
         await interaction.followup.send(embed=settlement_embed, view=view)
 
     @app_commands.command(name='new-convoy', description='Create a new convoy')
@@ -151,7 +151,6 @@ class Desolate_Cog(commands.Cog):
     
     @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
     async def my_convoys(self, interaction: discord.Interaction):
-        # await interaction.response.defer()
 
         # First, get user ID from discord_id
         user_dict = await api_calls.get_user_by_discord(interaction.user.id)
@@ -164,19 +163,10 @@ class Desolate_Cog(commands.Cog):
             embed = convoy_embed,
             file = image_file,
             view = convoy_views.ConvoyView(
-                interaction = interaction,
-                convoy_dict = convoy_dict
+                interaction=interaction,
+                convoy_dict=convoy_dict
             )
         )
-        
-        # await interaction.followup.send(
-        #     embed = convoy_embed,
-        #     file = image_file,
-        #     view = convoy_views.ConvoyView(
-        #         interaction = interaction,
-        #         convoy_dict = convoy_dict
-        #     )
-        # )
 
     async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
             self,
@@ -186,11 +176,13 @@ class Desolate_Cog(commands.Cog):
         # setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS_CACHE}
         # sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 
-        # OK so what's going on here is that discord.py does not like when the Choice.value is not a string, even though `value` has a type hint of `any`
-        # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled 
+        # OK so what's going on here is that discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
+        # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled it'll revert the numbers in the string back to int
         setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
         sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
+
         logger.debug(ansi_color(setts_dict, 'green'))
+
         choices = [
             app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
             for sett_name in sett_names if current.lower() in sett_name.lower()
@@ -218,7 +210,7 @@ class Desolate_Cog(commands.Cog):
         await interaction.followup.send(
             embed=convoy_embed,
             file=image_file,
-            view=convoy_views.SendConvoyConfirmView(
+            view = convoy_views.SendConvoyConfirmView(
                 interaction=interaction,
                 convoy_dict=convoy_dict,
                 prospective_journey_dict=prospective_journey_plus_misc['journey']

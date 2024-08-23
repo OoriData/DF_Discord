@@ -205,7 +205,7 @@ class SendConvoyConfirmView(discord.ui.View):
 
     @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send')
     async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
-        confirmed_journey_dict = await api_calls.send_convoy(self.convoy_dict['convoy_id'], self.prospective_journey_dict['journey_id'])
+        await api_calls.send_convoy(self.convoy_dict['convoy_id'], self.prospective_journey_dict['journey_id'])
 
         await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to see their progress)')  # TODO: send more information than just 'look at them go'
 
@@ -276,6 +276,7 @@ class VehicleView(discord.ui.View):
                 *{current_vehicle['base_desc']}*
             ''')  # FIXME: add wear and other values that aren't in this embed
         )
+
         convoy_balance = f'{self.convoy_dict['money']:,}'
         embed.set_author(
             name=f'{self.convoy_dict['name']} | ${convoy_balance}',
@@ -306,7 +307,7 @@ class CargoView(discord.ui.View):
         self.interaction = interaction
         self.convoy_dict = convoy_dict
 
-        self.position = -1
+        self.position = 0
 
     @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -320,7 +321,6 @@ class CargoView(discord.ui.View):
         self.position = (self.position + 1) % len(cargo_menu)
         await self.update_menu(interaction, cargo_menu=cargo_menu)
 
-
     async def update_menu(self, interaction: discord.Interaction, cargo_menu: dict):
         index = self.position
         cargo_item = cargo_menu[index]
@@ -330,9 +330,8 @@ class CargoView(discord.ui.View):
             recipient = recipient_info
             delivery_reward = cargo_item['delivery_reward']
 
-            self.mapbutton = MapButton(convoy_info = self.convoy_dict, recipient_info = recipient, label = 'Map (Recipient)', style = discord.ButtonStyle.green, custom_id='map_button')
+            self.mapbutton = MapButton(convoy_info=self.convoy_dict, recipient_info=recipient, label = 'Map (Recipient)', style=discord.ButtonStyle.green, custom_id='map_button')
             self.add_item(self.mapbutton)
-            # await interaction.response.edit_message(view=self)  # Will cry because interaction has already been responded to before, even though its an """EDIT"""_MESSAGE
             
         else:  # No recipient, no worries
             recipient = 'None'
@@ -344,8 +343,7 @@ class CargoView(discord.ui.View):
                 msg = 'MapButton is not in CargoView; skipping...'
                 logger.debug(msg=msg)
                 pass
-            
-        # API call to get vehicle
+
         cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
 
         embed = discord.Embed(
@@ -418,18 +416,10 @@ class MapButton(discord.ui.Button):
             top_left=(min_x - x_padding, min_y - y_padding),
             bottom_right=(max_x + x_padding, max_y + y_padding),
         )
-            # x_padding = 16
-            # y_padding = 9
-
-            # map_embed, image_file = await add_map_to_embed(
-            #     embed=embed,
-            #     highlighted=[(vendor_x, vendor_y)],
-            #     top_left=(vendor_x - x_padding, vendor_y - y_padding),
-            #     bottom_right=(vendor_x + x_padding, vendor_y + y_padding),
-            # )
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
 
+        await interaction.response.defer()
         await interaction.followup.send(
             embed=map_embed,
             file=image_file,

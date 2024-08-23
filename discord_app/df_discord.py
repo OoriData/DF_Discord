@@ -244,6 +244,7 @@ class Desolate_Cog(commands.Cog):
                             ping += f'\n<@{df_user.id}>'
 
                             await notification_channel.send(ping)
+                            logger.info(ansi_color(f'sent notification to user {df_user.nick} ({df_user.id})', 'green'))
 
                             await api_calls.mark_dialogue_as_seen(user_dict['user_id'])
                     except RuntimeError as e:

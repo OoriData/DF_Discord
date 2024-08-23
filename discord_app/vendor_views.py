@@ -593,7 +593,7 @@ class CargoQuantityView(discord.ui.View):
             # recipient_id = cargo_obj['recipient']
             recipient = dest_vendor_dict['name']
             embed.description = textwrap.dedent(f'''\
-                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}**
+                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}** (each)
                                                     
                 *{self.cargo_obj['base_desc']}*
             ''')

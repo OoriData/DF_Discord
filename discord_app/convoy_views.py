@@ -58,9 +58,10 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
         eta = convoy_obj['journey']['eta']
         convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
 
-        progress_percent = ((convoy_obj['journey']['progress'] - 1) / len(convoy_obj['journey']['route_x'])) * 100
+        progress_percent = ((convoy_obj['journey']['progress']) / len(convoy_obj['journey']['route_x'])) * 100
         progress_in_km = convoy_obj['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
-        convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km')
+        progress_in_miles = convoy_obj['journey']['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
+        convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
         origin_x = journey['origin_x']
         origin_y = journey['origin_y']
@@ -103,11 +104,19 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
 
         destination = await api_calls.get_tile(prospective_journey_plus_misc['journey']['dest_x'], prospective_journey_plus_misc['journey']['dest_y'])
 
+        convoy_embed.add_field(name='Fuel expense', value=f'**{prospective_journey_plus_misc['fuel_expense']:.2f}**')
+        convoy_embed.add_field(name='Water expense', value=f'**{prospective_journey_plus_misc['water_expense']:.2f}**')
+        convoy_embed.add_field(name='Food expense', value=f'**{prospective_journey_plus_misc['food_expense']:.2f}**')
+
         convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({prospective_journey_plus_misc['journey']['dest_x']}, {prospective_journey_plus_misc['journey']['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
         
         delta_t = discord_timestamp(datetime.now(timezone.utc) + timedelta(minutes=prospective_journey_plus_misc['delta_t']), 'R')
         eta_discord_time = discord_timestamp(datetime.now(timezone.utc) + timedelta(minutes=prospective_journey_plus_misc['delta_t']), 't')
         convoy_embed.add_field(name='ETA ⏰', value=f'**{delta_t}**\n{eta_discord_time}')
+
+        distance_km = 50 * len(prospective_journey_plus_misc['journey']['route_x'])
+        distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
+        convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km} km**\n{distance_miles} miles')
 
         origin_x = prospective_journey_plus_misc['journey']['origin_x']
         origin_y = prospective_journey_plus_misc['journey']['origin_y']
@@ -206,4 +215,4 @@ class SendConvoyConfirmView(discord.ui.View):
             await interaction.response.send_message(content=e, ephemeral=True)
             return
 
-        await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to see their progress)')  # TODO: send more information than just 'look at them go'
+        await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to check on their progress)')  # TODO: send more information than just 'look at them go'

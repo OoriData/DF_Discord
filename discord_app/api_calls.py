@@ -8,10 +8,13 @@ import           httpx
 DF_API_HOST = os.environ.get('DF_API_HOST')
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
+API_INTERNAL_SERVER_ERROR = 500
 
 
 def check_code(response: httpx.Response):
-    if response.status_code != API_SUCCESS_CODE:
+    if response.status_code == API_INTERNAL_SERVER_ERROR:
+        raise RuntimeError('API Internal Server Error')
+    elif response.status_code != API_SUCCESS_CODE:
         msg = response.json()['detail']
         raise RuntimeError(msg)
 

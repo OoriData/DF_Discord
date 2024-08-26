@@ -33,10 +33,15 @@ You'll need to have the [1Password CLI tools](https://developer.1password.com/do
 
 ## Setup
 ### Venv
-DF requires python **3.12**. Highly advised to get a new virtual environment setup specifically for DF. To create a venv in the oori "standard" location of your `.local/venv/`:
+The Desolate Frontiers Discord App requires **Python 3.12**. It is highly reccomended to create a new virtual environment (venv) setup specifically for the DF Discord App.
+
+To create a venv in the "standard" location of `~/.local/venv/`:
 ```sh
 /usr/local/bin/python3.12 -m venv $HOME/.local/venv/df_discord
-source $HOME/.local/venv/desolate_frontiers/bin/activate
+```
+You can manually activate that with:
+```sh
+source $HOME/.local/venv/df_discord/bin/activate
 ```
 
 ### Libraries
@@ -44,4 +49,10 @@ Get the correct libraries installed to the venv:
 ```sh
 pip install -U pip
 pip install -U -r requirements.txt -c constraints.txt
+```
+
+### VSCode
+To activate that in VSCode, open a python file and select the python version in the status bar in the bottom right in your VSCode window and click `Enter interpreter path...`, and enter:
+```
+~/.local/venv/df_discord/bin/python3.12
 ```

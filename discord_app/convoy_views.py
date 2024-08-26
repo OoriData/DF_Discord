@@ -178,7 +178,7 @@ def vehicles_embed_str(vehicles: list[dict], detailed: Optional[bool] = False) -
                 vehicle_str += f'  - Top Speed: **{vehicle['top_speed']}** / 100\n'
                 vehicle_str += f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100\n'
             
-            vehicle_str += f'  - Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters & **{vehicle['total_cargo_mass']}** / {vehicle['weight_capacity']} kg'
+            vehicle_str += f'  - Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
             vehicles_list.append(vehicle_str)
 
         vehicles_str += '\n'.join(vehicles_list)

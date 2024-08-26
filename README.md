@@ -23,8 +23,8 @@ DF_API_HOST = "http://localhost:1337"
 
 DISCORD_TOKEN = "REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"
 
-DF_GUILD_ID = "1119003654800822302"    # oori dev server
-DF_CHANNEL_ID = "1179194033923432578"  # #bot-attic
+DF_GUILD_ID = "1119003654800822302"    # server that is used as the presumed playerbase to send notifications to (oori dev server)
+DF_CHANNEL_ID = "1179194033923432578"  # channel to send those notifications in (#bot-attic)
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")
 

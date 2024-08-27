@@ -14,7 +14,7 @@ from discord.ext               import commands, tasks
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vendor_views, convoy_views
+from discord_app               import api_calls, vendor_views, convoy_views, DF_HELP
 from discord_app               import DF_DISCORD_LOGO as API_BANNER
 from discord_app.map_rendering import add_map_to_embed
 
@@ -32,7 +32,7 @@ DF_USERS_CACHE = None     # None until initialized
 
 class Desolate_Cog(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
         self.message_history_limit = 1
         self.ephemeral = True
 
@@ -43,6 +43,8 @@ class Desolate_Cog(commands.Cog):
         'Called when the bot is ready to start taking commands'
         global SETTLEMENTS_CACHE
         global DF_USERS_CACHE
+
+        await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
@@ -71,7 +73,7 @@ class Desolate_Cog(commands.Cog):
         self.notifier.start()  
 
     @app_commands.command(name='df-map', description='Show the full game map')
-    async def get_df_map(self, interaction: discord.Interaction):
+    async def df_map(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
             embed = discord.Embed()
@@ -88,7 +90,7 @@ class Desolate_Cog(commands.Cog):
             await interaction.followup.send(msg)
     
     @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
-    async def new_user(self, interaction: discord.Interaction):
+    async def df_register(self, interaction: discord.Interaction):
         global DF_USERS_CACHE
         try:
             new_user_id = await api_calls.new_user(interaction.user.name, interaction.user.id)
@@ -101,26 +103,26 @@ class Desolate_Cog(commands.Cog):
             await interaction.response.send_message(e)
 
     # i can't imagine this command seeing a whole lot of use, but added it anyway
-    @app_commands.command(name='get-user', description='Get a user object based on its ID (probably an admin command or smth)')
-    async def get_user(self, interaction: discord.Interaction, discord_id: str=None):
-        if not discord_id:
-            discord_id = interaction.user.id
+    # @app_commands.command(name='get-user', description='Get a user object based on its ID (probably an admin command or smth)')
+    # async def get_user(self, interaction: discord.Interaction, discord_id: str=None):
+    #     if not discord_id:
+    #         discord_id = interaction.user.id
 
-        if discord_id.startswith('<@'):
-            discord_id = discord_id.strip('<@>')  # allows users to @ individuals to get their profile info
+    #     if discord_id.startswith('<@'):
+    #         discord_id = discord_id.strip('<@>')  # allows users to @ individuals to get their profile info
 
-        user_info = await api_calls.get_user_by_discord(interaction.user.id)
+    #     user_info = await api_calls.get_user_by_discord(interaction.user.id)
         
-        await interaction.response.send_message(textwrap.dedent(f'''
-            user id: `{user_info['user_id']}`
-            username: `{user_info['username']}`
-            discord id: `{user_info['discord_id']}`
-            join date: `{user_info['join_date']}`
-            convoys: `{', '.join([f'{convoy['name']}' for convoy in user_info['convoys']])}`
-        '''))
+    #     await interaction.response.send_message(textwrap.dedent(f'''
+    #         user id: `{user_info['user_id']}`
+    #         username: `{user_info['username']}`
+    #         discord id: `{user_info['discord_id']}`
+    #         join date: `{user_info['join_date']}`
+    #         convoys: `{', '.join([f'{convoy['name']}' for convoy in user_info['convoys']])}`
+    #     '''))
 
     @app_commands.command(name='df-vendors', description='Open the Desolate Frontiers buy menu')
-    async def df_buy(self, interaction: discord.Interaction):
+    async def df_vendors(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
         user_dict = await api_calls.get_user_by_discord(interaction.user.id)
@@ -171,7 +173,7 @@ class Desolate_Cog(commands.Cog):
 
     
     @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
-    async def my_convoys(self, interaction: discord.Interaction):
+    async def df_convoys(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
         # First, get user ID from discord_id
@@ -234,6 +236,10 @@ class Desolate_Cog(commands.Cog):
                 prospective_journey_dict=prospective_journey_plus_misc['journey']
             )
         )
+
+    @app_commands.command(name='df-help', description='Show the help message')
+    async def df_help(self, interaction: discord.Interaction):
+        await interaction.response.send_message(DF_HELP, ephemeral=True)
 
     @tasks.loop(minutes=1)
     async def notifier(self):

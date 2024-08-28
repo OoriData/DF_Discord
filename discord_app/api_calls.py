@@ -8,10 +8,13 @@ import           httpx
 DF_API_HOST = os.environ.get('DF_API_HOST')
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
+API_INTERNAL_SERVER_ERROR = 500
 
 
 def check_code(response: httpx.Response):
-    if response.status_code != API_SUCCESS_CODE:
+    if response.status_code == API_INTERNAL_SERVER_ERROR:
+        raise RuntimeError('API Internal Server Error')
+    elif response.status_code != API_SUCCESS_CODE:
         msg = response.json()['detail']
         raise RuntimeError(msg)
 
@@ -22,6 +25,7 @@ async def get_map() -> dict:
             f'{DF_API_HOST}/map/get'
         )
 
+    check_code(response)
     return response.json()
 
 
@@ -34,7 +38,7 @@ async def get_tile(x: int, y: int) -> dict:
                 'y': y
             }
         )
-    
+
     check_code(response)
     return response.json()
 
@@ -232,6 +236,28 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
         response = await client.get(
             f'{DF_API_HOST}/vehicle/get',
             params={'vehicle_id': vehicle_id}
+        )
+
+    check_code(response)
+    return response.json()
+
+
+async def get_unseen_dialogue_for_user(user_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            f'{DF_API_HOST}/dialogue/get_user_unseen_messages',
+            params={'user_id': user_id}
+        )
+
+    check_code(response)
+    return response.json()
+
+
+async def mark_dialogue_as_seen(user_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            f'{DF_API_HOST}/dialogue/mark_user_dialogues_as_seen',
+            params={'user_id': user_id}
         )
 
     check_code(response)

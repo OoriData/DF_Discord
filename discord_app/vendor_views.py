@@ -417,7 +417,7 @@ class BuyView(discord.ui.View):
 
             item_embed.add_field(name='Quantity', value=current_item['quantity'])
             item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
-            item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
+            item_embed.add_field(name='Weight', value=f'{current_item['weight']} kilogram(s)')
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
@@ -565,6 +565,7 @@ class CargoQuantityView(discord.ui.View):
     @discord.ui.button(label='Buy Cargo', style=discord.ButtonStyle.green, custom_id='buy_cargo')
     async def buy_button(self, interaction: discord.Interaction, button: discord.Button):
         # API call to buy cargo item from vendor
+        convoy_before_money = self.user_info['convoys'][0]['money']
         try:
             convoy_after_dict = await api_calls.buy_cargo(
                 vendor_id=self.vendor_obj['vendor_id'],
@@ -575,11 +576,12 @@ class CargoQuantityView(discord.ui.View):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
 
         # set up buy embed for editing and display for user
         embed = discord.Embed(
             title = f'You bought {self.quantity} {self.cargo_obj['name']}',
-            description=f'Your convoy made ${(self.cargo_obj['base_price'] * self.quantity)} from the transaction',  # XXX: do some about this
+            description=f'Your convoy spent ${delta_cash} in the transaction',
             color=discord.Color.green()
         )
 
@@ -591,7 +593,7 @@ class CargoQuantityView(discord.ui.View):
             # recipient_id = cargo_obj['recipient']
             recipient = dest_vendor_dict['name']
             embed.description = textwrap.dedent(f'''\
-                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}**
+                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}** (each)
                                                     
                 *{self.cargo_obj['base_desc']}*
             ''')
@@ -619,6 +621,7 @@ class CargoQuantityView(discord.ui.View):
 
     @discord.ui.button(label='Sell Cargo', style=discord.ButtonStyle.green, custom_id='sell_cargo')
     async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
+        convoy_before_money = self.user_info['convoys'][0]['money']
         try:
             convoy_after_dict = await api_calls.sell_cargo(
                 vendor_id=self.vendor_obj['vendor_id'],
@@ -629,10 +632,15 @@ class CargoQuantityView(discord.ui.View):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
+        
+        print()
+        print(f'{convoy_after_dict['money']} - {convoy_before_money} = {delta_cash}')
+        print()
 
         embed = discord.Embed(
             title=f'You sold {self.quantity} {self.cargo_obj['name']} to {self.vendor_obj['name']}',
-            description=f'Your convoy made ${(self.cargo_obj['base_price']) * self.quantity} from the transaction.'
+            description=f'Your convoy made ${delta_cash} from the transaction.'
         )
         convoy_balance = f'{convoy_after_dict['money']:,}'
         embed.set_author(
@@ -1227,7 +1235,7 @@ class BuyCargoButton(discord.ui.Button):
     
         item_embed.add_field(name='Quantity', value=current_item['quantity'])
         item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
-        item_embed.add_field(name='Mass', value=f'{current_item['mass']} kilogram(s)')
+        item_embed.add_field(name='Weight', value=f'{current_item['weight']} kilogram(s)')
 
         item_embed.set_author(
             name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',

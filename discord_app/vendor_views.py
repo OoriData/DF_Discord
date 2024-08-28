@@ -581,7 +581,7 @@ class CargoQuantityView(discord.ui.View):
         # set up buy embed for editing and display for user
         embed = discord.Embed(
             title = f'You bought {self.quantity} {self.cargo_obj['name']}',
-            description=f'Your convoy made ${delta_cash} from the transaction',
+            description=f'Your convoy spent ${delta_cash} in the transaction',
             color=discord.Color.green()
         )
 
@@ -621,6 +621,7 @@ class CargoQuantityView(discord.ui.View):
 
     @discord.ui.button(label='Sell Cargo', style=discord.ButtonStyle.green, custom_id='sell_cargo')
     async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
+        convoy_before_money = self.user_info['convoys'][0]['money']
         try:
             convoy_after_dict = await api_calls.sell_cargo(
                 vendor_id=self.vendor_obj['vendor_id'],
@@ -631,10 +632,15 @@ class CargoQuantityView(discord.ui.View):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
+        
+        print()
+        print(f'{convoy_after_dict['money']} - {convoy_before_money} = {delta_cash}')
+        print()
 
         embed = discord.Embed(
             title=f'You sold {self.quantity} {self.cargo_obj['name']} to {self.vendor_obj['name']}',
-            description=f'Your convoy made ${(self.cargo_obj['base_price']) * self.quantity} from the transaction.'
+            description=f'Your convoy made ${delta_cash} from the transaction.'
         )
         convoy_balance = f'{convoy_after_dict['money']:,}'
         embed.set_author(

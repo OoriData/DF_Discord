@@ -365,7 +365,7 @@ class CargoView(discord.ui.View):
                 *{cargo_item['base_desc']}*
 
                 - Base (sell) Price: **${cargo_item['base_price']}**
-                - Recipient: **{recipient}**
+                - Recipient: **{recipient['name']}**
                 - Delivery Reward: **{delivery_reward}**
                 - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
                 - Cargo quantity: **{cargo_item['quantity']}**

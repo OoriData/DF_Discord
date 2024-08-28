@@ -911,13 +911,13 @@ class SellSelectView(discord.ui.View):
         self.quantity = 1
         self.position = -1
 
-    def is_disabled()
+    # def is_disabled()
 
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='previous_menu')
     async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
 
-    @discord.ui.button(label='Resource', style=discord.ButtonStyle.blurple, custom_id='resource', disabled=)
+    @discord.ui.button(label='Resource', style=discord.ButtonStyle.blurple, custom_id='resource')#, disabled=)
     async def sell_resource(self, interaction: discord.Interaction, button: discord.Button):
         '''Simple command; send embed with new button view depending on user's sell selection'''
         # no new embed is being created, this only exists to put author on the embed

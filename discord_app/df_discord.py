@@ -182,7 +182,7 @@ class Desolate_Cog(commands.Cog):
 
         convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed = convoy_embed,
             file = image_file,
             view = convoy_views.ConvoyView(

@@ -44,6 +44,8 @@ class Desolate_Cog(commands.Cog):
         global SETTLEMENTS_CACHE
         global DF_USERS_CACHE
 
+
+        # Startup:
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
@@ -77,6 +79,8 @@ class Desolate_Cog(commands.Cog):
         self.notifier.start()  
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
+
+        yield  # Shutdown:
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):

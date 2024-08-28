@@ -162,7 +162,7 @@ class Desolate_Cog(commands.Cog):
         )
         await interaction.followup.send(embed=settlement_embed, view=view)
 
-    @app_commands.command(name='new-convoy', description='Create a new convoy')
+    @app_commands.command(name='df-new-convoy', description='Create a new convoy')
     async def new_convoy(self, interaction: discord.Interaction, new_convoy_name: str=None):
         await interaction.response.defer()
 

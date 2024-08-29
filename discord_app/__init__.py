@@ -54,7 +54,7 @@ DF_HELP = '''\
 This thing's still in Alpha, so things *will* break and that the game *is not* finished! If you have an issue, please DM Choccy (or just holler in #general)!
 
 1. You'll be managing a logistics company, running convoys of land vehicles across the remains of the US, carrying all manner of useful goods.
-- To get started, run **`/df-register`** to get your account signed up for our system. After that, use **`/new-convoy`** to create your first convoy!
+- To get started, run **`/df-register`** to get your account signed up for our system. After that, use **`/df-new-convoy`** to create your first convoy!
 - Next, you'll need to buy a vehicle. Use **`df-vendors`** to investigate the vendors in the city you spawned in, and head to the ~~dealership~~ stealership to get yourself some wheels. (The menus there are a little janky. We're cookin' on 'em!)
 - After that, you're gonna need to buy some *Fuel* from the gas station, which you can also access with **`/df-vendors`**, in the form of `Jerry Cans`. Next, grab some water from the market, (imaginatively named) `Water Jerry Cans`, and finally you'll wanna buy some `MRE boxes` to feed your crew, also at the market.
 - With the basics down, it's time for your first delivery. Head to the market once again and look into the goods with a `Recipient`, who will reward you handsomely for bringing them these goods.

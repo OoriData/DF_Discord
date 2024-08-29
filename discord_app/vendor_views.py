@@ -34,6 +34,18 @@ def vendor_services(vendor: dict):
 
     return services
 
+def vendor_resources(vendor: dict):
+    ''' Quickly get which resources a vendor sells/buys '''
+    resources = []
+    if vendor['fuel']:
+        resources.append('fuel')
+    elif vendor['water']:
+        resources.append('water')
+    elif vendor['food']:
+        resources.append('food')
+    
+    return resources
+
 class BackButtonView(discord.ui.View):
     ''' A menu for a button that sends users back to the previous view. '''
     def __init__(
@@ -147,6 +159,7 @@ class VendorMenuView(discord.ui.View):
                 description=textwrap.dedent(f'''\
                     Available for Purchase:
                     {displayable_cargo}
+                    
                     **Use the arrows to select the item you want to buy**'
                 ''')
             )
@@ -911,51 +924,38 @@ class SellSelectView(discord.ui.View):
         self.quantity = 1
         self.position = -1
 
-    # def is_disabled()
+        if self.vendor_obj['cargo_inventory']:
+            self.add_item(SellSelectCargo(parent_view=self, label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo'))
+
+        if self.vendor_obj['vehicle_inventory']:
+            self.add_item(SellSelectVehicle(parent_view=self, label='Vehicle', style=discord.ButtonStyle.blurple, custom_id='vehicle'))
+
+        if len(vendor_resources(self.vendor_obj)) > 0:
+            self.add_item(SellSelectResource(parent_view=self, label='Resource', style=discord.ButtonStyle.blurple, custom_id='resource'))
+
 
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='previous_menu')
     async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
 
-    @discord.ui.button(label='Resource', style=discord.ButtonStyle.blurple, custom_id='resource')#, disabled=)
-    async def sell_resource(self, interaction: discord.Interaction, button: discord.Button):
-        '''Simple command; send embed with new button view depending on user's sell selection'''
-        # no new embed is being created, this only exists to put author on the embed
-        embed = discord.Embed(
-            title=f'Selling resources to {self.vendor_obj['name']}',
-            description='Use buttons to navigate selling menu',
-        )
+class SellSelectResource(discord.ui.Button):
+    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
+        super().__init__(label=label, custom_id=custom_id, style=style)
+        self.parent_view = parent_view
 
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.edit_message(embed=embed, view=ResourceSelectView(
-            interaction=interaction,
-            user_info=self.user_info,
-            vendor_obj=self.vendor_obj,
-            trade_type='sell',
-            previous_embed=self.current_embed,
-            previous_view=self,
-        ))
-
-    @discord.ui.button(label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo')
-    async def sell_cargo(self, interaction: discord.Interaction, button: discord.Button):
-        '''Simple command; send embed with new button view depending on user's sell selection'''
-        if not self.vendor_obj['cargo_inventory']:
-            await interaction.response.send_message(f'{self.vendor_obj['name']} does not buy cargo', ephemeral=True, delete_after=10)
+    async def callback(self, interaction: discord.Interaction):
+        if not self.parent_view.vendor_obj['cargo_inventory']:
+            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy cargo', ephemeral=True, delete_after=10)
             return
         
         embed = discord.Embed(
-            title=f'Selling cargo to {self.vendor_obj['name']}',
+            title=f'Selling cargo to {self.parent_view.vendor_obj['name']}',
             description='Use buttons to navigate selling menu',
         )
 
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
+        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
+            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -963,27 +963,66 @@ class SellSelectView(discord.ui.View):
             embed=embed,
             view=CargoSellView(
                 interaction=interaction,
-                user_info=self.user_info,
-                vendor_obj=self.vendor_obj,
-                sellable_cargo=self.sellable_cargo,
-                previous_embed=self.current_embed,
-                previous_view=self
+                user_info=self.parent_view.user_info,
+                vendor_obj=self.parent_view.vendor_obj,
+                sellable_cargo=self.parent_view.sellable_cargo,
+                previous_embed=self.parent_view.current_embed,
+                previous_view=self.parent_view
             )
         )
 
-    @discord.ui.button(label='Vehicle', style=discord.ButtonStyle.blurple, custom_id='vehicle')
-    async def sell_vehicle(self, interaction: discord.Interaction, button: discord.Button):
-        '''Simple command; send embed with new button view depending on user's sell selection'''
-        if not self.vendor_obj['vehicle_inventory']:
-            await interaction.response.send_message(f'{self.vendor_obj['name']} does not buy vehicles', ephemeral=True, delete_after=10)
+class SellSelectCargo(discord.ui.Button):
+    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
+        super().__init__(label=label, custom_id=custom_id, style=style)
+        self.parent_view = parent_view
+
+    async def callback(self, interaction: discord.Interaction):
+        if not self.parent_view.vendor_obj['cargo_inventory']:
+            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy cargo', ephemeral=True, delete_after=10)
+            return
+        
         embed = discord.Embed(
-            title=f'Selling vehicle to {self.vendor_obj['name']}',
+            title=f'Selling cargo to {self.parent_view.vendor_obj['name']}',
+            description='Use buttons to navigate selling menu',
+        )
+
+        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
+        embed.set_author(
+            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        await interaction.response.edit_message(
+            embed=embed,
+            view=CargoSellView(
+                interaction=interaction,
+                user_info=self.parent_view.user_info,
+                vendor_obj=self.parent_view.vendor_obj,
+                sellable_cargo=self.parent_view.sellable_cargo,
+                previous_embed=self.parent_view.current_embed,
+                previous_view=self.parent_view
+            )
+        )
+
+class SellSelectVehicle(discord.ui.Button):
+    '''
+    Directly tied to `SellSelectView`, and only used there.
+    '''
+    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
+        super().__init__(label=label, custom_id=custom_id, style=style)
+        self.parent_view = parent_view
+
+    async def callback(self, interaction: discord.Interaction):
+        if not self.parent_view.vendor_obj['vehicle_inventory']:
+            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy vehicles', ephemeral=True, delete_after=10)
+        embed = discord.Embed(
+            title=f'Selling vehicle to {self.parent_view.vendor_obj['name']}',
             description='Use buttons to navigate selling menu'
         )
 
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
+        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
         embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
+            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -991,15 +1030,13 @@ class SellSelectView(discord.ui.View):
             embed=embed,
             view=VehicleSellView(
                 interaction=interaction,
-                user_info=self.user_info,
-                vendor_obj=self.vendor_obj,
-                vehicle_menu=self.user_info['convoys'][0]['vehicles'],
-                previous_embed=self.current_embed,
-                previous_view=self
+                user_info=self.parent_view.user_info,
+                vendor_obj=self.parent_view.vendor_obj,
+                vehicle_menu=self.parent_view.user_info['convoys'][0]['vehicles'],
+                previous_embed=self.parent_view.current_embed,
+                previous_view=self.parent_view
             )
         )
-
-    # TODO: Add 'Vehicle' Button
 
 class ResourceSelectView(discord.ui.View):
     '''
@@ -1014,7 +1051,7 @@ class ResourceSelectView(discord.ui.View):
             self,
             interaction: discord.Interaction,
             user_info: dict,
-            vendor_obj: dict,  # this needed to happen eventually, i'll go around and fix it up.
+            vendor_obj: dict,
             trade_type: str,  # 'buy', 'sell'
             previous_embed: discord.Embed,
             previous_view: discord.ui.View,

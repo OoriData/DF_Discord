@@ -42,10 +42,10 @@ class Desolate_Cog(commands.Cog):
         global SETTLEMENTS_CACHE
         global DF_USERS_CACHE
 
+        # Startup:
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
-        logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
         SETTLEMENTS_CACHE = []
@@ -67,8 +67,17 @@ class Desolate_Cog(commands.Cog):
                 logger.debug(f'user is not registered: {e}')
                 continue
 
+        df_guild = self.bot.get_guild(DF_GUILD_ID)
+        logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
+        df_notification_channel = self.bot.get_channel(DF_CHANNEL_ID)
+        logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
+        
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
         self.notifier.start()  
+
+        logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
+
+        # yield  # Shutdown:
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):
@@ -151,7 +160,7 @@ class Desolate_Cog(commands.Cog):
 
         await interaction.followup.send(embed=settlement_embed, view=view)
 
-    @app_commands.command(name='new-convoy', description='Create a new convoy')
+    @app_commands.command(name='df-new-convoy', description='Create a new convoy')
     async def new_convoy(self, interaction: discord.Interaction, new_convoy_name: str=None):
         await interaction.response.defer()
 

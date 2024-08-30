@@ -42,6 +42,7 @@ class Desolate_Cog(commands.Cog):
         global SETTLEMENTS_CACHE
         global DF_USERS_CACHE
 
+
         # Startup:
         await self.bot.tree.sync()
 

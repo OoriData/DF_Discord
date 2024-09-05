@@ -46,7 +46,7 @@ def vendor_resources(vendor: dict):
     
     return resources
 
-class BackButtonView(discord.ui.View):
+class BackToVendorsView(discord.ui.View):
     ''' A menu for a button that sends users back to the previous view. '''
     def __init__(
             self,
@@ -558,12 +558,16 @@ class CargoQuantityView(discord.ui.View):
         self.user_info = user_info
         self.previous_view = previous_view
 
-
         self.quantity = 0
 
         # FIXME: maybe find a way to add this that isn't so ugly? don't know how i would do it but it would be nice
         # went over this before but I think what i'm going to do instead is have quantity buttons as static decorator buttons
         # and add buy/sell buttons as dynamic button classes. It's more lines of code, but it'll make the display look so much better.
+        if self.trade_type == 'sell':
+            self.add_item(CargoSellButton(self))
+        elif self.trade_type == 'buy':
+            self.add_item(CargoBuyButton(self))
+
         self.add_item(QuantityButton(self, item=self.cargo_obj['name'], label='-5', style=discord.ButtonStyle.gray, custom_id='-5'))
         self.add_item(QuantityButton(self, item=self.cargo_obj['name'], label='-1', style=discord.ButtonStyle.gray, custom_id='-1'))
         self.add_item(QuantityButton(self, item=self.cargo_obj['name'], label='+1', style=discord.ButtonStyle.gray, custom_id='1'))
@@ -573,95 +577,6 @@ class CargoQuantityView(discord.ui.View):
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
         self.previous_embed.remove_footer()
         await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
-
-    # TODO: Implement dynamic button strategy used when buying resources
-    @discord.ui.button(label='Buy Cargo', style=discord.ButtonStyle.green, custom_id='buy_cargo')
-    async def buy_button(self, interaction: discord.Interaction, button: discord.Button):
-        # API call to buy cargo item from vendor
-        convoy_before_money = self.user_info['convoys'][0]['money']
-        try:
-            convoy_after_dict = await api_calls.buy_cargo(
-                vendor_id=self.vendor_obj['vendor_id'],
-                convoy_id=self.user_info['convoys'][0]['convoy_id'],
-                cargo_id=self.cargo_obj['cargo_id'],
-                quantity=self.quantity
-            )
-        except RuntimeError as e:
-            await interaction.response.send_message(content=e, ephemeral=True)
-            return
-        delta_cash = convoy_after_dict['money'] - convoy_before_money
-
-        # set up buy embed for editing and display for user
-        embed = discord.Embed(
-            title = f'You bought {self.quantity} {self.cargo_obj['name']}',
-            description=f'Your convoy spent ${delta_cash} in the transaction',
-            color=discord.Color.green()
-        )
-
-        # if the cargo has a recipient, say so in the buy embed
-        if self.cargo_obj['recipient']:
-            # API call to get recipient vendor's info
-            dest_vendor_dict = await api_calls.get_vendor(vendor_id=self.cargo_obj['recipient'])
-
-            # recipient_id = cargo_obj['recipient']
-            recipient = dest_vendor_dict['name']
-            embed.description = textwrap.dedent(f'''\
-                Deliver it to {recipient} for a cash reward of $**{self.cargo_obj['delivery_reward']}** (each)
-                                                    
-                *{self.cargo_obj['base_desc']}*
-            ''')
-        else:
-            embed.description = textwrap.dedent(f'''\
-                Cargo has been added to your convoy.
-
-                *{self.cargo_obj['base_desc']}*
-            ''')
-
-        convoy_balance = f'{convoy_after_dict['money']:,}'
-        embed.set_author(
-            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.edit_message(
-            embed=embed,
-            view=BackButtonView(
-                interaction=interaction,
-                previous_embed=self.previous_embed,
-                previous_view=self
-            )
-        )
-
-    @discord.ui.button(label='Sell Cargo', style=discord.ButtonStyle.green, custom_id='sell_cargo')
-    async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
-        convoy_before_money = self.user_info['convoys'][0]['money']
-        try:
-            convoy_after_dict = await api_calls.sell_cargo(
-                vendor_id=self.vendor_obj['vendor_id'],
-                convoy_id=self.user_info['convoys'][0]['convoy_id'],
-                cargo_id=self.cargo_obj['cargo_id'],
-                quantity=self.quantity
-            )
-        except RuntimeError as e:
-            await interaction.response.send_message(content=e, ephemeral=True)
-            return
-        delta_cash = convoy_after_dict['money'] - convoy_before_money
-        
-        print()
-        print(f'{convoy_after_dict['money']} - {convoy_before_money} = {delta_cash}')
-        print()
-
-        embed = discord.Embed(
-            title=f'You sold {self.quantity} {self.cargo_obj['name']} to {self.vendor_obj['name']}',
-            description=f'Your convoy made ${delta_cash} from the transaction.'
-        )
-        convoy_balance = f'{convoy_after_dict['money']:,}'
-        embed.set_author(
-            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
 class ResourceQuantityView(discord.ui.View):
     '''
@@ -790,7 +705,7 @@ class VehicleConfirmView(discord.ui.View):
             icon_url=interaction.user.avatar.url
         )
 
-        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.previous_embed, previous_view=self))
+        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
 class VehicleSellView(discord.ui.View):
     '''
@@ -949,7 +864,7 @@ class SellSelectResource(discord.ui.Button):
             return
         
         embed = discord.Embed(
-            title=f'Selling cargo to {self.parent_view.vendor_obj['name']}',
+            title=f'Selling resources to {self.parent_view.vendor_obj['name']}',
             description='Use buttons to navigate selling menu',
         )
 
@@ -961,13 +876,13 @@ class SellSelectResource(discord.ui.Button):
 
         await interaction.response.edit_message(
             embed=embed,
-            view=CargoSellView(
+            view=ResourceSelectView(
                 interaction=interaction,
                 user_info=self.parent_view.user_info,
                 vendor_obj=self.parent_view.vendor_obj,
-                sellable_cargo=self.parent_view.sellable_cargo,
-                previous_embed=self.parent_view.current_embed,
-                previous_view=self.parent_view
+                trade_type='sell',
+                previous_embed=self.parent_view.previous_embed,
+                previous_view=self.parent_view.previous_view
             )
         )
 
@@ -1397,16 +1312,96 @@ class QuantityButton(discord.ui.Button):
         await interaction.response.edit_message(embed=embed)
 
 class CargoSellButton(discord.ui.Button):
-    def __init__(self, parent_view, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
+    def __init__(self, parent_view):
+        super().__init__(label='Sell Cargo', custom_id='sell_cargo', style=discord.ButtonStyle.green)
         self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        cargo_obj = self.parent_view.cargo_obj
-        user_info = self.parent_view.user_info
+        convoy_before_money = self.parent_view.user_info['convoys'][0]['money']
+        try:
+            convoy_after_dict = await api_calls.sell_cargo(
+                vendor_id=self.parent_view.vendor_obj['vendor_id'],
+                convoy_id=self.parent_view.user_info['convoys'][0]['convoy_id'],
+                cargo_id=self.parent_view.cargo_obj['cargo_id'],
+                quantity=self.parent_view.quantity
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
 
-        # async with httpx.AsyncClient(verify=False) as client:
-        #     pass
+        embed = discord.Embed(
+            title=f'You sold {self.parent_view.quantity} {self.parent_view.cargo_obj['name']} to {self.parent_view.vendor_obj['name']}',
+            description=f'Your convoy made ${delta_cash} from the transaction.'
+        )
+        convoy_balance = f'{convoy_after_dict['money']:,}'
+        embed.set_author(
+            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self))
+
+class CargoBuyButton(discord.ui.Button):
+    ''' Buy button placed in CargoQuantityView '''
+    def __init__(self, parent_view):
+        super().__init__(label='Buy Cargo', custom_id='buy_cargo', style=discord.ButtonStyle.green)
+        self.parent_view = parent_view
+
+    async def callback(self, interaction: discord.Interaction):
+        convoy_before_money = self.parent_view.user_info['convoys'][0]['money']
+        try:
+            convoy_after_dict = await api_calls.buy_cargo(
+                vendor_id=self.parent_view.vendor_obj['vendor_id'],
+                convoy_id=self.parent_view.user_info['convoys'][0]['convoy_id'],
+                cargo_id=self.parent_view.cargo_obj['cargo_id'],
+                quantity=self.parent_view.quantity
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+        delta_cash = convoy_after_dict['money'] - convoy_before_money
+
+        # set up buy embed for editing and display for user
+        embed = discord.Embed(
+            title = f'You bought {self.parent_view.quantity} {self.parent_view.cargo_obj['name']}',
+            description=f'Your convoy spent ${delta_cash} in the transaction',
+            color=discord.Color.green()
+        )
+
+        # if the cargo has a recipient, say so in the buy embed
+        if self.parent_view.cargo_obj['recipient']:
+            # API call to get recipient vendor's info
+            dest_vendor_dict = await api_calls.get_vendor(vendor_id=self.parent_view.cargo_obj['recipient'])
+
+            # recipient_id = cargo_obj['recipient']
+            recipient = dest_vendor_dict['name']
+            embed.description = textwrap.dedent(f'''\
+                Deliver it to {recipient} for a cash reward of $**{self.parent_view.cargo_obj['delivery_reward']}** (each)
+                                                    
+                *{self.parent_view.cargo_obj['base_desc']}*
+            ''')
+        else:
+            embed.description = textwrap.dedent(f'''\
+                Cargo has been added to your convoy.
+
+                *{self.parent_view.cargo_obj['base_desc']}*
+            ''')
+
+        convoy_balance = f'{convoy_after_dict['money']:,}'
+        embed.set_author(
+            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        await interaction.response.edit_message(
+            embed=embed,
+            view=BackToVendorsView(
+                interaction=interaction,
+                previous_embed=self.parent_view.previous_embed,
+                previous_view=self
+            )
+        )
 
 class ResourceBuyButton(discord.ui.Button):
     def __init__(self, parent_view, label: str, style: discord.ButtonStyle, custom_id: str):
@@ -1443,7 +1438,7 @@ class ResourceBuyButton(discord.ui.Button):
             icon_url=interaction.user.avatar.url
         )
 
-        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
+        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
 class ResourceSellButton(discord.ui.Button):
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
@@ -1476,7 +1471,7 @@ class ResourceSellButton(discord.ui.Button):
 
         self.parent_view.previous_embed.remove_footer()  # Remove the footer 
 
-        await interaction.response.edit_message(embed=embed, view=BackButtonView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
+        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
 class MapButton(discord.ui.Button):
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):

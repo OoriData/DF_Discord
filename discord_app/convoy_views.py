@@ -227,7 +227,7 @@ class ConvoyView(discord.ui.View):
     def __init__(
             self,
             interaction: discord.Interaction,
-            convoy_dict: dict
+            convoy_dict: dict,
     ):
         super().__init__(timeout=120)  # TODO: Add view timeout as a configurable option
 
@@ -237,27 +237,135 @@ class ConvoyView(discord.ui.View):
     @discord.ui.button(label='Vehicles', style=discord.ButtonStyle.blurple, custom_id='vehicles')
     async def vehicles_button(self, interaction: discord.Interaction, button: discord.Button):
         ''' Send VehicleView object '''
-        await interaction.response.edit_message(view=VehicleView(interaction=interaction, convoy_dict=self.convoy_dict))
+        await interaction.response.defer()
+        vehicle_menu = self.convoy_dict['vehicles']
+        first_vehicle = vehicle_menu[0]
+        
+        vehicle_embed = discord.Embed(
+            title=f'{first_vehicle['name']}',
+            description=textwrap.dedent(f'''\
+                ### ${first_vehicle['value']:,}
+                - Fuel Efficiency: **{first_vehicle['base_fuel_efficiency']}**/100
+                - Offroad Capability: **{first_vehicle['offroad_capability']}**/100
+                - Top Speed: **{first_vehicle['top_speed']}**/100
+                - Cargo Capacity: **{first_vehicle['cargo_capacity']}** liter(s)
+                - Weight Capacity: **{first_vehicle['weight_capacity']}** kilogram(s)
+                - Towing Capacity: **{first_vehicle['towing_capacity']}** kilogram(s)
+
+                *{first_vehicle['base_desc']}*
+            ''')  # FIXME: add wear and other values that aren't in this embed
+        )
+
+        convoy_balance = f'{self.convoy_dict['money']:,}'
+        vehicle_embed.set_author(
+            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        vehicle_embed.set_footer(
+            text=textwrap.dedent(f'''\
+            Page [1 / {len(vehicle_menu)}]
+            '''
+            )
+        )
+
+        await interaction.followup.send(
+            view = VehicleView(
+                interaction=interaction,
+                convoy_dict=self.convoy_dict,
+                previous_view=self,
+                previous_embed=interaction.message.embeds[0],
+                previous_attachments=interaction.message.attachments
+            ),
+            embed=vehicle_embed,
+            ephemeral=True
+        )
 
     @discord.ui.button(label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo')
     async def cargo_button(self, interaction: discord.Interaction, button: discord.Button):
         ''' Send VehicleView object '''
-        await interaction.response.edit_message(view=CargoView(interaction=interaction, convoy_dict=self.convoy_dict))
+        await interaction.response.defer()
+        cargo_menu = self.convoy_dict['all_cargo']
+        cargo_item = cargo_menu[0]  # We're just displaying the first item in the cargo menu to initialize the embed
+
+        if cargo_item['recipient']:  # API call to get recipient's vendor info
+            recipient_info = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
+                
+            recipient = recipient_info
+            print(ansi_color(recipient, 'purple'))
+            delivery_reward = cargo_item['delivery_reward']
+
+            self.mapbutton = MapButton(convoy_info=self.convoy_dict, recipient_info=recipient, label = 'Map (Recipient)', style=discord.ButtonStyle.green, custom_id='map_button')
+            self.add_item(self.mapbutton)
+            
+            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+
+            cargo_embed = discord.Embed(
+                title = cargo_item['name'],
+                description=textwrap.dedent(f'''\
+                    *{cargo_item['base_desc']}*
+
+                    - Base (sell) Price: **${cargo_item['base_price']}**
+                    - Recipient: **{recipient['name']}**
+                    - Delivery Reward: **{delivery_reward}**
+                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                    - Cargo quantity: **{cargo_item['quantity']}**
+                ''')
+            )
+
+        else:  # No recipient, no worries
+            recipient = 'None'
+            delivery_reward = 'None'
+            try:
+                if self.mapbutton:
+                    self.remove_item(self.mapbutton)
+            except AttributeError as e:
+                msg = 'MapButton is not in CargoView; skipping...'
+                logger.debug(msg=msg)
+                pass
+
+            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+            
+            cargo_embed = discord.Embed(
+                title = cargo_item['name'],
+                description=textwrap.dedent(f'''\
+                    *{cargo_item['base_desc']}*
+
+                    - Base (sell) Price: **${cargo_item['base_price']}**
+                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                    - Cargo quantity: **{cargo_item['quantity']}**
+                ''')
+            )
+
+        convoy_balance = f'{self.convoy_dict['money']:,}'
+        cargo_embed.set_author(
+            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        cargo_embed.set_footer(text=f'Page [1 / {len(cargo_menu)}]')
+        await interaction.followup.send(view=CargoView(interaction=interaction, convoy_dict=self.convoy_dict), embed=cargo_embed, ephemeral=True)
 
 class VehicleView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(
             self,
             interaction: discord.Interaction,
-            convoy_dict: dict
+            convoy_dict: dict,
+            previous_view: discord.ui.View,
+            previous_embed: discord.Embed,
+            previous_attachments: list[discord.Attachment]
     ):
         super().__init__(timeout=120)
 
         self.interaction = interaction
         self.convoy_dict = convoy_dict
         self.position = -1
+        self.previous_view = previous_view
+        self.previous_embed = previous_embed
+        self.previous_attachments = previous_attachments
 
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
+    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='previous')
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         vehicle_menu = self.convoy_dict['vehicles']
         self.position = (self.position - 1) % len(vehicle_menu)
@@ -292,7 +400,7 @@ class VehicleView(discord.ui.View):
 
         convoy_balance = f'{self.convoy_dict['money']:,}'
         embed.set_author(
-            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+            name=f'Cargo in {self.convoy_dict['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
 
@@ -319,7 +427,6 @@ class CargoView(discord.ui.View):
 
         self.interaction = interaction
         self.convoy_dict = convoy_dict
-
         self.position = 0
 
     @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
@@ -341,11 +448,27 @@ class CargoView(discord.ui.View):
             recipient_info = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
                 
             recipient = recipient_info
+            print(ansi_color(recipient, 'purple'))
             delivery_reward = cargo_item['delivery_reward']
 
             self.mapbutton = MapButton(convoy_info=self.convoy_dict, recipient_info=recipient, label = 'Map (Recipient)', style=discord.ButtonStyle.green, custom_id='map_button')
             self.add_item(self.mapbutton)
             
+            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+
+            embed = discord.Embed(
+                title = cargo_menu[index]['name'],
+                description=textwrap.dedent(f'''\
+                    *{cargo_item['base_desc']}*
+
+                    - Base (sell) Price: **${cargo_item['base_price']}**
+                    - Recipient: **{recipient['name']}**
+                    - Delivery Reward: **{delivery_reward}**
+                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                    - Cargo quantity: **{cargo_item['quantity']}**
+                ''')
+            )
+
         else:  # No recipient, no worries
             recipient = 'None'
             delivery_reward = 'None'
@@ -357,20 +480,18 @@ class CargoView(discord.ui.View):
                 logger.debug(msg=msg)
                 pass
 
-        cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+            
+            embed = discord.Embed(
+                title = cargo_menu[index]['name'],
+                description=textwrap.dedent(f'''\
+                    *{cargo_item['base_desc']}*
 
-        embed = discord.Embed(
-            title = cargo_menu[index]['name'],
-            description=textwrap.dedent(f'''\
-                *{cargo_item['base_desc']}*
-
-                - Base (sell) Price: **${cargo_item['base_price']}**
-                - Recipient: **{recipient['name']}**
-                - Delivery Reward: **{delivery_reward}**
-                - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
-                - Cargo quantity: **{cargo_item['quantity']}**
-            ''')
-        )
+                    - Base (sell) Price: **${cargo_item['base_price']}**
+                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+                    - Cargo quantity: **{cargo_item['quantity']}**
+                ''')
+            )
 
         convoy_balance = f'{self.convoy_dict['money']:,}'
         embed.set_author(

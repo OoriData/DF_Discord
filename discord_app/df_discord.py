@@ -42,8 +42,6 @@ class Desolate_Cog(commands.Cog):
         global SETTLEMENTS_CACHE
         global DF_USERS_CACHE
 
-
-        # Startup:
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
@@ -77,8 +75,6 @@ class Desolate_Cog(commands.Cog):
         self.notifier.start()  
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
-
-        # yield  # Shutdown:
 
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):
@@ -269,16 +265,16 @@ class Desolate_Cog(commands.Cog):
                 unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
 
                 if unseen_dialogue_dicts:
+                    ping = f'<@{discord_user.id}>\n'
+
                     ping_deets = [
                         message['content']
                         for dialogue in unseen_dialogue_dicts
                         for message in dialogue['messages']
                     ]
-                    ping = '\n- '
-                    ping +='\n- '.join(ping_deets)
-                    ping += f'\n<@{discord_user.id}>'
+                    ping +='\n'.join(ping_deets)
 
-                    await notification_channel.send(ping)
+                    await notification_channel.send(ping[:2000])  # TODO: handle longer messages
                     logger.info(ansi_color(f'sent notification to user {discord_user.nick} ({discord_user.id})', 'green'))
 
                     await api_calls.mark_dialogue_as_seen(df_id)

@@ -234,7 +234,7 @@ class ConvoyView(discord.ui.View):
         self.interaction = interaction
         self.convoy_dict = convoy_dict
 
-    @discord.ui.button(label='Vehicles', style=discord.ButtonStyle.blurple, custom_id='vehicles')
+    @discord.ui.button(label='Convoy Vehicles', style=discord.ButtonStyle.blurple, custom_id='vehicles')
     async def vehicles_button(self, interaction: discord.Interaction, button: discord.Button):
         ''' Send VehicleView object '''
         await interaction.response.defer()
@@ -281,7 +281,7 @@ class ConvoyView(discord.ui.View):
             ephemeral=True
         )
 
-    @discord.ui.button(label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo')
+    @discord.ui.button(label='Convoy Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo')
     async def cargo_button(self, interaction: discord.Interaction, button: discord.Button):
         ''' Send VehicleView object '''
         await interaction.response.defer()
@@ -345,6 +345,37 @@ class ConvoyView(discord.ui.View):
 
         cargo_embed.set_footer(text=f'Page [1 / {len(cargo_menu)}]')
         await interaction.followup.send(view=CargoView(interaction=interaction, convoy_dict=self.convoy_dict), embed=cargo_embed, ephemeral=True)
+
+    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations')
+    async def all_cargo_destinations(self, interaction: discord.Interaction, button: discord.Button):
+        await interaction.response.defer()
+        user_cargo = self.convoy_dict['all_cargo']
+        recipients = []
+        # Get all cargo destinations and put em in a list
+        for cargo in user_cargo:
+            if cargo['recipient']:
+                cargo_tuple = (cargo['recipient'], cargo['name'])
+                if cargo_tuple not in recipients:
+                    # add vendor id and cargo name as a tuple
+                    recipients.append(cargo_tuple)
+
+        # For each vendor ID found in recipients list, get vendor's location and add it to destinations
+        destinations = []
+        for cargo_tuple in recipients:
+            vendor = await api_calls.get_vendor(cargo_tuple[0])
+            destination = await api_calls.get_tile(vendor['x'], vendor['y'])
+
+            dest_name = destination['settlements'][0]['name']
+            destinations.append(f'- **{dest_name}** ({cargo_tuple[1]})')
+        
+        dest_string = '\n'.join(destinations)
+
+        embed = discord.Embed(
+            title=f'All cargo destinations in {self.convoy_dict['name']}',
+            description=dest_string
+        )
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 class VehicleView(discord.ui.View):
     ''' Overarching convoy button menu '''

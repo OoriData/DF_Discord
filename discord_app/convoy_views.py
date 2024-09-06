@@ -351,7 +351,7 @@ class ConvoyView(discord.ui.View):
         await interaction.response.defer()
         user_cargo = self.convoy_dict['all_cargo']
         recipients = []
-        # Get all cargo destinations and put em in a list
+        # Get all cargo recipient locations and put em in a tuple with the name of the cargo
         for cargo in user_cargo:
             if cargo['recipient']:
                 cargo_tuple = (cargo['recipient'], cargo['name'])
@@ -359,23 +359,70 @@ class ConvoyView(discord.ui.View):
                     # add vendor id and cargo name as a tuple
                     recipients.append(cargo_tuple)
 
-        # For each vendor ID found in recipients list, get vendor's location and add it to destinations
+        # For each vendor ID found in the cargo tuple, get vendor's location and add it to destinations
         destinations = []
+        recipient_coords = []
         for cargo_tuple in recipients:
             vendor = await api_calls.get_vendor(cargo_tuple[0])
             destination = await api_calls.get_tile(vendor['x'], vendor['y'])
 
+            # Grab destination name to display to user
             dest_name = destination['settlements'][0]['name']
             destinations.append(f'- **{dest_name}** ({cargo_tuple[1]})')
+            # And recipient_coords for map rendering
+            dest_coords = (destination['settlements'][0]['x'], destination['settlements'][0]['y'])
+            recipient_coords.append(dest_coords)
         
         dest_string = '\n'.join(destinations)
 
-        embed = discord.Embed(
+        dest_x_values = []
+        dest_y_values = []
+        for x, y in recipient_coords:
+            dest_x_values.append(x)
+            dest_y_values.append(y)
+
+        # sort coordinate values so we can easily grab the minimum and maximum x and y coords
+        dest_x_values.sort(reverse=True)
+        dest_y_values.sort(reverse=True)
+
+        x_min, x_max = dest_x_values[len(dest_x_values) - 1], dest_x_values[0]
+        y_min, y_max = dest_y_values[len(dest_x_values) - 1], dest_y_values[0]
+
+        convoy_x = self.convoy_dict['x']
+        convoy_y = self.convoy_dict['y']
+        convoy_coords = (convoy_x, convoy_y)
+
+        # We have to do this so that the convoy's coordinates
+        # don't get lumped in with the rest of the coordinates, which highlights them in the wrong color
+        if convoy_x <= x_min:
+            x_min = convoy_x
+        if convoy_x >= x_max:
+            x_max = convoy_x
+        # do the same thing for y coordinates
+        if convoy_y <= y_min:
+            y_min = convoy_y
+        if convoy_y >= y_max:
+            y_max = convoy_y
+
+        dest_embed = discord.Embed(
             title=f'All cargo destinations in {self.convoy_dict['name']}',
             description=dest_string
         )
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        x_padding = 3
+        y_padding = 3
+
+        map_embed, image_file = await add_map_to_embed(
+            embed=dest_embed,
+            lowlighted=[convoy_coords],
+            highlighted=recipient_coords,
+            top_left=(x_min - x_padding, y_min - y_padding),
+            bottom_right=(x_max + x_padding, y_max + y_padding)
+        )
+        
+        map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
+
+        await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
 class VehicleView(discord.ui.View):
     ''' Overarching convoy button menu '''
@@ -445,7 +492,6 @@ class VehicleView(discord.ui.View):
         self.current_embed = embed
 
         await interaction.response.edit_message(embed=embed, attachments=[])
-
 
 class CargoView(discord.ui.View):
     ''' Overarching convoy button menu '''

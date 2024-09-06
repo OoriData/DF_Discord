@@ -261,6 +261,7 @@ class Desolate_Cog(commands.Cog):
         notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
 
         for df_id, discord_user in DF_USERS_CACHE:
+            logger.info(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})')
             try:
                 unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
 

@@ -9,6 +9,7 @@ from datetime                  import datetime, timezone, timedelta
 from io                        import BytesIO
 
 import                                discord
+import                                httpx
 from discord                   import app_commands
 from discord.ext               import commands, tasks
 
@@ -205,8 +206,8 @@ class Desolate_Cog(commands.Cog):
         # setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS_CACHE}
         # sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 
-        # OK so what's going on here is that discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
-        # so what i'm gonna do instead is save the coordinates as a string, (example: '50,9'), and when it gets handled it'll revert the numbers in the string back to int
+        # discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
+        # instead, save the coordinates as a string, (example: '50,9'), and when it gets handled the program will revert the numbers in the string back to int
         setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
         sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 

@@ -95,8 +95,8 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=route_tiles,
-            top_left=(min_x - x_padding, min_y - y_padding),
-            bottom_right=(max_x + x_padding, max_y + y_padding),
+            # top_left=(min_x - x_padding, min_y - y_padding),
+            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
     elif prospective_journey_plus_misc:  # If a journey is being considered
@@ -150,8 +150,8 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=route_tiles,
-            top_left=(min_x - x_padding, min_y - y_padding),
-            bottom_right=(max_x + x_padding, max_y + y_padding),
+            # top_left=(min_x - x_padding, min_y - y_padding),
+            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
     else:  # If the convoy is just chilling somewhere
@@ -164,8 +164,8 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
-            top_left=top_left,
-            bottom_right=bottom_right
+            # top_left=top_left,
+            # bottom_right=bottom_right
         )
 
     return convoy_embed, image_file
@@ -409,15 +409,18 @@ class ConvoyView(discord.ui.View):
             description=dest_string
         )
 
-        x_padding = 3
-        y_padding = 3
+        # x_padding = 3
+        # y_padding = 3
+
+        print(ansi_color(f'Recipient coords: {recipient_coords}', 'purple'))
+        print(ansi_color(f'Convoy coords: {convoy_coords}', 'blue'))
 
         map_embed, image_file = await add_map_to_embed(
             embed=dest_embed,
             lowlighted=[convoy_coords],
             highlighted=recipient_coords,
-            top_left=(x_min - x_padding, y_min - y_padding),
-            bottom_right=(x_max + x_padding, y_max + y_padding)
+            # top_left=(x_min - x_padding, y_min - y_padding),
+            # bottom_right=(x_max + x_padding, y_max + y_padding)
         )
         
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
@@ -624,8 +627,8 @@ class MapButton(discord.ui.Button):
             embed=embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=[(recipient_x, recipient_y)],
-            top_left=(min_x - x_padding, min_y - y_padding),
-            bottom_right=(max_x + x_padding, max_y + y_padding),
+            # top_left=(min_x - x_padding, min_y - y_padding),
+            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')

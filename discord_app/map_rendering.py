@@ -265,28 +265,78 @@ async def add_map_to_embed(
         embed: discord.Embed,  # TODO: make this optional
         highlighted: Optional[list[tuple[int]]]=None,
         lowlighted: Optional[list[tuple[int]]]=None,
-        top_left: Optional[tuple[int]]=None,
-        bottom_right: Optional[tuple[int]]=None,
         highlight_color: Optional[str]=None,
         lowlight_color: Optional[str]=None
 ) -> discord.Embed | discord.File:
     '''Renders map as an image and formats it into a Discord embed object, and also returns a image file'''
-    if top_left and bottom_right:
+    if highlighted:
+        highlight_x_values = [coord[0] for coord in highlighted]
+        highlight_y_values = [coord[1] for coord in highlighted]
+    
+    if lowlighted:
+        lowlight_x_values = [coord[0] for coord in lowlighted]
+        lowlight_y_values = [coord[1] for coord in lowlighted]
+
+    # We'll need to find the top left and bottom right edges of the given coordinates
+    if not lowlighted:
+        x_min = min(highlight_x_values)
+        x_max = max(highlight_x_values)
+
+        y_min = min(highlight_y_values)
+        y_max = max(highlight_y_values)
+
+    else:
+        if min(lowlight_x_values) < min(highlight_x_values):
+            x_min = min(lowlight_x_values)
+        else:
+            x_min = min(highlight_x_values)
+        
+        if min(lowlight_y_values) < min(highlight_y_values):
+            y_min = min(lowlight_y_values)
+        else:
+            y_min = min(highlight_y_values)
+
+        if max(lowlight_x_values) > max(highlight_x_values):
+            x_max = max(lowlight_x_values)
+        else:
+            x_max = max(highlight_x_values)
+        
+        if max(lowlight_y_values) > max(highlight_y_values):
+            y_max = max(lowlight_y_values)
+        else:
+            y_max = max(highlight_y_values)
+
+    # If there's only one highlighted coordinate
+    if x_min == x_max and y_min == y_max:
+        x_padding = 16
+        y_padding = 9
+    else:
+        x_padding = 3
+        y_padding = 3
+
+    top_left = (x_min - x_padding, y_min - y_padding)
+
+    if highlighted or lowlighted:
         map_edges = {
-            'x_min': top_left[0],
-            'x_max': bottom_right[0],
-            'y_min': top_left[1],
-            'y_max': bottom_right[1]
+            'x_min': x_min - x_padding,
+            'x_max': x_max + x_padding,
+            'y_min': y_min - y_padding,
+            'y_max': y_max + y_padding
+        }
+    else:
+        map_edges = {
+            'x_min': None,
+            'x_max': None,
+            'y_min': None,
+            'y_max': None
         }
 
-        # Adjust the highlight and lowlight coordinates based on the top-left corner
-        if highlighted:
-            highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+    # Adjust the highlight and lowlight coordinates based on the top-left corner
+    if highlighted:
+        highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
 
-        if lowlighted:
-            lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
-    else:
-        map_edges = None
+    if lowlighted:
+        lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
 
     try:
         async with httpx.AsyncClient(verify=False) as client:

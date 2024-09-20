@@ -988,7 +988,7 @@ class ResourceSelectView(discord.ui.View):
                 style=discord.ButtonStyle.blurple,
                 custom_id='fuel'
             ))
-        elif vendor_obj['water']:
+        if vendor_obj['water']:
             self.add_item(ResourceButton(
                 self,
                 trade_type=self.trade_type,
@@ -997,7 +997,7 @@ class ResourceSelectView(discord.ui.View):
                 style=discord.ButtonStyle.blurple,
                 custom_id='water'
             ))
-        elif vendor_obj['food']:
+        if vendor_obj['food']:
             self.add_item(ResourceButton(
                 self,
                 trade_type=self.trade_type,

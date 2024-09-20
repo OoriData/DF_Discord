@@ -68,35 +68,10 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
         progress_in_miles = convoy_obj['journey']['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
         convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
-        origin_x = journey['origin_x']
-        origin_y = journey['origin_y']
-        destination_x = journey['dest_x']
-        destination_y = journey['dest_y']
-
-        if origin_x < destination_x:
-            min_x = origin_x
-            max_x = destination_x
-        else:
-            min_x = destination_x
-            max_x = origin_x
-        
-        # Declaring minimum and maximum y coordinates
-        if origin_y < destination_y:
-            min_y = origin_y
-            max_y = destination_y
-        else:
-            min_y = destination_y
-            max_y = origin_y
-            
-        x_padding = 3
-        y_padding = 3
-
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=route_tiles,
-            # top_left=(min_x - x_padding, min_y - y_padding),
-            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
     elif prospective_journey_plus_misc:  # If a journey is being considered
@@ -123,49 +98,16 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
         distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
         convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km} km**\n{distance_miles} miles')
 
-        origin_x = prospective_journey_plus_misc['journey']['origin_x']
-        origin_y = prospective_journey_plus_misc['journey']['origin_y']
-        destination_x = prospective_journey_plus_misc['journey']['dest_x']
-        destination_y = prospective_journey_plus_misc['journey']['dest_y']
-
-        if origin_x < destination_x:
-            min_x = origin_x
-            max_x = destination_x
-        else:
-            min_x = destination_x
-            max_x = origin_x
-        
-        # Declaring minimum and maximum y coordinates
-        if origin_y < destination_y:
-            min_y = origin_y
-            max_y = destination_y
-        else:
-            min_y = destination_y
-            max_y = origin_y
-            
-        x_padding = 3
-        y_padding = 3
-
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=route_tiles,
-            # top_left=(min_x - x_padding, min_y - y_padding),
-            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
     else:  # If the convoy is just chilling somewhere
-        x_padding = 16
-        y_padding = 9
-
-        top_left = (convoy_x - x_padding, convoy_y - y_padding)
-        bottom_right = (convoy_x + x_padding, convoy_y + y_padding)
-
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
             highlighted=[(convoy_x, convoy_y)],
-            # top_left=top_left,
-            # bottom_right=bottom_right
         )
 
     return convoy_embed, image_file
@@ -375,52 +317,19 @@ class ConvoyView(discord.ui.View):
         
         dest_string = '\n'.join(destinations)
 
-        dest_x_values = []
-        dest_y_values = []
-        for x, y in recipient_coords:
-            dest_x_values.append(x)
-            dest_y_values.append(y)
-
-        # sort coordinate values so we can easily grab the minimum and maximum x and y coords
-        dest_x_values.sort(reverse=True)
-        dest_y_values.sort(reverse=True)
-
-        x_min, x_max = dest_x_values[len(dest_x_values) - 1], dest_x_values[0]
-        y_min, y_max = dest_y_values[len(dest_x_values) - 1], dest_y_values[0]
-
         convoy_x = self.convoy_dict['x']
         convoy_y = self.convoy_dict['y']
-        convoy_coords = (convoy_x, convoy_y)
-
-        # We have to do this so that the convoy's coordinates
-        # don't get lumped in with the rest of the coordinates, which highlights them in the wrong color
-        if convoy_x <= x_min:
-            x_min = convoy_x
-        if convoy_x >= x_max:
-            x_max = convoy_x
-        # do the same thing for y coordinates
-        if convoy_y <= y_min:
-            y_min = convoy_y
-        if convoy_y >= y_max:
-            y_max = convoy_y
+        convoy_coords = [(convoy_x, convoy_y)]
 
         dest_embed = discord.Embed(
             title=f'All cargo destinations in {self.convoy_dict['name']}',
             description=dest_string
         )
 
-        # x_padding = 3
-        # y_padding = 3
-
-        print(ansi_color(f'Recipient coords: {recipient_coords}', 'purple'))
-        print(ansi_color(f'Convoy coords: {convoy_coords}', 'blue'))
-
         map_embed, image_file = await add_map_to_embed(
             embed=dest_embed,
-            lowlighted=[convoy_coords],
+            lowlighted=convoy_coords,
             highlighted=recipient_coords,
-            # top_left=(x_min - x_padding, y_min - y_padding),
-            # bottom_right=(x_max + x_padding, y_max + y_padding)
         )
         
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
@@ -605,30 +514,10 @@ class MapButton(discord.ui.Button):
             ''')
         )
 
-        # Declaring minimum and maximum y coordinates
-        if convoy_x < recipient_x:
-            min_x = convoy_x
-            max_x = recipient_x
-        else:
-            min_x = recipient_x
-            max_x = convoy_x
-        
-        if convoy_y < recipient_y:
-            min_y = convoy_y
-            max_y = recipient_y
-        else:
-            min_y = recipient_y
-            max_y = convoy_y
-            
-        x_padding = 3
-        y_padding = 3
-
         map_embed, image_file = await add_map_to_embed(
             embed=embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlighted=[(recipient_x, recipient_y)],
-            # top_left=(min_x - x_padding, min_y - y_padding),
-            # bottom_right=(max_x + x_padding, max_y + y_padding),
         )
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')

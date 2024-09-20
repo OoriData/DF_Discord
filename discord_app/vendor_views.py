@@ -1495,40 +1495,15 @@ class MapButton(discord.ui.Button):
             recipient_x = recipient_info['x']
             recipient_y = recipient_info['y']
 
-            if vendor_x < recipient_x:
-                min_x = vendor_x
-                max_x = recipient_x
-            else:
-                min_x = recipient_x
-                max_x = vendor_x
-            
-            # Declaring minimum and maximum y coordinates
-            if vendor_y < recipient_y:
-                min_y = vendor_y
-                max_y = recipient_y
-            else:
-                min_y = recipient_y
-                max_y = vendor_y
-                
-            x_padding = 3
-            y_padding = 3
-
             map_embed, image_file = await add_map_to_embed(
                 embed=embed,
                 highlighted=[(vendor_x, vendor_y)],
-                lowlighted=[(recipient_x, recipient_y)],
-                top_left=(min_x - x_padding, min_y - y_padding),
-                bottom_right=(max_x + x_padding, max_y + y_padding),
+                lowlighted=[(recipient_x, recipient_y)]
             )
         else:
-            x_padding = 16
-            y_padding = 9
-
             map_embed, image_file = await add_map_to_embed(
                 embed=embed,
-                highlighted=[(vendor_x, vendor_y)],
-                top_left=(vendor_x - x_padding, vendor_y - y_padding),
-                bottom_right=(vendor_x + x_padding, vendor_y + y_padding),
+                highlighted=[(vendor_x, vendor_y)]
             )
 
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')

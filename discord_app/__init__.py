@@ -3,6 +3,69 @@
 'Discord Frontend'
 from datetime import datetime
 
+import               discord
+
+
+def format_part(part):
+    fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
+    lbft = round(part['Nm'] * 0.7376) if part.get('Nm') else None
+    horsepower = round(part['kW'] * 1.34102) if part.get('kW') else None
+    displacement_cubic_inches = round(part['displacement'] * 61.0237) if part.get('displacement') else None
+    cargo_cubic_feet = round(part['cargo_capacity_mod'] * 0.0353147) if part.get('cargo_capacity_mod') else None
+    weight_lbs = round(part['weight_capacity_mod'] * 2.20462) if part.get('weight_capacity_mod') else None
+    towing_lbs = round(part['towing_capacity_mod'] * 2.20462) if part.get('towing_capacity_mod') else None
+    diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
+
+    part_bits = [
+        f'- {part['category'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['category'].replace('_', ' ').capitalize()}',
+        f'  - **{part['name']}**' if part.get('name') else None,
+
+        f'  - {part['capacity']} L ({fuel_gal} gal)' if part.get('capacity') else None,
+
+        f'  - {part['Nm']} N·m ({lbft} lb·ft)' if part.get('Nm') else None,
+        f'  - {part['kW']} kW ({horsepower} hp)' if part.get('kW') else None,
+        f'  - {part['displacement']} L ({displacement_cubic_inches} in³)' if part.get('displacement') else None,
+
+        f'  - Max AP: {part['max_ap_mod']:+}' if part.get('max_ap_mod') else None,
+        f'  - Fuel efficiency: {part['fuel_efficiency_mod']:+}' if part.get('fuel_efficiency_mod') else None,
+        f'  - Top speed: {part['top_speed_mod']:+}' if part.get('top_speed_mod') else None,
+        f'  - Offroad capability: {part['offroad_capability_mod']:+}' if part.get('offroad_capability_mod') else None,
+        f'  - Cargo capacity: {part['cargo_capacity_mod']:+} L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_mod') else None,
+        f'  - Weight capacity: {part['weight_capacity_mod']:+} kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_mod') else None,
+        f'  - Towing capacity: {part['towing_capacity_mod']:+} kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
+
+        f'  - {part['diameter']} m ({diameter_in} in) diameter' if part.get('diameter') else None,
+
+        f'  - *{part['description']}*' if part.get('description') else None,
+        # f'  - ${part['part_value']}' if part.get('part_value') else None,
+        f'    - Part price: ${part['kit_price']}' if part.get('kit_price') else None,
+        f'    - Installation price: ${part['installation_price']}' if part.get('installation_price') else None,
+        f'    - Total price: ${part['kit_price'] + part['installation_price']}' if part.get('kit_price') and part.get('installation_price') else None,
+    ]
+
+    return '\n'.join(bit for bit in part_bits if bit)
+
+
+def df_embed_author(embed: discord.Embed, convoy, user: discord.User):
+    embed.set_author(
+        name=f'{convoy['name']} | ${convoy['money']:,}',
+        icon_url=user.avatar.url
+    )
+    return embed
+
+
+def df_embed_vehicle_stats(embed: discord.Embed, vehicle):
+    embed.add_field(name='💵 Value', value=f'${vehicle['value']:,}')
+    embed.add_field(name='🔧 Wear', value=f'{vehicle['wear']} / 100')
+    embed.add_field(name='🛡️ AP', value=f'{vehicle['ap']} / {vehicle['max_ap']}')
+    embed.add_field(name='⛽️ Fuel Efficiency', value=f'{vehicle['fuel_efficiency']} / 100')
+    embed.add_field(name='🏎️ Top Speed', value=f'{vehicle['top_speed']} / 100')
+    embed.add_field(name='🏔️ Off-road Capability', value=f'{vehicle['offroad_capability']} / 100')
+    embed.add_field(name='📦 Cargo Capacity', value=f'{vehicle['cargo_capacity']:,} L')
+    embed.add_field(name='🏋️ Weight Capacity', value=f'{vehicle['weight_capacity']:,} kg')
+    embed.add_field(name='🚛 Towing Capacity', value=f'{vehicle['towing_capacity']:,} kg')
+    return embed
+
 
 def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str:
     '''

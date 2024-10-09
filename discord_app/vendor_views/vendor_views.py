@@ -7,7 +7,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls
+from discord_app               import api_calls, format_part, df_embed_author, df_embed_vehicle_stats
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
 
@@ -249,6 +249,15 @@ class VendorMenuView(discord.ui.View):
             name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']:,}',
             icon_url=interaction.user.avatar.url
         )
+        mech_embed = discord.Embed()
+        mech_embed = df_embed_author(mech_embed, self.user_obj['convoys'][0], interaction.user)
+        mech_embed.description = '\n'.join([
+            f'# {self.vendor_obj['name']}',
+            f'## {selected_vehicle['name']}',
+            f'*{selected_vehicle['base_desc']}*',
+            '## Stats'
+        ])
+        mech_embed = df_embed_vehicle_stats(mech_embed, selected_vehicle)
 
         vehicle_dropdown_view = MechVehicleDropdownView(
             user_obj=self.user_info,
@@ -397,11 +406,6 @@ class BuyView(discord.ui.View):
                 style=discord.ButtonStyle.green,
                 custom_id='buy_vehicle'
             ))
-
-        if self.vendor_obj['repair_price']:
-            self.add_item(
-
-            )
 
         if self.vendor_obj['cargo_inventory']:
             self.add_item(BuyCargoButton(

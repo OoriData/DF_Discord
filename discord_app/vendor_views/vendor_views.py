@@ -249,15 +249,6 @@ class VendorMenuView(discord.ui.View):
             name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']:,}',
             icon_url=interaction.user.avatar.url
         )
-        mech_embed = discord.Embed()
-        mech_embed = df_embed_author(mech_embed, self.user_obj['convoys'][0], interaction.user)
-        mech_embed.description = '\n'.join([
-            f'# {self.vendor_obj['name']}',
-            f'## {selected_vehicle['name']}',
-            f'*{selected_vehicle['base_desc']}*',
-            '## Stats'
-        ])
-        mech_embed = df_embed_vehicle_stats(mech_embed, selected_vehicle)
 
         vehicle_dropdown_view = MechVehicleDropdownView(
             user_obj=self.user_info,

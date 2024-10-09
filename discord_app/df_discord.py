@@ -15,9 +15,10 @@ from discord.ext               import commands, tasks
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vendor_views, convoy_views, DF_HELP
+from discord_app               import api_calls, convoy_views, DF_HELP
 from discord_app               import DF_DISCORD_LOGO as API_BANNER
 from discord_app.map_rendering import add_map_to_embed
+from discord_app.vendor_views  import vendor_views
 
 DF_API_HOST = os.environ.get('DF_API_HOST')
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')

@@ -11,7 +11,7 @@ API_UNPROCESSABLE_ENTITY_CODE = 422
 API_INTERNAL_SERVER_ERROR = 500
 
 
-def check_code(response: httpx.Response):
+def _check_code(response: httpx.Response):
     if response.status_code == API_INTERNAL_SERVER_ERROR:
         raise RuntimeError('API Internal Server Error')
     elif response.status_code != API_SUCCESS_CODE:
@@ -25,7 +25,7 @@ async def get_map() -> dict:
             f'{DF_API_HOST}/map/get'
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -39,7 +39,7 @@ async def get_tile(x: int, y: int) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -52,7 +52,7 @@ async def get_user_by_discord(discord_id: int) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -66,7 +66,7 @@ async def new_user(username: str, discord_id: int) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -80,7 +80,7 @@ async def new_convoy(user_id: UUID, new_convoy_name: str) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -93,7 +93,7 @@ async def get_convoy(convoy_id: UUID) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -108,7 +108,7 @@ async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -122,7 +122,7 @@ async def send_convoy(convoy_id: UUID, journey_id: UUID) -> dict:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -133,7 +133,7 @@ async def get_vendor(vendor_id: UUID) -> dict:
             params={'vendor_id': vendor_id}
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -148,7 +148,7 @@ async def buy_vehicle(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> dic
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -163,7 +163,7 @@ async def sell_vehicle(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> di
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -179,7 +179,7 @@ async def buy_cargo(vendor_id: UUID, convoy_id: UUID, cargo_id: UUID, quantity: 
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -195,7 +195,7 @@ async def sell_cargo(vendor_id: UUID, convoy_id: UUID, cargo_id: UUID, quantity:
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -211,7 +211,7 @@ async def buy_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qua
             }
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -227,7 +227,23 @@ async def sell_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qu
             }
         )
 
-    check_code(response)
+    _check_code(response)
+    return response.json()
+
+
+async def add_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_cargo_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            f'{DF_API_HOST}/vendor/vehicle/part/add',
+            params={
+                'vendor_id': vendor_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id,
+                'part_cargo_id': part_cargo_id
+            }
+        )
+
+    _check_code(response)
     return response.json()
 
 
@@ -238,7 +254,21 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
             params={'vehicle_id': vehicle_id}
         )
 
-    check_code(response)
+    _check_code(response)
+    return response.json()
+
+
+async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            f'{DF_API_HOST}/vehicle/part_compatibility',
+            params={
+                'vehicle_id': vehicle_id,
+                'part_cargo_id': part_cargo_id
+            }
+        )
+
+    _check_code(response)
     return response.json()
 
 
@@ -249,7 +279,7 @@ async def get_unseen_dialogue_for_user(user_id: UUID) -> list[dict]:
             params={'user_id': user_id}
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()
 
 
@@ -260,5 +290,5 @@ async def mark_dialogue_as_seen(user_id: UUID) -> list[dict]:
             params={'user_id': user_id}
         )
 
-    check_code(response)
+    _check_code(response)
     return response.json()

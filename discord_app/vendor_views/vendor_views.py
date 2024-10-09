@@ -9,6 +9,7 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls
 from discord_app.map_rendering import add_map_to_embed
+from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -126,17 +127,27 @@ class VendorMenuView(discord.ui.View):
         self.user_info = user_info
 
         self.current_embed = None
+
+        self.remove_item(self.buy_button)
+        self.remove_item(self.mechanic_services_button)
+        self.remove_item(self.sell_button)
     
     # menu_types = ['vendor', 'vehicle', 'cargo', 'food', 'resource']
 
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
+    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back', row=0)
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         '''Simple button to bring user back and forth between the menu list'''
         self.position = (self.position - 1) % len(self.menu)
         await self.update_menu(interaction)
 
+    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next', row=0)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        '''Simple button to bring user back and forth between the menu list'''
+        self.position = (self.position + 1) % len(self.menu)
+        await self.update_menu(interaction)
+
     # Renaming this to 'buy' instead
-    @discord.ui.button(label='Buy', style=discord.ButtonStyle.green, custom_id='buy')  # TODO: Create an actual 'trade' button which diverges into a sell and buy button
+    @discord.ui.button(label='Buy', style=discord.ButtonStyle.green, custom_id='buy', row=1)  # TODO: Create an actual 'trade' button which diverges into a sell and buy button
     async def buy_button(self, interaction: discord.Interaction, button: discord.Button):
         if self.current_embed is None:
             await interaction.response.send_message('Select a vendor to buy from', ephemeral=True, delete_after=10)
@@ -145,8 +156,13 @@ class VendorMenuView(discord.ui.View):
         convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         index = self.position
         current_vendor = self.menu[index]  # set variable for menu user is currently interacting with
-        if current_vendor['cargo_inventory']:  # if the vendor has a cargo inventory
-            menu_type = 'cargo'
+        
+        for cargo in current_vendor['cargo_inventory']:
+            cargo['inv_type'] = 'cargo'
+        for cargo in current_vendor['vehicle_inventory']:
+            cargo['inv_type'] = 'vehicle'
+
+        if current_vendor['cargo_inventory'] or current_vendor['vehicle_inventory']:  # if the vendor has a cargo or vehicle inventory
             # display cargo available for purchase in current vendor's inventory
             cargo_list = []
             for cargo in current_vendor['cargo_inventory']:  # could maaaaaaybe list comprehension this, not super important
@@ -154,13 +170,23 @@ class VendorMenuView(discord.ui.View):
                 cargo_list.append(cargo_str)
             displayable_cargo = '\n'.join(cargo_list)
 
+            vehicle_list = []
+            for vehicle in current_vendor['vehicle_inventory']:
+                vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
+                vehicle_list.append(vehicle_str)
+            displayable_vehicles = '\n'.join(vehicle_list)
+
             menu_embed = discord.Embed(
                 title=current_vendor['name'],
                 description=textwrap.dedent(f'''\
-                    Available for Purchase:
+                    **Available for Purchase:**
+                    Vehicles:
+                    {displayable_vehicles}
+
+                    Cargo:
                     {displayable_cargo}
                     
-                    **Use the arrows to select the item you want to buy**'
+                    **Use the arrows to select the item you want to buy**
                 ''')
             )
             convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
@@ -171,37 +197,8 @@ class VendorMenuView(discord.ui.View):
             view = BuyView(
                 interaction=interaction,
                 user_info=self.user_info,
-                menu=current_vendor['cargo_inventory'],
-                menu_type=menu_type,
-                vendor_obj=current_vendor,
-                previous_menu=self,
-                previous_embed=self.current_embed
-                )
-        elif current_vendor['vehicle_inventory']:
-            # XXX: there's gotta be a way to reuse the code from the cargo embed stuff
-            menu_type = 'vehicle'
-            vehicle_list = []
-            for vehicle in current_vendor['vehicle_inventory']:
-                vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
-                vehicle_list.append(vehicle_str)
-            displayable_vehicles = '\n'.join(vehicle_list)
-
-            menu_embed = discord.Embed(
-                title=current_vendor['name'],
-                description=textwrap.dedent(f'''\
-                    Available for Purchase:
-                    {displayable_vehicles}
-                ''')
-            )
-            menu_embed.set_author(
-                name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
-                icon_url=interaction.user.avatar.url
-            )
-            view = BuyView(
-                interaction=interaction,
-                user_info=self.user_info,
-                menu=current_vendor['vehicle_inventory'],
-                menu_type=menu_type,
+                menu=current_vendor['cargo_inventory'] + current_vendor['vehicle_inventory'],
+                menu_type='n/A',
                 vendor_obj=current_vendor,
                 previous_menu=self,
                 previous_embed=self.current_embed
@@ -230,7 +227,39 @@ class VendorMenuView(discord.ui.View):
             )
         await interaction.response.edit_message(embed=menu_embed, view=view)
 
-    @discord.ui.button(label='Sell', style=discord.ButtonStyle.green, custom_id='sell')
+    @discord.ui.button(label='Mechanic Services', style=discord.ButtonStyle.green, custom_id='mechanic_services', row=1)
+    async def mechanic_services_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        current_vendor = self.menu[self.position]  # set variable for menu user is currently interacting with
+
+        vehicle_list = []
+        for vehicle in self.user_info['convoys'][0]['vehicles']:
+            vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
+            vehicle_list.append(vehicle_str)
+        displayable_vehicles = '\n'.join(vehicle_list)
+
+        mech_dropdown_embed = discord.Embed(
+            title=current_vendor['name'],
+            description=textwrap.dedent(f'''\
+                **Select a vehicle for repairs/upgrades:**
+                Vehicles:
+                {displayable_vehicles}
+            ''')
+        )
+        mech_dropdown_embed.set_author(
+            name=f'{self.user_info['convoys'][0]['name']} | ${self.user_info['convoys'][0]['money']:,}',
+            icon_url=interaction.user.avatar.url
+        )
+
+        vehicle_dropdown_view = MechVehicleDropdownView(
+            user_obj=self.user_info,
+            vendor_obj=current_vendor,
+            previous_embed=self.current_embed,
+            previous_view=self
+        )
+        
+        await interaction.response.edit_message(embed=mech_dropdown_embed, view=vehicle_dropdown_view)
+
+    @discord.ui.button(label='Sell', style=discord.ButtonStyle.green, custom_id='sell', row=1)
     async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
         if self.current_embed is None:
             await interaction.response.send_message('Select a vendor to sell to', ephemeral=True, delete_after=10)
@@ -269,12 +298,6 @@ class VendorMenuView(discord.ui.View):
                 previous_view=self,
                 current_embed=sell_embed
             ))
-        
-    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        '''Simple button to bring user back and forth between the menu list'''
-        self.position = (self.position + 1) % len(self.menu)
-        await self.update_menu(interaction)
     
     async def update_menu(self, interaction: discord.Interaction):
         '''Update embed to send user back and forth between list menu items.'''
@@ -302,8 +325,17 @@ class VendorMenuView(discord.ui.View):
             name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
             icon_url=interaction.user.avatar.url
         )
+        
+        # Reset buttons
+        self.clear_items()
+        self.add_item(self.previous_button)
+        self.add_item(self.buy_button)
+        if self.menu[self.position]['repair_price']:
+            self.add_item(self.mechanic_services_button)
+        self.add_item(self.sell_button)
+        self.add_item(self.next_button)
 
-        await interaction.response.edit_message(embed=item_embed)
+        await interaction.response.edit_message(embed=item_embed, view=self)
 
 
 class BuyView(discord.ui.View):
@@ -357,6 +389,19 @@ class BuyView(discord.ui.View):
                 style=discord.ButtonStyle.green,
                 custom_id='buy_resources'
             ))
+        
+        if self.vendor_obj['vehicle_inventory']:
+            self.add_item(BuyVehicleButton(
+                self,
+                label='Buy Vehicle',
+                style=discord.ButtonStyle.green,
+                custom_id='buy_vehicle'
+            ))
+
+        if self.vendor_obj['repair_price']:
+            self.add_item(
+
+            )
 
         if self.vendor_obj['cargo_inventory']:
             self.add_item(BuyCargoButton(
@@ -366,21 +411,13 @@ class BuyView(discord.ui.View):
                 custom_id='buy_cargo'
             ))
 
-        if self.vendor_obj['vehicle_inventory']:
-            self.add_item(BuyVehicleButton(
+            self.add_item(MapButton(
                 self,
-                label='Buy Vehicle',
-                style=discord.ButtonStyle.green,
-                custom_id='buy_vehicle'
-            ))
-
-        self.add_item(MapButton(
-            self,
-            label='Destination Map (appears in new message)',
-            style=discord.ButtonStyle.blurple,
-            custom_id='map'
+                label='Destination Map (appears in new message)',
+                style=discord.ButtonStyle.blurple,
+                custom_id='map'
+                )
             )
-        )
     
     # menu_types = ['vendor', 'vehicle', 'cargo', 'food', 'resource']
 
@@ -405,7 +442,8 @@ class BuyView(discord.ui.View):
         convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
         index = self.position
         current_item = self.menu[index]
-        if self.menu_type == 'cargo':
+
+        if current_item['inv_type'] == 'cargo':
             if current_item['recipient']:
                 recipient_dict = await api_calls.get_vendor(current_item['recipient'])
 
@@ -434,7 +472,12 @@ class BuyView(discord.ui.View):
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
-        if self.menu_type == 'vehicle':
+        if current_item['inv_type'] == 'vehicle':
+            if current_item['part_descs']:
+                part_descs = f'\nNotable parts:\n  - {'\n- '.join(current_item['part_descs'])}\n'
+            else:
+                part_descs = ''
+
             item_embed = discord.Embed(
                 title=f'{current_item['name']}',
                 description=textwrap.dedent(f'''\
@@ -445,14 +488,13 @@ class BuyView(discord.ui.View):
                     - Cargo Capacity: **{current_item['cargo_capacity']}** liter(s)
                     - Weight Capacity: **{current_item['weight_capacity']}** kilogram(s)
                     - Towing Capacity: **{current_item['towing_capacity']}** kilogram(s)
-
+                    {part_descs}
                     *{current_item['base_desc']}*
                 ''')
             )
             
-            item_embed.add_field(name='Wear', value=current_item['wear'])
+            item_embed.add_field(name='Wear', value=f'{current_item['wear']:.0f}/100')
             item_embed.add_field(name='Armor Points', value=f'{current_item['ap']}/{current_item['max_ap']}')
-            item_embed.add_field(name='Offroad Capability', value=f'{current_item['offroad_capability']}/100')
 
             item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
 
@@ -1205,6 +1247,7 @@ class BuyCargoButton(discord.ui.Button):
             )
         )
 
+
 class BuyVehicleButton(discord.ui.Button):
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
@@ -1260,6 +1303,7 @@ class BuyVehicleButton(discord.ui.Button):
         )
         await interaction.response.edit_message(embed=item_embed, view=view)
 
+
 class ResourceButton(discord.ui.Button):
     '''
     Simple button for passing on resource type to further view menus
@@ -1289,6 +1333,7 @@ class ResourceButton(discord.ui.Button):
                 previous_view=self.parent_view
             )
         )
+
 
 # Most likely avaialble to reuse this for different quantity view types
 # XXX: wait couldn't i high key just put some decorator buttons on QuantityView instead??

@@ -164,6 +164,7 @@ class SendConvoyConfirmView(discord.ui.View):
 
         await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to see their progress)')  # TODO: send more information than just 'look at them go'
 
+
 class ConvoyView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(
@@ -336,74 +337,6 @@ class ConvoyView(discord.ui.View):
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
-class VehicleView(discord.ui.View):
-    ''' Overarching convoy button menu '''
-    def __init__(
-            self,
-            interaction: discord.Interaction,
-            convoy_dict: dict,
-            previous_view: discord.ui.View,
-            previous_embed: discord.Embed,
-            previous_attachments: list[discord.Attachment]
-    ):
-        super().__init__(timeout=120)
-
-        self.interaction = interaction
-        self.convoy_dict = convoy_dict
-        self.position = -1
-        self.previous_view = previous_view
-        self.previous_embed = previous_embed
-        self.previous_attachments = previous_attachments
-
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='previous')
-    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        vehicle_menu = self.convoy_dict['vehicles']
-        self.position = (self.position - 1) % len(vehicle_menu)
-        await self.update_menu(interaction, vehicle_menu=vehicle_menu)
-
-    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        vehicle_menu = self.convoy_dict['vehicles']
-        self.position = (self.position + 1) % len(vehicle_menu)
-        await self.update_menu(interaction, vehicle_menu=vehicle_menu)
-
-    # Completely stolen code from vendor_views, but if it aint broke don't fix it!
-    # also maybe make it into a global function!
-    async def update_menu(self, interaction: discord.Interaction, vehicle_menu: list):
-        index = self.position
-        current_vehicle = vehicle_menu[index]
-
-        embed = discord.Embed(
-            title=f'{current_vehicle['name']}',
-            description=textwrap.dedent(f'''\
-                ### ${current_vehicle['value']:,}
-                - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
-                - Offroad Capability: **{current_vehicle['offroad_capability']}**/100
-                - Top Speed: **{current_vehicle['top_speed']}**/100
-                - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liter(s)
-                - Weight Capacity: **{current_vehicle['weight_capacity']}** kilogram(s)
-                - Towing Capacity: **{current_vehicle['towing_capacity']}** kilogram(s)
-
-                *{current_vehicle['base_desc']}*
-            ''')  # FIXME: add wear and other values that aren't in this embed
-        )
-
-        convoy_balance = f'{self.convoy_dict['money']:,}'
-        embed.set_author(
-            name=f'Cargo in {self.convoy_dict['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        embed.set_footer(
-            text=textwrap.dedent(f'''\
-            Page [{index + 1} / {len(vehicle_menu)}]
-            '''
-            )
-        )
-
-        self.current_embed = embed
-
-        await interaction.response.edit_message(embed=embed, attachments=[])
 
 class CargoView(discord.ui.View):
     ''' Overarching convoy button menu '''

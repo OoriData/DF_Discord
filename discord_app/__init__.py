@@ -54,16 +54,32 @@ def df_embed_author(embed: discord.Embed, convoy, user: discord.User):
     return embed
 
 
-def df_embed_vehicle_stats(embed: discord.Embed, vehicle):
-    embed.add_field(name='💵 Value', value=f'${vehicle['value']:,}')
-    embed.add_field(name='🔧 Wear', value=f'{vehicle['wear']} / 100')
-    embed.add_field(name='🛡️ AP', value=f'{vehicle['ap']} / {vehicle['max_ap']}')
-    embed.add_field(name='⛽️ Fuel Efficiency', value=f'{vehicle['fuel_efficiency']} / 100')
-    embed.add_field(name='🏎️ Top Speed', value=f'{vehicle['top_speed']} / 100')
-    embed.add_field(name='🏔️ Off-road Capability', value=f'{vehicle['offroad_capability']} / 100')
-    embed.add_field(name='📦 Cargo Capacity', value=f'{vehicle['cargo_capacity']:,} L')
-    embed.add_field(name='🏋️ Weight Capacity', value=f'{vehicle['weight_capacity']:,} kg')
-    embed.add_field(name='🚛 Towing Capacity', value=f'{vehicle['towing_capacity']:,} kg')
+def df_embed_vehicle_stats(embed: discord.Embed, vehicle, new_part=None):
+    fields = {
+        '💵 Value': ('value', '${:,}', '', 'part_value', ' (${:+})'),
+        '🔧 Wear': ('wear', '{}', ' / 100', None, ''),
+        '🛡️ AP': ('ap', '{}', f' / {vehicle['max_ap']}', 'max_ap_mod', ' ({:+})'),
+        '⛽️ Fuel Efficiency': ('fuel_efficiency', '{}', ' / 100', 'fuel_efficiency_mod', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '{}', ' / 100', 'top_speed_mod', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '{}', ' / 100', 'offroad_capability_mod', ' ({:+})'),
+        '📦 Cargo Capacity': ('cargo_capacity', '{:,}', ' L', 'cargo_capacity_mod', ' ({:+} L)'),
+        '🏋️ Weight Capacity': ('weight_capacity', '{:,}', ' kg', 'weight_capacity_mod', ' ({:+} kg)'),
+        '🚛 Towing Capacity': ('towing_capacity', '{:,}', ' kg', 'towing_capacity_mod', ' ({:+} kg)')
+    }
+
+    for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
+        base_value = vehicle[stat_key]
+        mod_value = new_part.get(mod_key) if new_part and mod_key else None
+        
+        value_str = base_format.format(base_value)
+        
+        if mod_value is not None:
+            value_str += mod_format.format(mod_value)
+        
+        value_str += suffix
+        
+        embed.add_field(name=name, value=value_str)
+
     return embed
 
 

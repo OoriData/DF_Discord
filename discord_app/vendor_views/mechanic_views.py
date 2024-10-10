@@ -121,7 +121,7 @@ class MechView(discord.ui.View):
             displayable_vehicle_parts,
             '## Stats'
         ])
-        mech_vehicle_embed = add_vehicle_stats_to_embed(mech_vehicle_embed, self.selected_vehicle)
+        mech_vehicle_embed = df_embed_vehicle_stats(mech_vehicle_embed, self.selected_vehicle)
 
         mech_vehicle_view = MechVehicleView(
             user_obj=self.user_obj,
@@ -196,7 +196,7 @@ class MechVehicleView(discord.ui.View):
             f'{displayable_vehicle_parts}',
             '### Stats'
         ])
-        cargo_selection_embed = add_vehicle_stats_to_embed(cargo_selection_embed, self.selected_vehicle)
+        cargo_selection_embed = df_embed_vehicle_stats(cargo_selection_embed, self.selected_vehicle)
 
         cargo_selection_view = CargoSelectView(
             cargo_list=part_cargos_to_display,
@@ -289,7 +289,7 @@ class CargoSelect(discord.ui.Select):
             f'{format_part(selected_part)}\n'
             '## Stats'
         ])
-        confirm_embed = add_vehicle_stats_to_embed(confirm_embed, self.selected_vehicle)
+        confirm_embed = df_embed_vehicle_stats(confirm_embed, self.selected_vehicle, selected_part)
 
         install_confirm_view = InstallConfirmView(
             selected_part_cargo=selected_part_cargo,
@@ -348,7 +348,7 @@ class InstallConfirmView(discord.ui.View):
             f'*{post_install_vehicle['base_desc']}*',
             '## Stats'
         ])
-        post_install_embed = add_vehicle_stats_to_embed(post_install_embed, post_install_vehicle)
+        post_install_embed = df_embed_vehicle_stats(post_install_embed, post_install_vehicle)
 
         post_install_view = PostInstallView(
             user_obj=self.user_obj,

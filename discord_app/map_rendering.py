@@ -1,14 +1,17 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 'Map image rendering functionality'
-from PIL import Image, ImageDraw, ImageColor, ImageFont
-from io import BytesIO
-from typing import Optional
+import                  os
+from io          import BytesIO
+from typing      import Optional
+import                  logging
 
-import discord
-import logging
-import httpx
-import os
+import                  discord
+from PIL         import Image, ImageDraw, ImageColor, ImageFont
+import                  httpx
+
+from discord_app import api_calls
+
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.environ.get('DF_API_HOST')
@@ -261,111 +264,115 @@ def render_map(
     return map_img
 
 
+from typing import Optional, Tuple
+import discord
+from io import BytesIO
+
 async def add_map_to_embed(
-        embed: discord.Embed,  # TODO: make this optional
-        highlighted: Optional[list[tuple[int]]]=None,
-        lowlighted: Optional[list[tuple[int]]]=None,
-        highlight_color: Optional[str]=None,
-        lowlight_color: Optional[str]=None
-) -> discord.Embed | discord.File:
-    '''Renders map as an image and formats it into a Discord embed object, and also returns a image file'''
-    if highlighted:
-        highlight_x_values = [coord[0] for coord in highlighted]
-        highlight_y_values = [coord[1] for coord in highlighted]
+        embed: Optional[discord.Embed] = None,
+        highlighted: Optional[list[tuple[int, int]]] = None,
+        lowlighted: Optional[list[tuple[int, int]]] = None,
+        highlight_color: Optional[str] = None,
+        lowlight_color: Optional[str] = None
+) -> Tuple[discord.Embed, discord.File]:
+    '''
+    Renders map as an image and formats it into a Discord embed object, 
+    and also returns an image file.
     
-    if lowlighted:
-        lowlight_x_values = [coord[0] for coord in lowlighted]
-        lowlight_y_values = [coord[1] for coord in lowlighted]
-
-    # We'll need to find the top left and bottom right edges of the given coordinates
-    if not lowlighted:
-        x_min = min(highlight_x_values)
-        x_max = max(highlight_x_values)
-
-        y_min = min(highlight_y_values)
-        y_max = max(highlight_y_values)
-
-    else:
-        if min(lowlight_x_values) < min(highlight_x_values):
-            x_min = min(lowlight_x_values)
-        else:
-            x_min = min(highlight_x_values)
-        
-        if min(lowlight_y_values) < min(highlight_y_values):
-            y_min = min(lowlight_y_values)
-        else:
-            y_min = min(highlight_y_values)
-
-        if max(lowlight_x_values) > max(highlight_x_values):
-            x_max = max(lowlight_x_values)
-        else:
-            x_max = max(highlight_x_values)
-        
-        if max(lowlight_y_values) > max(highlight_y_values):
-            y_max = max(lowlight_y_values)
-        else:
-            y_max = max(highlight_y_values)
-
-    # If there's only one highlighted coordinate
-    if x_min == x_max and y_min == y_max:
-        x_padding = 16
-        y_padding = 9
-    else:
-        x_padding = 3
-        y_padding = 3
-
-    top_left = (x_min - x_padding, y_min - y_padding)
+    Arguments:
+    - embed: Optional discord.Embed object (can be None, in which case a new one is created).
+    - highlighted: Optional list of (x, y) tuples for highlighting coordinates.
+    - lowlighted: Optional list of (x, y) tuples for lowlighting coordinates.
+    - highlight_color: Optional color to use for highlighting.
+    - lowlight_color: Optional color to use for lowlighting.
+    
+    Returns:
+    - A tuple containing the updated embed and the image file for the map.
+    '''
+    # Create a new embed if one is not provided
+    if embed is None:
+        embed = discord.Embed()
+    
+    # Initialize the boundaries for the API call and padding
+    map_edges = {'x_min': None, 'x_max': None, 'y_min': None, 'y_max': None}
+    x_padding = y_padding = 0  # Defaults, will adjust based on coordinates
 
     if highlighted or lowlighted:
-        map_edges = {
-            'x_min': x_min - x_padding,
-            'x_max': x_max + x_padding,
-            'y_min': y_min - y_padding,
-            'y_max': y_max + y_padding
-        }
+        # Compute boundaries if any coordinates are provided
+        if highlighted:
+            highlight_x_values = [coord[0] for coord in highlighted]
+            highlight_y_values = [coord[1] for coord in highlighted]
+        else:
+            highlight_x_values = []
+            highlight_y_values = []
+
+        if lowlighted:
+            lowlight_x_values = [coord[0] for coord in lowlighted]
+            lowlight_y_values = [coord[1] for coord in lowlighted]
+        else:
+            lowlight_x_values = []
+            lowlight_y_values = []
+
+        # Find the minimum and maximum x and y values for both highlights and lowlights
+        if highlight_x_values or lowlight_x_values:
+            x_min = min(highlight_x_values + lowlight_x_values, default=0)
+            x_max = max(highlight_x_values + lowlight_x_values, default=0)
+            y_min = min(highlight_y_values + lowlight_y_values, default=0)
+            y_max = max(highlight_y_values + lowlight_y_values, default=0)
+
+            # Apply some padding unless there's only one point
+            if x_min == x_max and y_min == y_max:
+                x_padding = 16
+                y_padding = 9
+            else:
+                x_padding = 3
+                y_padding = 3
+
+            # Set the map edges, adjusted by padding
+            map_edges = {
+                'x_min': x_min - x_padding,
+                'x_max': x_max + x_padding,
+                'y_min': y_min - y_padding,
+                'y_max': y_max + y_padding
+            }
+
+            # Adjust highlight and lowlight coordinates relative to the top-left corner
+            top_left = (map_edges['x_min'], map_edges['y_min'])
+            if highlighted:
+                highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+            if lowlighted:
+                lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
+
     else:
-        map_edges = {
-            'x_min': None,
-            'x_max': None,
-            'y_min': None,
-            'y_max': None
-        }
+        # No highlights or lowlights provided, don't compute boundaries
+        map_edges = None  # Pass nothing for boundaries to the API
+    
+    # try:
+    # Fetch tiles for the map (map_edges will be None if no boundaries are needed)
+    if map_edges:
+        tiles = (await api_calls.get_map(**map_edges))['tiles']
+    else:
+        tiles = (await api_calls.get_map())['tiles']
 
-    # Adjust the highlight and lowlight coordinates based on the top-left corner
-    if highlighted:
-        highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+    # Render the map with the given tiles and any highlights or lowlights
+    rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
 
-    if lowlighted:
-        lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
+    # Save the rendered map to an in-memory file (BytesIO object)
+    with BytesIO() as image_binary:
+        rendered_map.save(image_binary, 'PNG')
+        image_binary.seek(0)
 
-    try:
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(
-                url=f'{DF_API_HOST}/map/get',
-                params=map_edges
-            )
-            if response.status_code == API_UNPROCESSABLE_ENTITY_CODE:
-                raise RuntimeError('Error: 422 Unprocessable')
-            elif response.status_code == API_SUCCESS_CODE:
-                tiles = response.json()['tiles']
-                rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
+        file_name = 'map.png'
+        img_file = discord.File(fp=image_binary, filename=file_name)
 
-                with BytesIO() as image_binary:  # Create a BytesIO object to save the image in memory
-                    rendered_map.save(image_binary, 'PNG')  # Save the image to the BytesIO object
-                    image_binary.seek(0)  # Move the cursor to the beginning of the BytesIO object
+    # Attach the image file to the embed
+    embed.set_image(url=f'attachment://{file_name}')
+    
+    return embed, img_file
 
-                    file_name = 'map.png'
-                    img_file = discord.File(fp=image_binary, filename=file_name)  # Declare a discord.File object to include in the response
-
-                embed.set_image(url=f'attachment://{file_name}')  # I guess Discord.py handles files in the backend, and stores them as a filepath which you can access with attachment:// (i hope that makes sense)
-
-                return embed, img_file
-                # Now all you have to do to apply this is:
-                # await interaction.response.send_message(embed=embed, file=img_file)
-
-    except Exception as e:
-        msg = f'something went wrong rendering image: {e}'
-        raise RuntimeError(msg)
+    # except Exception as e:
+    #     msg = f'something went wrong rendering image: {e}'
+    #     raise RuntimeError(msg)
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):

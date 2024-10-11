@@ -15,7 +15,7 @@ from discord.ext               import commands, tasks
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, convoy_views, DF_HELP
+from discord_app               import api_calls, convoy_views, DF_HELP, df_embed_author
 from discord_app               import DF_DISCORD_LOGO as API_BANNER
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views  import vendor_views
@@ -78,23 +78,38 @@ class Desolate_Cog(commands.Cog):
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
-    @app_commands.command(name='df-map', description='Show the full game map')
-    async def df_map(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
+    async def df_main_menu(self, interaction: discord.Interaction):
+        user_obj = await api_calls.get_user_by_discord(interaction.user.id)
+        if not user_obj:
+            await interaction.response.send_message('nope! register with /df-register')
+
         try:
-            embed = discord.Embed()
-            embed, image_file = await add_map_to_embed(embed)
+            main_menu_embed = discord.Embed()
+            main_menu_embed = df_embed_author()
 
-            embed.set_author(
-                name=interaction.user.name,
-                icon_url=interaction.user.avatar.url
-            )
-
-            await interaction.followup.send(embed=embed, file=image_file)
+            await interaction.response.send_message(embed=main_menu_embed)
 
         except Exception as e:
             msg = f'something went wrong: {e}'
             await interaction.followup.send(msg)
+
+    @app_commands.command(name='df-map', description='Show the full game map')
+    async def df_map(self, interaction: discord.Interaction):
+        # try:
+        map_embed = discord.Embed()
+        map_embed, image_file = await add_map_to_embed(map_embed)
+
+        map_embed.set_author(
+            name=interaction.user.name,
+            icon_url=interaction.user.avatar.url
+        )
+
+        await interaction.response.send_message(embed=map_embed, file=image_file)
+
+        # except Exception as e:
+        #     msg = f'something went wrong: {e}'
+        #     await interaction.response.send_message(msg)
 
     @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     async def df_register(self, interaction: discord.Interaction):
@@ -191,11 +206,13 @@ class Desolate_Cog(commands.Cog):
         convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
 
         await interaction.followup.send(
-            embed = convoy_embed,
-            file = image_file,
-            view = convoy_views.ConvoyView(
+            embed=convoy_embed,
+            file=image_file,
+            view=convoy_views.ConvoyView(
                 interaction=interaction,
-                convoy_dict=convoy_dict
+                convoy_dict=convoy_dict,
+                previous_embed=convoy_embed,
+                previous_attachments=[image_file]
             )
         )
 

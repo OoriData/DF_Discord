@@ -19,10 +19,25 @@ def _check_code(response: httpx.Response):
         raise RuntimeError(msg)
 
 
-async def get_map() -> dict:
+async def get_map(x_min: int = None, x_max: int = None, y_min: int = None, y_max: int = None) -> dict:
+    params = {}
+
+    # Add parameters only if they are not None
+    if x_min is not None:
+        params['x_min'] = x_min
+    if x_max is not None:
+        params['x_max'] = x_max
+    if y_min is not None:
+        params['y_min'] = y_min
+    if y_max is not None:
+        params['y_max'] = y_max
+
+    print(x_min, x_max, y_min, y_max)
+
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
-            f'{DF_API_HOST}/map/get'
+            f'{DF_API_HOST}/map/get',
+            params=params
         )
 
     _check_code(response)
@@ -34,7 +49,7 @@ async def get_tile(x: int, y: int) -> dict:
         response = await client.get(
             f'{DF_API_HOST}/map/tile/get',
             params={
-                'x': x, 
+                'x': x,
                 'y': y
             }
         )

@@ -55,7 +55,6 @@ class VehicleSelect(discord.ui.Select):
         self.previous_embed = previous_embed
         self.previous_view = previous_view
 
-
     async def callback(self, interaction: discord.Interaction):
         selected_vehicle = next((
             v for v in self.user_obj['convoys'][0]['vehicles']
@@ -192,7 +191,7 @@ class MechVehicleView(discord.ui.View):
             f'# {self.vendor_obj['name']}',
             f'## {self.selected_vehicle["name"]}',
             f'*{self.selected_vehicle["base_desc"]}*',
-            '### Compatible parts available for purchase and installation',
+            '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
             f'{displayable_vehicle_parts}',
             '### Stats'
         ])

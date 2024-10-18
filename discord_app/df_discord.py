@@ -216,13 +216,13 @@ class Desolate_Cog(commands.Cog):
 
         # discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
         # instead, save the coordinates as a string, (example: '50,9'), and when it gets handled the program will revert the numbers in the string back to int
-        setts_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
+        coords_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
         sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 
-        logger.debug(ansi_color(setts_dict, 'green'))
+        logger.debug(ansi_color(coords_dict, 'green'))
 
         choices = [
-            app_commands.Choice(name=sett_name, value=setts_dict[sett_name])
+            app_commands.Choice(name=sett_name, value=coords_dict[sett_name])
             for sett_name in sett_names if current.lower() in sett_name.lower()
             # for city in city_names if current.lower() in city.lower()
         ][:25]

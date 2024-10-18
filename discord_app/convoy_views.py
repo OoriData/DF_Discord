@@ -4,7 +4,7 @@ import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
 import                                textwrap
-import asyncio
+import                                math
 
 import                                discord
 import                                httpx
@@ -28,6 +28,8 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 
 
 async def convoy_menu(df_state: DFState, edit: bool=True):
+    # TODO: call an embed with the ConvoySelect if the df_state doesn't have a convoy_obj
+
     convoy_embed, image_file = await make_convoy_embed(df_state)
 
     convoy_view = ConvoyView(df_state=df_state)
@@ -41,32 +43,6 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
         # print(df_state.interaction.message.attachments[0].proxy_url)
     else:
         await df_state.interaction.followup.send(embed=convoy_embed, view=convoy_view, files=[image_file])
-
-
-class ConvoySelect(discord.ui.Select):
-    def __init__(self, df_state: DFState):
-        self.df_state = df_state
-
-        options=[
-            discord.SelectOption(label=convoy['name'], value=convoy['convoy_id'])
-            for convoy in df_state.user_obj['convoys']
-        ]
-        
-        super().__init__(
-            placeholder='Which convoy?',
-            options=options,
-            custom_id='select_convoy',
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.convoy_obj = next((
-            c for c in self.df_state.user_obj['convoys']
-            if c['convoy_id'] == self.values[0]
-        ), None)
-
-        convoy_menu(self.df_state)
 
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
@@ -170,38 +146,9 @@ def vehicles_embed_str(vehicles: list[dict], detailed: Optional[bool] = False) -
         vehicles_str += '\n'.join(vehicles_list)
 
     else:
-        vehicles_str = '*No vehicles in convoy. Buy one by using /vendors and navigating one of your city\'s dealerships.*'
+        vehicles_str = '*No vehicles in convoy. Buy one by using /vendors and navigating one of the settlement\'s dealerships.*'
 
     return vehicles_str
-
-
-class SendConvoyConfirmView(discord.ui.View):
-    '''Confirm button before sending convoy somewhere'''
-    def __init__(
-            self,
-            interaction: discord.Interaction,
-            convoy_dict: dict,
-            prospective_journey_dict: dict
-    ):
-        super().__init__(timeout=120)
-        self.interaction = interaction
-        self.convoy_dict = convoy_dict
-        self.prospective_journey_dict = prospective_journey_dict
-
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.red, custom_id='cancel_send')
-    async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):
-        # TODO: Make it so that when you press the cancel button it gives you some sort of feedback rather than just deleting the whole thing
-        await interaction.response.edit_message(content='Canceled!', delete_after=5, embed=None, view=None)
-
-    @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send')
-    async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
-        try:
-            confirmed_journey_dict = await api_calls.send_convoy(self.convoy_dict['convoy_id'], self.prospective_journey_dict['journey_id'])
-        except RuntimeError as e:
-            await interaction.response.send_message(content=e, ephemeral=True)
-            return
-
-        await interaction.response.send_message('Look at them gooooooo :D\n(call `/df-convoy` to see their progress)')  # TODO: send more information than just 'look at them go'
 
 
 class ConvoyView(discord.ui.View):
@@ -215,12 +162,17 @@ class ConvoyView(discord.ui.View):
 
         add_nav_buttons(self, df_state)
 
-        if self.df_state.convoy_obj['vehicles']:
-            self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=1))
-
-        if self.df_state.convoy_obj['all_cargo']:
-            self.add_item(cargo_views.CargoSelect(df_state=self.df_state, row=2))
+        if self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
+            self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=2))
         else:
+            self.send_convoy_button.disabled = True
+
+        if self.df_state.convoy_obj['journey']:  # If the convoy is already on a journey
+            self.send_convoy_button.disabled = True
+
+        if self.df_state.convoy_obj['all_cargo']:  # If the convoy has any (displayable) cargo
+            self.add_item(cargo_views.CargoSelect(df_state=self.df_state, row=3))
+        else:  # If the convoy has no (displayable) cargo
             self.remove_item(self.all_cargo_destinations_button)
 
         recipients = []
@@ -235,10 +187,16 @@ class ConvoyView(discord.ui.View):
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
 
-    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations', row=3)
+    @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
+    async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button, row=1):
+        self.df_state.interaction = interaction
+        await send_convoy_menu(self.df_state)
+
+    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.df_state.interaction = interaction
         await interaction.response.defer()
-        user_cargo = self.convoy_dict['all_cargo']
+        user_cargo = self.df_state.convoy_obj['all_cargo']
         recipients = []
         # Get all cargo recipient locations and put em in a tuple with the name of the cargo
         for cargo in user_cargo:
@@ -264,12 +222,12 @@ class ConvoyView(discord.ui.View):
         
         dest_string = '\n'.join(destinations)
 
-        convoy_x = self.convoy_dict['x']
-        convoy_y = self.convoy_dict['y']
+        convoy_x = self.df_state.convoy_obj['x']
+        convoy_y = self.df_state.convoy_obj['y']
         convoy_coords = [(convoy_x, convoy_y)]
 
         dest_embed = discord.Embed(
-            title=f'All cargo destinations in {self.convoy_dict['name']}',
+            title=f'All cargo destinations in {self.df_state.convoy_obj['name']}',
             description=dest_string
         )
 
@@ -282,6 +240,114 @@ class ConvoyView(discord.ui.View):
         map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
+
+
+async def send_convoy_menu(df_state: DFState):
+    convoy_embed, image_file = await make_convoy_embed(df_state)
+
+    df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
+    destination_view = DestinationView(df_state=df_state, df_map=df_map)
+
+    df_state.previous_embed = convoy_embed
+    df_state.previous_view = destination_view
+    df_state.previous_attachments = [image_file]
+
+    await df_state.interaction.response.edit_message(embed=convoy_embed, view=destination_view, attachments=[image_file])
+
+
+class DestinationView(discord.ui.View):
+    def __init__(self, df_state: DFState, df_map: dict):
+        self.df_state = df_state
+        super().__init__()
+
+        add_nav_buttons(self, self.df_state)
+
+        self.add_item(DestinationSelect(self.df_state, df_map))
+
+
+class DestinationSelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, df_map):
+        self.df_state = df_state
+
+        convoy_x = self.df_state.convoy_obj['x']
+        convoy_y = self.df_state.convoy_obj['y']
+        
+        setts = []
+        for row in df_map['tiles']:
+            for sett in row:
+                setts.extend(sett['settlements'])
+
+        settlements_with_distances = [  # Calculate the Euclidean distance for each settlement and store in a list
+            (sett['name'], sett['x'], sett['y'], math.sqrt((sett['x'] - convoy_x) ** 2 + (sett['y'] - convoy_y) ** 2))
+            for sett in setts
+        ]
+
+        sorted_settlements = sorted(settlements_with_distances, key=lambda x: x[3])  # Sort settlements by distance (smallest to largest)
+
+        coords_dict = {sett_name: f'{x},{y}' for sett_name, x, y, _ in sorted_settlements}  # Prepare dictionary and sorted names
+        
+        sett_names = [sett_name for sett_name, _, _, _ in sorted_settlements]  # Get the sorted settlement names
+
+        options = [  # Create SelectOption objects, limited to the first 25
+            discord.SelectOption(label=sett_name, value=coords_dict[sett_name])
+            for sett_name in sett_names
+        ][:25]
+        
+        super().__init__(
+            placeholder='Where to?',
+            options=options,
+            custom_id='destination_select',
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        dest_x, dest_y = map(int, self.values[0].split(','))  # Get the destination coords
+
+        route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
+
+        prospective_journey_plus_misc = route_choices[0]  # TODO: handle multiple routes
+
+        convoy_embed, image_file = await make_convoy_embed(self.df_state, prospective_journey_plus_misc)
+
+        await interaction.response.edit_message(
+            embed=convoy_embed,
+            view=SendConvoyConfirmView(
+                df_state=self.df_state,
+                prospective_journey_dict=prospective_journey_plus_misc['journey']
+            ),
+            attachments=[image_file]
+        )
+
+
+class SendConvoyConfirmView(discord.ui.View):
+    '''Confirm button before sending convoy somewhere'''
+    def __init__(
+            self,
+            df_state: DFState,
+            prospective_journey_dict: dict
+    ):
+        self.df_state = df_state
+        self.prospective_journey_dict = prospective_journey_dict
+        
+        super().__init__(timeout=120)
+
+        add_nav_buttons(self, self.df_state)
+
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.red, custom_id='cancel_send', row=1)
+    async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):
+        # TODO: Make it so that when you press the cancel button it gives you some sort of feedback rather than just deleting the whole thing
+        await convoy_menu(self.df_state)
+
+    @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send', row=1)
+    async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
+        try:
+            self.df_state.convoy_obj = await api_calls.send_convoy(self.df_state.convoy_obj['convoy_id'], self.prospective_journey_dict['journey_id'])
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+
+        await convoy_menu(self.df_state)
 
 
 class CargoView(discord.ui.View):
@@ -408,3 +474,29 @@ class MapButton(discord.ui.Button):
             file=image_file,
             ephemeral=True
         )
+
+
+class ConvoySelect(discord.ui.Select):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        options = [
+            discord.SelectOption(label=convoy['name'], value=convoy['convoy_id'])
+            for convoy in df_state.user_obj['convoys']
+        ]
+        
+        super().__init__(
+            placeholder='Which convoy?',
+            options=options,
+            custom_id='select_convoy',
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.convoy_obj = next((
+            c for c in self.df_state.user_obj['convoys']
+            if c['convoy_id'] == self.values[0]
+        ), None)
+
+        convoy_menu(self.df_state)

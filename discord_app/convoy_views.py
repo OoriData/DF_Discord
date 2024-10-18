@@ -4,16 +4,18 @@ import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
 import                                textwrap
+import asyncio
 
 import                                discord
 import                                httpx
 import                                logging
 
-from discord_app               import api_calls, discord_timestamp
-from discord_app.vehicle_views import VehicleView, VehicleSelect
-from discord_app.cargo_views   import CargoView, CargoSelect
-from discord_app.map_rendering import add_map_to_embed
 from utiloori.ansi_color       import ansi_color
+
+from discord_app               import api_calls, vehicle_views, cargo_views, discord_timestamp, df_embed_author
+from discord_app.map_rendering import add_map_to_embed
+from discord_app.df_state      import DFState
+from discord_app.nav_menus     import add_nav_buttons
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -25,32 +27,68 @@ logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
 
-async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_misc=None) -> discord.Embed:
-    convoy_embed = discord.Embed(
-        color=discord.Color.green(),
-        title=f'{convoy_obj['name']} Information'
-    )
+async def convoy_menu(df_state: DFState, edit: bool=True):
+    convoy_embed, image_file = await make_convoy_embed(df_state)
+
+    convoy_view = ConvoyView(df_state=df_state)
+
+    df_state.previous_embed = convoy_embed
+    df_state.previous_view = convoy_view
+    df_state.previous_attachments = [image_file]
+    if edit:
+        await df_state.interaction.response.edit_message(embed=convoy_embed, view=convoy_view, attachments=[image_file])
+        # await asyncio.sleep(5)
+        # print(df_state.interaction.message.attachments[0].proxy_url)
+    else:
+        await df_state.interaction.followup.send(embed=convoy_embed, view=convoy_view, files=[image_file])
+
+
+class ConvoySelect(discord.ui.Select):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        options=[
+            discord.SelectOption(label=convoy['name'], value=convoy['convoy_id'])
+            for convoy in df_state.user_obj['convoys']
+        ]
+        
+        super().__init__(
+            placeholder='Which convoy?',
+            options=options,
+            custom_id='select_convoy',
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.convoy_obj = next((
+            c for c in self.df_state.user_obj['convoys']
+            if c['convoy_id'] == self.values[0]
+        ), None)
+
+        convoy_menu(self.df_state)
+
+
+async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
+    convoy_embed = discord.Embed(color=discord.Color.green())
     
-    convoy_embed.description = vehicles_embed_str(convoy_obj['vehicles'])
+    convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
-    convoy_embed.set_author(
-        name=f'{convoy_obj['name']} | ${convoy_obj['money']:,}',
-        icon_url=interaction.user.avatar.url
-    )
+    convoy_embed = df_embed_author(convoy_embed, df_state)
 
-    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{convoy_obj['fuel']:.2f}**\n/{convoy_obj['max_fuel']:.2f} liters')
-    convoy_embed.add_field(name='Water 💧', value=f'**{convoy_obj['water']:.2f}**\n/{convoy_obj['max_water']:.2f} liters')
-    convoy_embed.add_field(name='Food 🥪', value=f'**{convoy_obj['food']:.2f}**\n/{convoy_obj['max_food']:.2f} meals')
+    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:.2f}**\n/{df_state.convoy_obj['max_fuel']:.2f} liters')
+    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:.2f}**\n/{df_state.convoy_obj['max_water']:.2f} liters')
+    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:.2f}**\n/{df_state.convoy_obj['max_food']:.2f} meals')
 
-    convoy_embed.add_field(name='Fuel Efficiency', value=f'**{convoy_obj['fuel_efficiency']:.0f}**\n/100')
-    convoy_embed.add_field(name='Top Speed', value=f'**{convoy_obj['top_speed']:.0f}**\n/100')
-    convoy_embed.add_field(name='Offroad Capability', value=f'**{convoy_obj['offroad_capability']:.0f}**\n/100')
+    convoy_embed.add_field(name='Fuel Efficiency', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
+    convoy_embed.add_field(name='Top Speed', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
+    convoy_embed.add_field(name='Offroad Capability', value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100')
 
-    convoy_x = convoy_obj['x']
-    convoy_y = convoy_obj['y']
+    convoy_x = df_state.convoy_obj['x']
+    convoy_y = df_state.convoy_obj['y']
 
-    if convoy_obj['journey']:  # If the convoy is in transit
-        journey = convoy_obj['journey']
+    if df_state.convoy_obj['journey']:  # If the convoy is in transit
+        journey = df_state.convoy_obj['journey']
         route_tiles = []  # a list of tuples
         pos = 0  # bad way to do it but i'll fix later
         for x in journey['route_x']:
@@ -61,12 +99,12 @@ async def make_convoy_embed(interaction, convoy_obj, prospective_journey_plus_mi
         destination = await api_calls.get_tile(journey['dest_x'], journey['dest_y'])
         convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({journey['dest_x']}, {journey['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
 
-        eta = convoy_obj['journey']['eta']
+        eta = df_state.convoy_obj['journey']['eta']
         convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
 
-        progress_percent = ((convoy_obj['journey']['progress']) / len(convoy_obj['journey']['route_x'])) * 100
-        progress_in_km = convoy_obj['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
-        progress_in_miles = convoy_obj['journey']['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
+        progress_percent = ((df_state.convoy_obj['journey']['progress']) / len(df_state.convoy_obj['journey']['route_x'])) * 100
+        progress_in_km = df_state.convoy_obj['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
+        progress_in_miles = df_state.convoy_obj['journey']['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
         convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
         convoy_embed, image_file = await add_map_to_embed(
@@ -170,32 +208,35 @@ class ConvoyView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(
             self,
-            interaction: discord.Interaction,
-            convoy_dict: dict,
-            previous_embed: discord.Embed,
-            previous_attachments: list[discord.Attachment] = None
+            df_state: DFState
     ):
+        self.df_state = df_state
         super().__init__(timeout=120)  # TODO: Add view timeout as a configurable option
 
-        self.interaction = interaction
-        self.convoy_dict = convoy_dict
+        add_nav_buttons(self, df_state)
 
-        self.add_item(VehicleSelect(
-            convoy_obj=convoy_dict,
-            previous_embed=previous_embed,
-            previous_view=self,
-            previous_attachments=previous_attachments
-        ))
+        if self.df_state.convoy_obj['vehicles']:
+            self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=1))
 
-        self.add_item(CargoSelect(
-            convoy_obj=convoy_dict,
-            previous_embed=previous_embed,
-            previous_view=self,
-            previous_attachments=previous_attachments
-        ))
+        if self.df_state.convoy_obj['all_cargo']:
+            self.add_item(cargo_views.CargoSelect(df_state=self.df_state, row=2))
+        else:
+            self.remove_item(self.all_cargo_destinations_button)
 
-    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations', row=1)
-    async def all_cargo_destinations(self, interaction: discord.Interaction, button: discord.Button):
+        recipients = []
+        # Get all cargo recipient locations and put em in a tuple with the name of the cargo
+        for cargo in self.df_state.convoy_obj['all_cargo']:
+            if cargo['recipient']:
+                cargo_tuple = (cargo['recipient'], cargo['name'])
+                if cargo_tuple not in recipients:
+                    # add vendor id and cargo name as a tuple
+                    recipients.append(cargo_tuple)
+        
+        if not recipients:
+            self.all_cargo_destinations_button.disabled = True
+
+    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations', row=3)
+    async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.defer()
         user_cargo = self.convoy_dict['all_cargo']
         recipients = []
@@ -275,7 +316,7 @@ class CargoView(discord.ui.View):
             recipient_info = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
                 
             recipient = recipient_info
-            print(ansi_color(recipient, 'purple'))
+            # print(ansi_color(recipient, 'purple'))
             delivery_reward = cargo_item['delivery_reward']
 
             self.mapbutton = MapButton(convoy_info=self.convoy_dict, recipient_info=recipient, label = 'Map (Recipient)', style=discord.ButtonStyle.green, custom_id='map_button')
@@ -329,6 +370,7 @@ class CargoView(discord.ui.View):
         embed.set_footer(text=f'Page [{index + 1} / {len(cargo_menu)}]')
         self.current_embed = embed
         await interaction.response.edit_message(embed=embed, view=self, attachments=[])
+
     
 class MapButton(discord.ui.Button):
     def __init__(self, convoy_info: dict, recipient_info: dict, label: str, style: discord.ButtonStyle, custom_id: str):

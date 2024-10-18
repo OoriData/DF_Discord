@@ -1,24 +1,26 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-import                                os
-import                                asyncio
-import                                logging
-import                                textwrap
-from typing                    import Optional
-from datetime                  import datetime, timezone, timedelta
-from io                        import BytesIO
+import                                 os
+import                                 asyncio
+import                                 logging
+import                                 textwrap
+from typing                     import Optional
+from datetime                   import datetime, timezone, timedelta
+from io                         import BytesIO
 
-import                                discord
-import                                httpx
-from discord                   import app_commands
-from discord.ext               import commands, tasks
+import                                 discord
+import                                 httpx
+from discord                    import app_commands
+from discord.ext                import commands, tasks
 
-from utiloori.ansi_color       import ansi_color
+from utiloori.ansi_color        import ansi_color
 
-from discord_app               import api_calls, convoy_views, DF_HELP, df_embed_author
-from discord_app               import DF_DISCORD_LOGO as API_BANNER
-from discord_app.map_rendering import add_map_to_embed
-from discord_app.vendor_views  import vendor_views
+from discord_app                import DF_DISCORD_LOGO as API_BANNER
+from discord_app                import api_calls, convoy_views, DF_HELP, df_embed_author
+from discord_app.map_rendering  import add_map_to_embed
+from discord_app.vendor_views   import vendor_views
+from discord_app.main_menu_views import main_menu
+from discord_app.df_state       import DFState
 
 DF_API_HOST = os.environ.get('DF_API_HOST')
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -80,36 +82,24 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
     async def df_main_menu(self, interaction: discord.Interaction):
-        user_obj = await api_calls.get_user_by_discord(interaction.user.id)
-        if not user_obj:
-            await interaction.response.send_message('nope! register with /df-register')
-
+        await main_menu(interaction=interaction, edit=False)
+        
+    @app_commands.command(name='df-map', description='Show the full game map')
+    async def df_map(self, interaction: discord.Interaction):
         try:
-            main_menu_embed = discord.Embed()
-            main_menu_embed = df_embed_author()
+            map_embed = discord.Embed()
+            map_embed, image_file = await add_map_to_embed(map_embed)
 
-            await interaction.response.send_message(embed=main_menu_embed)
+            map_embed.set_author(
+                name=interaction.user.name,
+                icon_url=interaction.user.avatar.url
+            )
+
+            await interaction.response.send_message(embed=map_embed, file=image_file)
 
         except Exception as e:
             msg = f'something went wrong: {e}'
-            await interaction.followup.send(msg)
-
-    @app_commands.command(name='df-map', description='Show the full game map')
-    async def df_map(self, interaction: discord.Interaction):
-        # try:
-        map_embed = discord.Embed()
-        map_embed, image_file = await add_map_to_embed(map_embed)
-
-        map_embed.set_author(
-            name=interaction.user.name,
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.send_message(embed=map_embed, file=image_file)
-
-        # except Exception as e:
-        #     msg = f'something went wrong: {e}'
-        #     await interaction.response.send_message(msg)
+            await interaction.response.send_message(msg)
 
     @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     async def df_register(self, interaction: discord.Interaction):
@@ -301,6 +291,8 @@ class Desolate_Cog(commands.Cog):
             except RuntimeError as e:
                 logger.error(f'Error fetching notifications: {e}')
                 continue
+
+    # XXX user cache update function? for when new users are registered from within a menu or smth
 
 
 def main():

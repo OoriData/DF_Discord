@@ -179,6 +179,7 @@ class MechVehicleView(discord.ui.View):
                     part_cargos_to_display.append(cargo)
                 except RuntimeError as e:
                     print(f'part does not fit: {e}')
+                    continue
         
         part_list = []
         for cargo in part_cargos_to_display:

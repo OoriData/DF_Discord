@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 'Discord Frontend'
-from datetime import datetime
+from __future__ import annotations
+from datetime   import datetime
 
-import               discord
+import                 discord
 
 
 def format_part(part):
@@ -46,15 +47,19 @@ def format_part(part):
     return '\n'.join(bit for bit in part_bits if bit)
 
 
-def df_embed_author(embed: discord.Embed, convoy, user: discord.User):
-    embed.set_author(
-        name=f'{convoy['name']} | ${convoy['money']:,}',
-        icon_url=user.avatar.url
-    )
+def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
+    if df_state.convoy_obj:
+        author_name = f"{df_state.convoy_obj['name']} | ${df_state.convoy_obj['money']:,}"
+    elif df_state.user_obj:
+        author_name = f"{df_state.user_obj['username']} | ${df_state.user_obj['money']:,}"
+    else:
+        author_name = df_state.interaction.user.display_name
+
+    embed.set_author(name=author_name, icon_url=df_state.interaction.user.avatar.url)
     return embed
 
 
-def df_embed_vehicle_stats(embed: discord.Embed, vehicle, new_part=None):
+def df_embed_vehicle_stats(embed: discord.Embed, vehicle: dict, new_part: dict=None):
     fields = {
         '💵 Value': ('value', '${:,}', '', 'part_value', ' (${:+})'),
         '🔧 Wear': ('wear', '{}', ' / 100', None, ''),
@@ -68,16 +73,23 @@ def df_embed_vehicle_stats(embed: discord.Embed, vehicle, new_part=None):
     }
 
     for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
-        base_value = vehicle[stat_key]
+        # Get the base value, default to 'N/A' if None
+        base_value = vehicle.get(stat_key)
+
+        # If base_value is None, assign 'N/A'
+        if base_value is None:
+            value_str = 'N/A'
+        else:
+            value_str = base_format.format(base_value)
+
+        # Get the modifier value and apply it if available
         mod_value = new_part.get(mod_key) if new_part and mod_key else None
-        
-        value_str = base_format.format(base_value)
-        
-        if mod_value is not None:
+        if mod_value is not None and value_str != 'N/A':
             value_str += mod_format.format(mod_value)
-        
+
         value_str += suffix
         
+        # Add the formatted field to the embed
         embed.add_field(name=name, value=value_str)
 
     return embed

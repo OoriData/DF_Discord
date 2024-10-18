@@ -347,32 +347,32 @@ async def add_map_to_embed(
         # No highlights or lowlights provided, don't compute boundaries
         map_edges = None  # Pass nothing for boundaries to the API
     
-    # try:
-    # Fetch tiles for the map (map_edges will be None if no boundaries are needed)
-    if map_edges:
-        tiles = (await api_calls.get_map(**map_edges))['tiles']
-    else:
-        tiles = (await api_calls.get_map())['tiles']
+    try:
+        # Fetch tiles for the map (map_edges will be None if no boundaries are needed)
+        if map_edges:
+            tiles = (await api_calls.get_map(**map_edges))['tiles']
+        else:
+            tiles = (await api_calls.get_map())['tiles']
 
-    # Render the map with the given tiles and any highlights or lowlights
-    rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
+        # Render the map with the given tiles and any highlights or lowlights
+        rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
 
-    # Save the rendered map to an in-memory file (BytesIO object)
-    with BytesIO() as image_binary:
-        rendered_map.save(image_binary, 'PNG')
-        image_binary.seek(0)
+        # Save the rendered map to an in-memory file (BytesIO object)
+        with BytesIO() as image_binary:
+            rendered_map.save(image_binary, 'PNG')
+            image_binary.seek(0)
 
-        file_name = 'map.png'
-        img_file = discord.File(fp=image_binary, filename=file_name)
+            file_name = 'map.png'
+            img_file = discord.File(fp=image_binary, filename=file_name)
 
-    # Attach the image file to the embed
-    embed.set_image(url=f'attachment://{file_name}')
-    
-    return embed, img_file
+        # Attach the image file to the embed
+        embed.set_image(url=f'attachment://{file_name}')
+        
+        return embed, img_file
 
-    # except Exception as e:
-    #     msg = f'something went wrong rendering image: {e}'
-    #     raise RuntimeError(msg)
+    except Exception as e:
+        msg = f'something went wrong rendering image: {e}'
+        raise RuntimeError(msg)
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):

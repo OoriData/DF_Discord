@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
+from __future__                import annotations
 import                                os
 import                                textwrap
 
@@ -7,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, format_part, df_embed_author, df_embed_vehicle_stats
+from discord_app               import api_calls, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 
 API_SUCCESS_CODE = 200

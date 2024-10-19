@@ -14,8 +14,9 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, vehicle_views, cargo_views, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
-from discord_app.df_state      import DFState
 from discord_app.nav_menus     import add_nav_buttons
+
+from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -47,10 +48,9 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
     convoy_embed = discord.Embed(color=discord.Color.green())
-    
-    convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
-
     convoy_embed = df_embed_author(convoy_embed, df_state)
+
+    convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
     convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:.2f}**\n/{df_state.convoy_obj['max_fuel']:.2f} liters')
     convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:.2f}**\n/{df_state.convoy_obj['max_water']:.2f} liters')
@@ -171,7 +171,7 @@ class ConvoyView(discord.ui.View):
             self.send_convoy_button.disabled = True
 
         if self.df_state.convoy_obj['all_cargo']:  # If the convoy has any (displayable) cargo
-            self.add_item(cargo_views.CargoSelect(df_state=self.df_state, row=3))
+            self.add_item(cargo_views.ConvoyCargoSelect(df_state=self.df_state, row=3))
         else:  # If the convoy has no (displayable) cargo
             self.remove_item(self.all_cargo_destinations_button)
 
@@ -499,4 +499,4 @@ class ConvoySelect(discord.ui.Select):
             if c['convoy_id'] == self.values[0]
         ), None)
 
-        convoy_menu(self.df_state)
+        await convoy_menu(self.df_state)

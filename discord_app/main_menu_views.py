@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
+from __future__                import annotations
 import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
@@ -9,8 +10,9 @@ import                                asyncio
 import                                discord
 
 from discord_app               import discord_timestamp
-from discord_app               import api_calls, convoy_views, discord_timestamp, format_part, df_embed_author
+from discord_app               import api_calls, convoy_views, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
+
 from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200

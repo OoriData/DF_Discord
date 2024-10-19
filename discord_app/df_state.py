@@ -7,10 +7,6 @@ import                                textwrap
 
 import                                discord
 
-from discord_app               import discord_timestamp
-from discord_app               import api_calls, discord_timestamp, format_part, df_embed_author, df_embed_vehicle_stats
-from discord_app.map_rendering import add_map_to_embed
-
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')

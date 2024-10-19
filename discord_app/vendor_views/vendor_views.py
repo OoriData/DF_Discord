@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
+from __future__                import annotations
 import                                os
 import                                textwrap
 
@@ -7,9 +8,12 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, format_part, df_embed_author, df_embed_vehicle_stats
+from discord_app               import api_calls, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
+import discord_app.nav_menus
+
+from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
@@ -17,6 +21,160 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 # TODO: send message if user tries to iterate through menu with a length of zero
 # TODO: Add universal BackButtonView that just allows users to go back to the main vendor menu after they complete a transaction
+
+
+async def vendor_menu(df_state: DFState, edit: bool=True):
+    vendor_embed = discord.Embed()
+    vendor_embed = df_embed_author(vendor_embed, df_state)
+
+    if df_state.vendor_obj:  # If a vendor has been selected
+        vendor_embed.description = '\n'.join([
+            f'## {df_state.vendor_obj['name']}',
+            'Available Services:'
+        ])
+        
+        for service, availability in vendor_services(df_state.vendor_obj):
+            vendor_embed.add_field(
+                name=service,
+                value=availability,
+            )
+
+        vendor_view = VendorView(df_state)
+
+    else:  # If no vendor selected, go select one
+        tile_obj = await api_calls.get_tile(df_state.convoy_obj['x'], df_state.convoy_obj['y'])
+        if not tile_obj['settlements']:
+            await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
+            return
+        
+        vendor_embed.description = '\n'.join([
+            f'## {tile_obj['settlements'][0]['name']}',
+            '\n'.join([f'- {vendor['name']}' for vendor in tile_obj['settlements'][0]['vendors']]),
+            'Select a vendor:'
+        ])
+
+        vendor_view = ChooseVendorView(df_state, tile_obj['settlements'][0]['vendors'])
+
+    if edit:
+        await df_state.interaction.response.edit_message(embed=vendor_embed, view=vendor_view, attachments=[])
+    else:
+        await df_state.interaction.followup.send(embed=vendor_embed, view=vendor_view)
+
+
+class ChooseVendorView(discord.ui.View):
+    ''' Overarching convoy button menu '''
+    def __init__(self, df_state: DFState, vendors):
+        self.df_state = df_state
+        super().__init__(timeout=120)
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(VendorSelect(self.df_state, vendors))
+
+
+class VendorSelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, vendors, row: int=1):
+        self.df_state = df_state
+        self.vendors = vendors
+
+        options=[
+            discord.SelectOption(label=vendor['name'], value=vendor['vendor_id'])
+            for vendor in self.vendors
+        ]
+        
+        super().__init__(
+            placeholder='Select vendor to visit',
+            options=options,
+            custom_id='select_vendor',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.vendor_obj = next((
+            v for v in self.vendors
+            if v['vendor_id'] == self.values[0]
+        ), None)
+
+        await vendor_menu(self.df_state)
+
+
+class VendorView(discord.ui.View):
+    ''' Overarching convoy button menu '''
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=120)
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(BuyButton(df_state))
+        self.add_item(MechanicButton(df_state))
+        self.add_item(SellButton(df_state))
+
+
+class BuyButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        if self.df_state.vendor_obj['cargo_inventory']:
+            disabled = False
+        else:
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Buy',
+            disabled=disabled,
+            custom_id='buy_button',
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message('buy', ephemeral=True)
+
+
+class MechanicButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        if self.df_state.vendor_obj['repair_price']:
+            disabled = False
+        else:
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Mechanic Services',
+            disabled=disabled,
+            custom_id='mech_button',
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message('mech', ephemeral=True)
+
+
+class SellButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        # if self.df_state.vendor_obj['repair_price']:
+        #     disabled = False
+        # else:
+        #     disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Sell',
+            # disabled=disabled,
+            custom_id='sell_button',
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message('sell', ephemeral=True)
+
 
 def vendor_services(vendor: dict):
     service_keys = {
@@ -35,6 +193,7 @@ def vendor_services(vendor: dict):
 
     return services
 
+
 def vendor_resources(vendor: dict):
     ''' Quickly get which resources a vendor sells/buys '''
     resources = []
@@ -46,6 +205,7 @@ def vendor_resources(vendor: dict):
         resources.append('food')
     
     return resources
+
 
 class BackToVendorsView(discord.ui.View):
     ''' A menu for a button that sends users back to the previous view. '''
@@ -102,6 +262,7 @@ class BackToVendorsView(discord.ui.View):
         )
         await interaction.followup.send(embed=node_embed, view=view)
         # await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
+
 
 class VendorMenuView(discord.ui.View):
     '''
@@ -744,7 +905,7 @@ class VehicleConfirmView(discord.ui.View):
 
         await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.previous_embed, previous_view=self))
 
-class VehicleSellView(discord.ui.View):
+class VehicleSellView(discord.ui.View):  # XXX: to send to SellMenus
     '''
     Select menu for selling vehicles to vendors. 
 
@@ -845,7 +1006,7 @@ class VehicleSellView(discord.ui.View):
 
         await interaction.response.edit_message(embed=embed)
 
-class SellSelectView(discord.ui.View):
+class SellSelectView(discord.ui.View):  # XXX: likely going to be replaced by a dropdown menu
     '''
     Select what type of item the user is trying to sell to the vendor (vehicle, resources, cargo)
 
@@ -890,7 +1051,7 @@ class SellSelectView(discord.ui.View):
     async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
 
-class SellSelectResource(discord.ui.Button):
+class SellSelectResource(discord.ui.Button):  # XXX: most likely to be replaced by a dropdown menu
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -923,7 +1084,7 @@ class SellSelectResource(discord.ui.Button):
             )
         )
 
-class SellSelectCargo(discord.ui.Button):
+class SellSelectCargo(discord.ui.Button):  # XXX: also likely going to be replaced by a dropdown menu
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -956,7 +1117,7 @@ class SellSelectCargo(discord.ui.Button):
             )
         )
 
-class SellSelectVehicle(discord.ui.Button):
+class SellSelectVehicle(discord.ui.Button):  # XXX: going to be replaced by a dropdown menu
     '''
     Directly tied to `SellSelectView`, and only used there.
     '''
@@ -990,7 +1151,7 @@ class SellSelectVehicle(discord.ui.Button):
             )
         )
 
-class ResourceSelectView(discord.ui.View):
+class ResourceSelectView(discord.ui.View):  # XXX: replaced by dropdown menu
     '''
     A simple view that allows users to select a resource to buy or sell.
 
@@ -1048,7 +1209,7 @@ class ResourceSelectView(discord.ui.View):
     async def back_button(self, interaction: discord.Interaction, button: discord.Button):
         await interaction.response.edit_message(view=self.previous_view, embed=self.previous_embed)
 
-class CargoSellView(discord.ui.View):
+class CargoSellView(discord.ui.View):  # XXX: replaced by dropdown menu
     def __init__(
             self,
             interaction: discord.Interaction,
@@ -1140,7 +1301,7 @@ class CargoSellView(discord.ui.View):
         # self.previous_embed = embed
         await interaction.response.edit_message(embed=embed)
 
-class BuyResourceButton(discord.ui.Button):
+class BuyResourceButton(discord.ui.Button):  # XXX: replaced by dropdown menu
     '''
     Not to be confused with ResourceBuyButton, which executes the API call to buy resources.
     This button is simply to choose which resource the user would like to buy from the vendor.
@@ -1186,7 +1347,7 @@ class BuyResourceButton(discord.ui.Button):
         await interaction.response.edit_message(view=view)
         return
 
-class BuyCargoButton(discord.ui.Button):
+class BuyCargoButton(discord.ui.Button):  # XXX: replaced by dropdown menu
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -1242,8 +1403,7 @@ class BuyCargoButton(discord.ui.Button):
             )
         )
 
-
-class BuyVehicleButton(discord.ui.Button):
+class BuyVehicleButton(discord.ui.Button):  # XXX: replaced by dropdown menu
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -1333,7 +1493,7 @@ class ResourceButton(discord.ui.Button):
 # Most likely avaialble to reuse this for different quantity view types
 # XXX: wait couldn't i high key just put some decorator buttons on QuantityView instead??
 # lol i think it makes more sense to have the quantity buttons as a decorator button and the sell/buy buttons as button classes
-class QuantityButton(discord.ui.Button):
+class QuantityButton(discord.ui.Button):  # XXX: we can probably replace this with a text input
     def __init__(self, parent_view, item: str, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -1351,7 +1511,7 @@ class QuantityButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed)
 
-class CargoSellButton(discord.ui.Button):
+class CargoSellButton(discord.ui.Button):  # XXX: To be sent to SellButtons or SellView, or replaced by text input
     def __init__(self, parent_view):
         super().__init__(label='Sell Cargo', custom_id='sell_cargo', style=discord.ButtonStyle.green)
         self.parent_view = parent_view
@@ -1382,7 +1542,7 @@ class CargoSellButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self))
 
-class CargoBuyButton(discord.ui.Button):
+class CargoBuyButton(discord.ui.Button):  # XXX: To be sent to BuyButtons or BuyView, or replaced by text input
     ''' Buy button placed in CargoQuantityView '''
     def __init__(self, parent_view):
         super().__init__(label='Buy Cargo', custom_id='buy_cargo', style=discord.ButtonStyle.green)
@@ -1443,7 +1603,7 @@ class CargoBuyButton(discord.ui.Button):
             )
         )
 
-class ResourceBuyButton(discord.ui.Button):
+class ResourceBuyButton(discord.ui.Button):  # XXX: To be sent to BuyButtons or BuyView, or replaced by text input
     def __init__(self, parent_view, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -1480,7 +1640,7 @@ class ResourceBuyButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
-class ResourceSellButton(discord.ui.Button):
+class ResourceSellButton(discord.ui.Button):  # XXX: To be sent to SellButtons or SellView, or replaced by text input
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view
@@ -1513,7 +1673,7 @@ class ResourceSellButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
 
-class MapButton(discord.ui.Button):
+class MapButton(discord.ui.Button):  # XXX: No need to move this guy
     def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
         super().__init__(label=label, custom_id=custom_id, style=style)
         self.parent_view = parent_view

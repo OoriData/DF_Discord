@@ -11,6 +11,7 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import api_calls, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
+import discord_app.vendor_views.mechanic_views
 import discord_app.nav_menus
 
 from discord_app.df_state      import DFState
@@ -152,7 +153,8 @@ class MechanicButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message('mech', ephemeral=True)
+        self.df_state.interaction = interaction
+        await discord_app.vendor_views.mechanic_views.mechanic_menu(self.df_state)
 
 
 class SellButton(discord.ui.Button):

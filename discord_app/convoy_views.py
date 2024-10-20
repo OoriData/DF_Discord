@@ -33,7 +33,7 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
 
     convoy_embed, image_file = await make_convoy_embed(df_state)
 
-    convoy_view = ConvoyView(df_state=df_state)
+    convoy_view = ConvoyView(df_state)
 
     df_state.previous_embed = convoy_embed
     df_state.previous_view = convoy_view

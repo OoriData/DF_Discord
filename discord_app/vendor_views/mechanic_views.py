@@ -10,27 +10,51 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
+import discord_app.nav_menus
+import discord_app.vehicle_views
+import discord_app.cargo_views
+
+from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.getenv('DF_API_HOST')
 
 
+async def mechanic_menu(df_state: DFState):
+    vehicle_list = []
+    for vehicle in df_state.convoy_obj['vehicles']:
+        vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
+        vehicle_list.append(vehicle_str)
+    displayable_vehicles = '\n'.join(vehicle_list)
+
+    mech_embed = discord.Embed(
+        title=df_state.vendor_obj['name'],
+        description=textwrap.dedent(f'''\
+            **Select a vehicle for repairs/upgrades:**
+            Vehicles:
+            {displayable_vehicles}
+        ''')
+    )
+    mech_embed = df_embed_author(mech_embed, df_state)
+    
+    vehicle_dropdown_view = MechVehicleDropdownView(df_state)
+    
+    await df_state.interaction.response.edit_message(embed=mech_embed, view=vehicle_dropdown_view)
+
+
 class MechVehicleDropdownView(discord.ui.View):
     def __init__(
             self,
-            user_obj,
-            vendor_obj,
-            previous_embed,
-            previous_view
+            df_state: DFState
     ):
         super().__init__()
 
         self.add_item(VehicleSelect(
-            user_obj=user_obj,
-            vendor_obj=vendor_obj,
-            previous_embed=previous_embed,
-            previous_view=previous_view
+            user_obj=df_state.user_obj,
+            vendor_obj=df_state.vendor_obj,
+            previous_embed=df_state.previous_embed,
+            previous_view=df_state.previous_view
         ))
     
     @discord.ui.button(label='Repair wear and AP for all vehicles', style=discord.ButtonStyle.green, custom_id='repair_all', disabled=True)
@@ -63,14 +87,14 @@ class VehicleSelect(discord.ui.Select):
         ), None)
 
         mech_embed = discord.Embed()
-        mech_embed = df_embed_author(mech_embed, self.user_obj['convoys'][0], interaction.user)
+        # mech_embed = df_embed_author(mech_embed, self.user_obj['convoys'][0], interaction.user)
         mech_embed.description = '\n'.join([
             f'# {self.vendor_obj['name']}',
             f'## {selected_vehicle['name']}',
             f'*{selected_vehicle['base_desc']}*',
             '## Stats'
         ])
-        mech_embed = df_embed_vehicle_stats(mech_embed, selected_vehicle)
+        mech_embed = discord_app.vehicle_views.df_embed_vehicle_stats(mech_embed, selected_vehicle)
 
         mech_view = MechView(
             user_obj=self.user_obj,
@@ -109,11 +133,11 @@ class MechView(discord.ui.View):
                 part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
                 continue
 
-            part_list.append(format_part(part))
+            part_list.append(discord_app.cargo_views.format_part(part))
         displayable_vehicle_parts = '\n'.join(part_list)
 
         mech_vehicle_embed = discord.Embed()
-        mech_vehicle_embed = df_embed_author(mech_vehicle_embed, self.user_obj['convoys'][0], interaction.user)
+        # mech_vehicle_embed = df_embed_author(mech_vehicle_embed, self.user_obj['convoys'][0], interaction.user)
         mech_vehicle_embed.description = '\n'.join([
             f'## {self.selected_vehicle['name']}',
             f'*{self.selected_vehicle['base_desc']}*',
@@ -121,7 +145,7 @@ class MechView(discord.ui.View):
             displayable_vehicle_parts,
             '## Stats'
         ])
-        mech_vehicle_embed = df_embed_vehicle_stats(mech_vehicle_embed, self.selected_vehicle)
+        mech_vehicle_embed = discord_app.vehicle_views.df_embed_vehicle_stats(mech_vehicle_embed, self.selected_vehicle)
 
         mech_vehicle_view = MechVehicleView(
             user_obj=self.user_obj,
@@ -184,11 +208,11 @@ class MechVehicleView(discord.ui.View):
         
         part_list = []
         for cargo in part_cargos_to_display:
-            part_list.append(format_part(cargo['part']))
+            part_list.append(discord_app.cargo_views.format_part(cargo['part']))
         displayable_vehicle_parts = '\n'.join(part_list)
 
         cargo_selection_embed = discord.Embed()
-        cargo_selection_embed = df_embed_author(cargo_selection_embed, self.user_obj['convoys'][0], interaction.user)
+        # cargo_selection_embed = df_embed_author(cargo_selection_embed, self.user_obj['convoys'][0], interaction.user)
         cargo_selection_embed.description = '\n'.join([
             f'# {self.vendor_obj['name']}',
             f'## {self.selected_vehicle["name"]}',
@@ -197,7 +221,7 @@ class MechVehicleView(discord.ui.View):
             f'{displayable_vehicle_parts}',
             '### Stats'
         ])
-        cargo_selection_embed = df_embed_vehicle_stats(cargo_selection_embed, self.selected_vehicle)
+        cargo_selection_embed = discord_app.vehicle_views.df_embed_vehicle_stats(cargo_selection_embed, self.selected_vehicle)
 
         cargo_selection_view = CargoSelectView(
             cargo_list=part_cargos_to_display,
@@ -279,18 +303,18 @@ class CargoSelect(discord.ui.Select):
             current_part = None
 
         confirm_embed = discord.Embed()
-        confirm_embed = df_embed_author(confirm_embed, self.user_obj['convoys'][0], interaction.user)
+        # confirm_embed = df_embed_author(confirm_embed, self.user_obj['convoys'][0], interaction.user)
         confirm_embed.description = '\n'.join([
             f'# {self.vendor_obj['name']}',
             f'## {self.selected_vehicle['name']}\n'
             f'*{self.selected_vehicle['base_desc']}*\n'
             f'### Current Part\n'
-            f'{format_part(current_part) if current_part else '- None'}\n'
+            f'{discord_app.cargo_views.format_part(current_part) if current_part else '- None'}\n'
             f'### New Part\n'
-            f'{format_part(selected_part)}\n'
+            f'{discord_app.cargo_views.format_part(selected_part)}\n'
             '## Stats'
         ])
-        confirm_embed = df_embed_vehicle_stats(confirm_embed, self.selected_vehicle, selected_part)
+        confirm_embed = discord_app.vehicle_views.df_embed_vehicle_stats(confirm_embed, self.selected_vehicle, selected_part)
 
         install_confirm_view = InstallConfirmView(
             selected_part_cargo=selected_part_cargo,
@@ -342,14 +366,14 @@ class InstallConfirmView(discord.ui.View):
         ), None)
 
         post_install_embed = discord.Embed()
-        post_install_embed = df_embed_author(post_install_embed, self.user_obj['convoys'][0], interaction.user)
+        # post_install_embed = df_embed_author(post_install_embed, self.user_obj['convoys'][0], interaction.user)
         post_install_embed.description = '\n'.join([
             f'# {self.vendor_obj['name']}',
             f'## {post_install_vehicle['name']}',
             f'*{post_install_vehicle['base_desc']}*',
             '## Stats'
         ])
-        post_install_embed = df_embed_vehicle_stats(post_install_embed, post_install_vehicle)
+        post_install_embed = discord_app.vehicle_views.df_embed_vehicle_stats(post_install_embed, post_install_vehicle)
 
         post_install_view = PostInstallView(
             user_obj=self.user_obj,

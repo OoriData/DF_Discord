@@ -22,444 +22,499 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def sell_menu(df_state: DFState):
-    convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
-    current_vendor = self.menu[self.position]
-    user_convoy = self.user_info['convoys'][0]
-    sell_embed = discord.Embed(
-        title=f'Selling to {current_vendor['name']}',
-        description='*All vendors will buy all cargo. Resources may only be sold to their respecive vendor types (ex: fuel to gasoline refineries, water to water reclamation plants), and vehicles may only be sold to dealerships.*',
-        color=discord.Color.blurple()
-    )
-    
-    sell_embed.set_author(
-        name=f'{user_convoy['name']} | ${convoy_balance}',
-        icon_url=interaction.user.avatar.url
-    )
+    resources_list = []
+    if df_state.vendor_obj['fuel']:
+        resources_list.append(f'- Fuel: {df_state.convoy_obj['fuel']} Liters\n  - *${df_state.vendor_obj['fuel_price']} per Liter*')
+    if df_state.vendor_obj['water']:
+        resources_list.append(f'- Water: {df_state.convoy_obj['water']} Liters\n  - *${df_state.vendor_obj['water_price']} per Liter*')
+    if df_state.vendor_obj['food']:
+        resources_list.append(f'- Food: {df_state.convoy_obj['food']} Servings\n  - *${df_state.vendor_obj['food_price']} per Serving*')
+    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
 
-    # Create a list of items in the user's convoy that can be sold to the vendor.
-    # This list isn't for display, we're sending it to the next view as a list menu.
-    sellable_cargo = []
-    user_info = self.user_info['convoys'][0]
-    for vehicle in user_info['vehicles']:
-        for cargo_item in vehicle['cargo']:
-            sellable_cargo.append(cargo_item)
-    
-    await interaction.response.edit_message(
-        embed=sell_embed,
-        view=SellSelectView(
-            interaction=interaction,
-            user_info=self.user_info,
-            vendor_obj=current_vendor,
-            sellable_cargo=sellable_cargo,
-            previous_embed=self.current_embed,
-            previous_view=self,
-            current_embed=sell_embed
-        ))
+    vehicle_list = []
+    for vehicle in df_state.convoy_obj['vehicles']:
+        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
+        if not all(c['intrinsic'] for c in vehicle['cargo']):
+            vehicle_str += '\n  - *contains cargo, cannot be sold*'
+        vehicle_list.append(vehicle_str)
+    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
+
+    cargo_list = []
+    for vehicle in df_state.convoy_obj['vehicles']:
+        for cargo in vehicle['cargo']:
+            if cargo['intrinsic']:
+                continue
+
+            cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['base_price']:,} each*'
+
+            if cargo['recipient']:
+                cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+                cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ${cargo['delivery_reward']:,}'
+
+            cargo_list.append(cargo_str)
+    displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
+
+    embed = discord.Embed()
+    embed.description='\n'.join([
+        f'## {df_state.vendor_obj['name']}',
+        '### Available to sell from convoy:',
+        '**Resources:**',
+        f'{displayable_resources}',
+        '',
+        '**Vehicles:**',
+        f'{displayable_vehicles}',
+        '',
+        '**Cargo:**',
+        f'{displayable_cargo}'
+    ])
+
+    embed = df_embed_author(embed, df_state)
+
+    view = SellView(df_state)
+
+    await df_state.interaction.response.edit_message(embed=embed, view=view)
 
 
-class CargoSellView(discord.ui.View):  # XXX: replaced by dropdown menu
-    def __init__(
-            self,
-            interaction: discord.Interaction,
-            user_info: dict,
-            vendor_obj: dict,
-            sellable_cargo: list,
-            previous_embed: discord.Embed,
-            previous_view: discord.ui.View
-    ):
-        super().__init__(timeout=120)
-        # args
-        self.interaction = interaction
-        self.user_info = user_info
-        self.vendor_obj = vendor_obj
-        self.sellable_cargo = sellable_cargo
-        self.previous_embed = previous_embed
-        self.previous_view = previous_view
+class SellView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__()
 
-        self.current_embed = None
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.quantity = 1
-        self.position = -1
+        self.add_item(SellResourceButton(self.df_state, 'fuel'))
+        self.add_item(SellResourceButton(self.df_state, 'water'))
+        self.add_item(SellResourceButton(self.df_state, 'food'))
 
-    @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='previous_menu')
-    async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
-        await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
+        self.add_item(SellVehicleSelect(self.df_state))
 
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
-    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.position = (self.position - 1) % len(self.sellable_cargo)
-        await self.update_menu(interaction)
+        self.add_item(SellCargoSelect(self.df_state))
 
-    @discord.ui.button(label='Sell', style=discord.ButtonStyle.green, custom_id='sell')
-    async def sell_button(self, interaction: discord.Interaction, button: discord.Button):
-        if self.current_embed is None:
-            await interaction.response.send_message('Select a cargo to sell to the vendor', ephemeral=True, delete_after=10)
-            return
-        await interaction.response.edit_message(view=CargoQuantityView(
-            interaction=interaction,
-            user_info=self.user_info,
-            vendor_obj=self.vendor_obj,
-            cargo_obj=self.sellable_cargo[self.position],
-            trade_type='sell',
-            previous_embed=self.current_embed,
-            previous_view=self
-        ))
 
-    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.position = (self.position + 1) % len(self.sellable_cargo)
-        await self.update_menu(interaction)
+class SellResourceButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, resource_type: str, row: int=1):
+        self.df_state = df_state
+        self.resource_type = resource_type
 
-    async def update_menu(self, interaction: discord.Interaction):
-        index = self.position
-        sell_item = self.sellable_cargo[index]
-        if sell_item['recipient']:  # API call to get recipient's vendor info
-            vendor_dict = await api_calls.get_vendor(vendor_id=sell_item['recipient'])
-                
-            recipient = vendor_dict['name']
-            delivery_reward = sell_item['delivery_reward']
-        else:  # No recipient, no worries
-            recipient = 'None'
-            delivery_reward = 'None'
+        disabled = True
+        if self.df_state.vendor_obj[resource_type]:
+            disabled = False
 
-        # API call to get vehicle
-        cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=sell_item['vehicle_id'])
-
-        embed = discord.Embed(
-            title=self.sellable_cargo[index]['name'],
-            description=textwrap.dedent(f'''\
-                *{sell_item['base_desc']}*
-
-                - Base (sell) Price: **${sell_item['base_price']}**
-                - Recipient: **{recipient}**
-                - Delivery Reward: **{delivery_reward}**
-                - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
-                - Cargo quantity: **{sell_item['quantity']}**
-            ''')
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=f'Sell {resource_type}',
+            disabled=disabled,
+            row=row
         )
-
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        embed.set_footer(text=f'Page [{index + 1} / {len(self.sellable_cargo)}]')
-        self.current_embed = embed
-        # self.previous_embed = embed
-        await interaction.response.edit_message(embed=embed)
-
-
-class CargoSellButton(discord.ui.Button):  # XXX: To be sent to SellButtons or SellView, or replaced by text input
-    def __init__(self, parent_view):
-        super().__init__(label='Sell Cargo', custom_id='sell_cargo', style=discord.ButtonStyle.green)
-        self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        convoy_before_money = self.parent_view.user_info['convoys'][0]['money']
+        self.df_state.interaction = interaction
+        
+        embed = ResourceSellQuantityEmbed(self.df_state, self.resource_type)
+        view = ResourceSellQuantityView(self.df_state, self.resource_type)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class ResourceSellQuantityEmbed(discord.Embed):
+    def __init__(self, df_state: DFState, resource_type: str, sale_quantity: int=1):
+        self.df_state = df_state
+        self.resource_type = resource_type
+        self.sale_quantity = sale_quantity
+        super().__init__()
+        
+        self = df_embed_author(self, self.df_state)
+
+        sale_price = self.sale_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
+        
+        self.description = '\n'.join([
+            f'## {df_state.vendor_obj['name']}',
+            f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/Serving',
+            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]} Liters/Servings',
+            f'### Sale: {self.sale_quantity} Liters/Servings | ${sale_price:,}'
+        ])
+
+
+class ResourceSellQuantityView(discord.ui.View):
+    def __init__(self, df_state: DFState, resource_type: str, sale_quantity: int=1):
+        self.df_state = df_state
+        self.resource_type = resource_type
+        self.sale_quantity = sale_quantity
+        super().__init__()
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, -10, self.resource_type))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, -1, self.resource_type))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 1, self.resource_type))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 10, self.resource_type))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 'max', self.resource_type))
+
+        self.add_item(ResourceConfirmSellButton(self.df_state, self.sale_quantity, self.resource_type, row=2))
+
+
+class ResourceConfirmSellButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            sale_quantity: int,
+            resource_type: str=None,
+            row: int=1
+    ):
+        self.df_state = df_state
+        self.sale_quantity = sale_quantity
+        self.resource_type = resource_type
+
+        sale_price = self.sale_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=f'Buy {self.sale_quantity}L of {self.resource_type} | ${sale_price}',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
         try:
-            convoy_after_dict = await api_calls.sell_cargo(
-                vendor_id=self.parent_view.vendor_obj['vendor_id'],
-                convoy_id=self.parent_view.user_info['convoys'][0]['convoy_id'],
-                cargo_id=self.parent_view.cargo_obj['cargo_id'],
-                quantity=self.parent_view.quantity
+            self.df_state.convoy_obj = await api_calls.sell_resource(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                resource_type=self.resource_type,
+                quantity=self.sale_quantity
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        delta_cash = convoy_after_dict['money'] - convoy_before_money
+        
+        sale_price = self.sale_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
+        
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'## {self.df_state.vendor_obj['name']}',
+            f'Sold {self.sale_quantity} Liters/Servings of {self.resource_type} for ${sale_price}'
+        ])
 
-        embed = discord.Embed(
-            title=f'You sold {self.parent_view.quantity} {self.parent_view.cargo_obj['name']} to {self.parent_view.vendor_obj['name']}',
-            description=f'Your convoy made ${delta_cash} from the transaction.'
+        view = PostSellView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into like 4 different buttons, instead of just nesting a million if/elses
+    def __init__(
+            self,
+            df_state: DFState,
+            sale_quantity: int,
+            button_quantity: int | str,
+            resource_type: str = None,
+            cargo_for_sale: dict = None,
+            row: int = 1
+    ):
+        self.df_state = df_state
+        self.sale_quantity = sale_quantity
+        self.resource_type = resource_type
+        self.cargo_for_sale = cargo_for_sale
+
+        if self.cargo_for_sale:  # Determine max quantities
+            inventory_quantity = self.df_state.cargo_obj['quantity']
+        else:
+            inventory_quantity = self.df_state.convoy_obj[self.resource_type]
+
+        if button_quantity == 'max':  # Handle "max" button logic
+            self.button_quantity = inventory_quantity - self.sale_quantity
+            if self.button_quantity <= 0:
+                self.button_quantity = 0  # Ensure the quantity is 0
+            label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
+        else:
+            self.button_quantity = int(button_quantity)
+            label = f'{self.button_quantity:+,}'
+
+        resultant_quantity = self.sale_quantity + self.button_quantity
+
+        disabled = self.should_disable_button(  # Determine if button should be disabled
+            resultant_quantity, inventory_quantity
         )
-        convoy_balance = f'{convoy_after_dict['money']:,}'
-        embed.set_author(
-            name=f'{convoy_after_dict['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
+
+        if self.button_quantity == 0:  # Disable the button if the "max" button would add 0 quantity
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=label,
+            disabled=disabled,
+            row=row
         )
 
-        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self))
+    def should_disable_button(self, resultant_quantity, inventory_quantity):
+        # Disable if the resulting quantity is out of valid bounds
+        if resultant_quantity <= 0:
+            return True
+        
+        if resultant_quantity > inventory_quantity:
+            return True
 
-
-
-class ResourceSellButton(discord.ui.Button):  # XXX: To be sent to SellButtons or SellView, or replaced by text input
-    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
-        self.parent_view = parent_view
+        return False
 
     async def callback(self, interaction: discord.Interaction):
-        user_info = self.parent_view.user_info
-        resource_type = self.parent_view.resource_type
+        self.df_state.interaction = interaction
+
+        self.sale_quantity += self.button_quantity  # Update sale quantity
+
+        if self.resource_type:  # Update embed and view depending on resource type
+            embed = ResourceSellQuantityEmbed(self.df_state, self.resource_type, self.sale_quantity)
+            view = ResourceSellQuantityView(self.df_state, self.resource_type, self.sale_quantity)
+        else:
+            embed = CargoSellQuantityEmbed(self.df_state, self.sale_quantity)
+            view = CargoSellQuantityView(self.df_state, self.sale_quantity)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class SellVehicleSelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, row: int=2):
+        self.df_state = df_state
+
+        placeholder = 'Vehicles which can be sold'
+        disabled = False
+        options=[]
+        for vehicle in self.df_state.convoy_obj['vehicles']:
+            if all(c['intrinsic'] for c in vehicle['cargo']):  # Check if any of the items in the 'cargo' list of the 'vehicle' have the 'intrinsic' key set to False.
+                options.append(discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,}', value=vehicle['vehicle_id']))
+        if not options:
+            placeholder = 'Convoy has no sellable vehicles'
+            disabled = True
+            options=[discord.SelectOption(label='None', value='None')]
+        if not self.df_state.vendor_obj['vehicle_inventory']:
+            placeholder = 'Vendor does not buy vehicles'
+            disabled = True
+        
+        super().__init__(
+            placeholder=placeholder,
+            options=options,
+            disabled=disabled,
+            custom_id='select_vehicle',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.vehicle_obj = next((
+            v for v in self.df_state.convoy_obj['vehicles']
+            if v['vehicle_id'] == self.values[0]
+        ), None)
+
+        part_list = []
+        for category, part in self.df_state.vehicle_obj['parts'].items():
+            if not part:  # If the part slot is empty
+                part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+                continue
+
+            part_list.append(discord_app.cargo_views.format_part(part))
+        displayable_vehicle_parts = '\n'.join(part_list)
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'## {self.df_state.vendor_obj['name']}',
+            f'### {self.df_state.vehicle_obj['name']} | ${self.df_state.vehicle_obj['value']:,}',
+            f'*{self.df_state.vehicle_obj['base_desc']}*',
+            '### Parts',
+            displayable_vehicle_parts,
+            '### Stats'
+        ])
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+
+        view = VehicleSellConfirmView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class VehicleSellConfirmView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=120)
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(BuyVehicleButton(self.df_state))
+
+
+class BuyVehicleButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=f'Sell {self.df_state.vehicle_obj['name']} | ${self.df_state.vehicle_obj['value']:,}',
+            row=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
 
         try:
-            convoy_after = await api_calls.sell_resource(
-                vendor_id=self.parent_view.vendor_obj['vendor_id'],
-                convoy_id=user_info['convoys'][0]['convoy_id'],
-                resource_type=self.parent_view.resource_type,
-                quantity=self.parent_view.quantity
+            self.df_state.convoy_obj = await api_calls.sell_vehicle(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
 
-        embed = discord.Embed(
-            title=f'You sold {self.parent_view.quantity} {resource_type} to {self.parent_view.vendor_obj['name']}',
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'Your convoy sold {self.df_state.vehicle_obj['name']} for ${self.df_state.vehicle_obj['value']:,}',
+            f'*{self.df_state.vehicle_obj['base_desc']}*'
+        ])
+
+        view = PostSellView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class SellCargoSelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, row: int=3):
+        self.df_state = df_state
+
+        placeholder = 'Cargo which can be sold'
+        disabled = False
+        options=[]
+        for vehicle in df_state.convoy_obj['vehicles']:
+            for cargo in vehicle['cargo']:
+                if not cargo['intrinsic']:
+                    options.append(discord.SelectOption(label=f'{cargo['name']} | {vehicle['name']} | ${cargo['base_price']:,}', value=cargo['cargo_id']))
+        if not options:
+            placeholder = 'Convoy has no sellable cargo'
+            disabled = True
+            options=[discord.SelectOption(label='None', value='None')]
+        
+        super().__init__(
+            placeholder=placeholder,
+            options=options,
+            disabled=disabled,
+            custom_id='select_cargo',
+            row=row
         )
 
-        embed.set_author(
-            name=f'{convoy_after['name']} | ${convoy_after['money']:,}',
-            icon_url=interaction.user.avatar.url
-        )
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
 
-        self.parent_view.previous_embed.remove_footer()  # Remove the footer 
+        self.df_state.cargo_obj = next((
+            c for c in self.df_state.convoy_obj['all_cargo']
+            if c['cargo_id'] == self.values[0]
+        ), None)
 
-        await interaction.response.edit_message(embed=embed, view=BackToVendorsView(interaction, previous_embed=self.parent_view.previous_embed, previous_view=self.parent_view))
+        embed = CargoSellQuantityEmbed(self.df_state)
+
+        view = CargoSellQuantityView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
 
 
+class CargoSellQuantityEmbed(discord.Embed):
+    def __init__(self, df_state: DFState, cart_quantity: int=1):
+        self.df_state = df_state
+        self.cart_quantity = cart_quantity
+        super().__init__()
+        
+        self = df_embed_author(self, self.df_state)
+        
+        sale_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
+        sale_weight = self.cart_quantity * self.df_state.cargo_obj['weight']
 
-class VehicleSellView(discord.ui.View):  # XXX: to send to SellMenus
-    '''
-    Select menu for selling vehicles to vendors. 
+        desc = [f'## {self.df_state.vendor_obj['name']}']
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${self.df_state.cargo_obj['delivery_reward']:,} per item')
+            sale_price = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+        else:
+            desc.append(f'### Selling {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['base_price']:,} per item')
+            sale_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        desc.extend([
+            f'*{self.df_state.cargo_obj['base_desc']}*',
+            f'- Sale volume: {sale_volume:,}L',
+            f'- Sale weight: {sale_weight:,}kg',
+            f'### Cart: {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'
+        ])
 
-    - Appears when 'Vehicle' button is pressed in `VehicleSellView`
+        self.description = '\n'.join(desc)
+        self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
+        self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
+        self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
 
-    - Directs to `VehicleConfirmView` when 'Sell Vehicle' button is pressed
-    '''
+
+class CargoSellQuantityView(discord.ui.View):
+    def __init__(self, df_state: DFState, cart_quantity: int=1):
+        self.df_state = df_state
+        self.cart_quantity = cart_quantity
+        super().__init__()
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, -1, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 1, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 10, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 'max', cargo_for_sale=self.df_state.cargo_obj))
+
+        self.add_item(CargoConfirmSellButton(self.df_state, self.cart_quantity, row=2))
+
+
+class CargoConfirmSellButton(discord.ui.Button):
     def __init__(
             self,
-            interaction: discord.Interaction,
-            user_info: dict,
-            vendor_obj: dict,
-            vehicle_menu: list,
-            previous_embed: discord.Embed,
-            previous_view: discord.ui.View
+            df_state: DFState,
+            cart_quantity: int,
+            row: int=1
     ):
-        
-        super().__init__(timeout=120)
-        # args
-        self.interaction = interaction
-        self.user_info = user_info
-        self.vendor_obj = vendor_obj
-        self.vehicle_menu = vehicle_menu
-        self.previous_embed = previous_embed
-        self.previous_view = previous_view
+        self.df_state = df_state
+        self.cart_quantity = cart_quantity
 
-        self.current_embed = None
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
 
-        self.position = -1
-
-    @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='previous_menu')
-    async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
-        await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
-    
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
-    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.position = (self.position - 1) % len(self.vehicle_menu)
-        await self.update_menu(interaction)
-
-    @discord.ui.button(label='Sell Vehicle', style=discord.ButtonStyle.green, custom_id='sell_vehicle')
-    async def sell_vehicle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.current_embed is None:
-            await interaction.response.send_message('Select a vehicle to sell to the vendor', ephemeral=True, delete_after=10)
-            return
-
-        index = self.position
-        current_vehicle = self.vehicle_menu[index]
-
-        await interaction.response.edit_message(
-            view=VehicleConfirmView(
-                interaction=interaction,
-                user_info=self.user_info,
-                vendor_obj=self.vendor_obj,
-                vehicle_obj=current_vehicle,
-                trade_type='sell',
-                previous_embed=self.previous_embed,
-                previous_view=self
-            )
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=f'Sell {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price}',
+            row=row
         )
-
-    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.position = (self.position + 1) % len(self.vehicle_menu)
-        await self.update_menu(interaction)
-
-    async def update_menu(self, interaction: discord.Interaction):
-        index = self.position
-        current_vehicle = self.vehicle_menu[index]
-
-        embed = discord.Embed(
-            title=f'{current_vehicle['name']}',
-            description=textwrap.dedent(f'''\
-                ### ${current_vehicle['value']:,}
-                - Fuel Efficiency: **{current_vehicle['base_fuel_efficiency']}**/100
-                - Offroad Capability: **{current_vehicle['offroad_capability']}**/100
-                - Top Speed: **{current_vehicle['top_speed']}**/100
-                - Cargo Capacity: **{current_vehicle['cargo_capacity']}** liter(s)
-                - Weight Capacity: **{current_vehicle['weight_capacity']}** kilogram(s)
-                - Towing Capacity: **{current_vehicle['towing_capacity']}** kilogram(s)
-
-                *{current_vehicle['base_desc']}*
-            ''')  # FIXME: add wear and other values that aren't in this embed
-        )
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        embed.set_footer(
-            text=textwrap.dedent(f'''\
-            Page [{index + 1} / {len(self.vehicle_menu)}]
-            '''
-            )
-        )
-
-        self.current_embed = embed
-
-        await interaction.response.edit_message(embed=embed)
-
-class SellSelectView(discord.ui.View):  # XXX: likely going to be replaced by a dropdown menu
-    '''
-    Select what type of item the user is trying to sell to the vendor (vehicle, resources, cargo)
-
-    - Appears when 'sell' button is pressed in `VendorMenuView`
-
-    - Directs to `ResourceSelectView` if user is selling resources, `CargoSellView` if user is selling cargo, or (eventually) `VehicleSellView`
-    if user is selling a vehicle to the vendor.
-    
-    '''
-    def __init__(
-            self,
-            interaction: discord.Interaction,  # Using interaction.user, we can get user's ID and therefore relevant information
-            user_info: dict,
-            vendor_obj: dict,
-            sellable_cargo: list,
-            previous_embed: discord.Embed,
-            previous_view: discord.ui.View,
-            current_embed: discord.Embed  # an argument that shouldn't be needed often, only when a response's view is being changed but not its embed.
-        ):
-        super().__init__(timeout=120)
-        self.interaction = interaction
-        self.user_info = user_info
-        self.vendor_obj = vendor_obj
-        self.sellable_cargo = sellable_cargo
-        self.previous_embed = previous_embed
-        self.previous_view = previous_view
-        self.current_embed = current_embed
-        self.quantity = 1
-        self.position = -1
-
-        if self.vendor_obj['cargo_inventory']:
-            self.add_item(SellSelectCargo(parent_view=self, label='Cargo', style=discord.ButtonStyle.blurple, custom_id='cargo'))
-
-        if self.vendor_obj['vehicle_inventory']:
-            self.add_item(SellSelectVehicle(parent_view=self, label='Vehicle', style=discord.ButtonStyle.blurple, custom_id='vehicle'))
-
-        if len(vendor_resources(self.vendor_obj)) > 0:
-            self.add_item(SellSelectResource(parent_view=self, label='Resource', style=discord.ButtonStyle.blurple, custom_id='resource'))
-
-
-    @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.green, custom_id='previous_menu')
-    async def previous_menu_button(self, interaction: discord.Interaction, button: discord.Button):
-        await interaction.response.edit_message(embed=self.previous_embed, view=self.previous_view)
-
-class SellSelectResource(discord.ui.Button):  # XXX: most likely to be replaced by a dropdown menu
-    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
-        self.parent_view = parent_view
 
     async def callback(self, interaction: discord.Interaction):
-        if not self.parent_view.vendor_obj['cargo_inventory']:
-            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy cargo', ephemeral=True, delete_after=10)
+        self.df_state.interaction = interaction
+        
+        try:
+            self.df_state.convoy_obj = await api_calls.sell_cargo(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                cargo_id=self.df_state.cargo_obj['cargo_id'],
+                quantity=self.cart_quantity
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
             return
         
-        embed = discord.Embed(
-            title=f'Selling resources to {self.parent_view.vendor_obj['name']}',
-            description='Use buttons to navigate selling menu',
-        )
-
-        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.edit_message(
-            embed=embed,
-            view=ResourceSelectView(
-                interaction=interaction,
-                user_info=self.parent_view.user_info,
-                vendor_obj=self.parent_view.vendor_obj,
-                trade_type='sell',
-                previous_embed=self.parent_view.previous_embed,
-                previous_view=self.parent_view.previous_view
-            )
-        )
-
-class SellSelectCargo(discord.ui.Button):  # XXX: also likely going to be replaced by a dropdown menu
-    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
-        self.parent_view = parent_view
-
-    async def callback(self, interaction: discord.Interaction):
-        if not self.parent_view.vendor_obj['cargo_inventory']:
-            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy cargo', ephemeral=True, delete_after=10)
-            return
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
         
-        embed = discord.Embed(
-            title=f'Selling cargo to {self.parent_view.vendor_obj['name']}',
-            description='Use buttons to navigate selling menu',
-        )
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        desc = [f'## {self.df_state.vendor_obj['name']}']
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            desc.append(f'Delivered {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${delivery_reward}')
+        else:
+            desc.append(f'Sold {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${cart_price}')
+        embed.description = '\n'.join(desc)
 
-        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
+        view = PostSellView(self.df_state)
 
-        await interaction.response.edit_message(
-            embed=embed,
-            view=CargoSellView(
-                interaction=interaction,
-                user_info=self.parent_view.user_info,
-                vendor_obj=self.parent_view.vendor_obj,
-                sellable_cargo=self.parent_view.sellable_cargo,
-                previous_embed=self.parent_view.current_embed,
-                previous_view=self.parent_view
-            )
-        )
+        await interaction.response.edit_message(embed=embed, view=view)
 
-class SellSelectVehicle(discord.ui.Button):  # XXX: going to be replaced by a dropdown menu
-    '''
-    Directly tied to `SellSelectView`, and only used there.
-    '''
-    def __init__(self, parent_view: discord.ui.View, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
-        self.parent_view = parent_view
 
-    async def callback(self, interaction: discord.Interaction):
-        if not self.parent_view.vendor_obj['vehicle_inventory']:
-            await interaction.response.send_message(f'{self.parent_view.vendor_obj['name']} does not buy vehicles', ephemeral=True, delete_after=10)
-        embed = discord.Embed(
-            title=f'Selling vehicle to {self.parent_view.vendor_obj['name']}',
-            description='Use buttons to navigate selling menu'
-        )
+class PostSellView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__()
 
-        convoy_balance = f'{self.parent_view.user_info['convoys'][0]['money']:,}'
-        embed.set_author(
-            name=f'{self.parent_view.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        await interaction.response.edit_message(
-            embed=embed,
-            view=VehicleSellView(
-                interaction=interaction,
-                user_info=self.parent_view.user_info,
-                vendor_obj=self.parent_view.vendor_obj,
-                vehicle_menu=self.parent_view.user_info['convoys'][0]['vehicles'],
-                previous_embed=self.parent_view.current_embed,
-                previous_view=self.parent_view
-            )
-        )
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)

@@ -23,6 +23,7 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 async def main_menu(interaction: discord.Interaction, edit: bool=True):
+    'This menu should *always* perform a "full refresh" in order to allow it to function as a reset/refresh button'
     if not edit:
         await interaction.response.defer()
 

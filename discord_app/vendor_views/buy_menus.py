@@ -34,13 +34,13 @@ async def buy_menu(df_state: DFState):
 
     vehicle_list = []
     for vehicle in df_state.vendor_obj['vehicle_inventory']:
-        vehicle_str = f'- {vehicle['name']} - *${vehicle['value']:,}*'
+        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
         vehicle_list.append(vehicle_str)
     displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
 
     cargo_list = []
     for cargo in df_state.vendor_obj['cargo_inventory']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) - *${cargo['base_price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['base_price']:,} each*'
 
         if cargo['recipient']:
             cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
@@ -71,14 +71,6 @@ async def buy_menu(df_state: DFState):
 
 
 class BuyView(discord.ui.View):
-    '''
-    Menu for selecting and buying items from vendors.
-    
-    - Appears when `Buy` button from VendorMenuView is pressed. 
-
-    - Directs to `VehicleConfirmView` if user is buying a vehicle, `ResourceView` if user is buying resources,
-    and `CargoQuantityView` if user is buying cargo.
-    '''
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__()
@@ -93,84 +85,8 @@ class BuyView(discord.ui.View):
 
         self.add_item(BuyCargoSelect(self.df_state))
 
-    async def update_menu(self, interaction: discord.Interaction):
-        '''Update menu based on whether user pressed back or next button'''
-        convoy_balance = f'{self.user_info['convoys'][0]['money']:,}'
-        index = self.position
-        current_item = self.menu[index]
-
-        if current_item['inv_type'] == 'cargo':
-            if current_item['recipient']:
-                recipient_dict = await api_calls.get_vendor(current_item['recipient'])
-
-                self.recipient = recipient_dict
-                recipient_name = recipient_dict['name']
-                delivery_reward = current_item['delivery_reward']
-            else:
-                self.recipient = None
-                recipient_name = 'None'
-                delivery_reward = 'None'
-            image_file = None
-            item_embed = discord.Embed(
-                title=current_item['name'],
-                description=textwrap.dedent(f'''\
-                    *{current_item['base_desc']}*
-
-                    - Base Price: **${current_item['base_price']}**
-                    - Recipient: **{recipient_name}**
-                    - Delivery Reward: **{delivery_reward}**
-                ''')
-            )
-
-            item_embed.add_field(name='Quantity', value=current_item['quantity'])
-            item_embed.add_field(name='Volume', value=f'{current_item['volume']} liter(s)')
-            item_embed.add_field(name='Weight', value=f'{current_item['weight']} kilogram(s)')
-
-            item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
-
-        if current_item['inv_type'] == 'vehicle':
-            if current_item['part_descs']:
-                part_descs = f'\nNotable parts:\n  - {'\n- '.join(current_item['part_descs'])}\n'
-            else:
-                part_descs = ''
-
-            item_embed = discord.Embed(
-                title=f'{current_item['name']}',
-                description=textwrap.dedent(f'''\
-                    ### ${current_item['value']:,}
-                    - Fuel Efficiency: **{current_item['base_fuel_efficiency']}**/100
-                    - Offroad Capability: **{current_item['offroad_capability']}**/100
-                    - Top Speed: **{current_item['top_speed']}**/100
-                    - Cargo Capacity: **{current_item['cargo_capacity']}** liter(s)
-                    - Weight Capacity: **{current_item['weight_capacity']}** kilogram(s)
-                    - Towing Capacity: **{current_item['towing_capacity']}** kilogram(s)
-                    {part_descs}
-                    *{current_item['base_desc']}*
-                ''')
-            )
-            
-            item_embed.add_field(name='Wear', value=f'{current_item['wear']:.0f}/100')
-            item_embed.add_field(name='Armor Points', value=f'{current_item['ap']}/{current_item['max_ap']}')
-
-            item_embed.set_footer(text=f'Page [{index + 1} / {len(self.menu)}]')
-
-        item_embed.set_author(
-            name=f'{self.user_info['convoys'][0]['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
-
-        self.current_embed = item_embed
-
-        await interaction.response.edit_message(embed=item_embed)
-
 
 class BuyResourceButton(discord.ui.Button):
-    '''
-    Not to be confused with ResourceBuyButton, which executes the API call to buy resources.
-    This button is simply to choose which resource the user would like to buy from the vendor.
-
-    Applied to `BuyView` if there are any resources at the vendor the user is shopping at.
-    '''
     def __init__(self, df_state: DFState, resource_type: str, row: int=1):
         self.df_state = df_state
         self.resource_type = resource_type
@@ -189,15 +105,14 @@ class BuyResourceButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
         
-        embed = ResourceBuyQuantityEmbed(self.df_state, self.resource_type, 1)
-        
+        embed = ResourceBuyQuantityEmbed(self.df_state, self.resource_type)
         view = ResourceBuyQuantityView(self.df_state, self.resource_type)
 
         await interaction.response.edit_message(embed=embed, view=view)
 
 
 class ResourceBuyQuantityEmbed(discord.Embed):
-    def __init__(self, df_state: DFState, resource_type: str, cart_quantity: int=0):
+    def __init__(self, df_state: DFState, resource_type: str, cart_quantity: int=1):
         self.df_state = df_state
         self.resource_type = resource_type
         self.cart_quantity = cart_quantity
@@ -259,7 +174,6 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
         if button_quantity == 'max':  # Handle "max" button logic
             self.button_quantity = min(max_convoy_capacity, inventory_quantity) - self.cart_quantity
-            # Disable the "max" button if it would add 0
             if self.button_quantity <= 0:
                 self.button_quantity = 0  # Ensure the quantity is 0
             label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
@@ -273,8 +187,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             resultant_quantity, inventory_quantity, max_convoy_capacity
         )
 
-        # Disable the button if the "max" button would add 0 quantity
-        if self.button_quantity == 0:
+        if self.button_quantity == 0:  # Disable the button if the "max" button would add 0 quantity
             disabled = True
 
         super().__init__(
@@ -378,18 +291,19 @@ class BuyVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):
         self.df_state = df_state
         
-        if self.df_state.vendor_obj['vehicle_inventory']:
-            disabled = False
-            options=[
-                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,}', value=vehicle['vehicle_id'])
-                for vehicle in self.df_state.vendor_obj['vehicle_inventory']
-            ]
-        else:
+        placeholder = 'Vehicle Inventory'
+        disabled = False
+        options=[
+            discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,}', value=vehicle['vehicle_id'])
+            for vehicle in self.df_state.vendor_obj['vehicle_inventory']
+        ]
+        if not options:
+            placeholder = 'Vendor has no vehicle inventory'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
         
         super().__init__(
-            placeholder='Vehicle Inventory',
+            placeholder=placeholder,
             options=options,
             disabled=disabled,
             custom_id='select_vehicle',
@@ -425,12 +339,12 @@ class BuyVehicleSelect(discord.ui.Select):
         ])
         vehicle_buy_confirm_embed = discord_app.vehicle_views.df_embed_vehicle_stats(vehicle_buy_confirm_embed, self.df_state.vehicle_obj)
 
-        vehicle_buy_confirm_view = VehicleConfirmView(self.df_state)
+        vehicle_buy_confirm_view = VehicleBuyConfirmView(self.df_state)
 
         await interaction.response.edit_message(embed=vehicle_buy_confirm_embed, view=vehicle_buy_confirm_view)
 
 
-class VehicleConfirmView(discord.ui.View):
+class VehicleBuyConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=120)
@@ -438,27 +352,6 @@ class VehicleConfirmView(discord.ui.View):
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(BuyVehicleButton(self.df_state))
-
-    # @discord.ui.button(label='Buy Vehicle', style=discord.ButtonStyle.green, custom_id='confirm_buy_vehicle', row=1)
-    # async def buy_vehicle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-    #     '''Confirm button for selling and buying vehicles'''
-    #     self.df_state.interaction = interaction
-
-    #     if self.trade_type == 'sell':  # XXX: Trying to sell a vehicle will most likely throw an error becuase there's still cargo in it; we need error handling
-    #         try:
-    #             convoy_after = await api_calls.sell_vehicle(
-    #                 vendor_id=self.vendor_obj['vendor_id'],
-    #                 convoy_id=self.user_info['convoys'][0]['convoy_id'],
-    #                 vehicle_id=self.vehicle['vehicle_id']
-    #             )
-    #         except RuntimeError as e:
-    #             await interaction.response.send_message(content=e, ephemeral=True)
-    #             return
-
-    #         embed = discord.Embed(
-    #             title=f'You sold your convoy\'s {self.vehicle['name']}',
-    #             description=f'Money gained: ${self.vehicle['value']}'
-    #         )
 
 
 class BuyVehicleButton(discord.ui.Button):
@@ -505,19 +398,20 @@ class BuyVehicleButton(discord.ui.Button):
 class BuyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=3):
         self.df_state = df_state
-        
-        if self.df_state.vendor_obj['cargo_inventory']:
-            disabled = False
-            options=[
-                discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,}', value=cargo['cargo_id'])
-                for cargo in self.df_state.vendor_obj['cargo_inventory']
-            ]
-        else:
+
+        placeholder = 'Cargo Inventory'
+        disabled = False
+        options=[
+            discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,}', value=cargo['cargo_id'])
+            for cargo in self.df_state.vendor_obj['cargo_inventory']
+        ]
+        if not options:
+            placeholder = 'Vendor has no cargo inventory'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
         
         super().__init__(
-            placeholder='Cargo Inventory',
+            placeholder=placeholder,
             options=options,
             disabled=disabled,
             custom_id='select_cargo',

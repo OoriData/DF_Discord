@@ -7,12 +7,11 @@ import                                textwrap
 import                                math
 
 import                                discord
-import                                httpx
 import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, discord_timestamp, df_embed_author
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -188,9 +187,14 @@ class ConvoyView(discord.ui.View):
             self.all_cargo_destinations_button.disabled = True
 
     @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
-    async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button, row=1):
+    async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
         await send_convoy_menu(self.df_state)
+
+    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', row=1)
+    async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.df_state.interaction = interaction
+        await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
 
     @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):

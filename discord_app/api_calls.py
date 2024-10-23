@@ -300,6 +300,20 @@ async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dic
     return response.json()
 
 
+async def get_dialogue_by_char_ids(char_a_id: UUID, char_b_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            f'{DF_API_HOST}/dialogue/get_by_char_ids',
+            params={
+                'char_a_id': char_a_id,
+                'char_b_id': char_b_id,
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
 async def get_unseen_dialogue_for_user(user_id: UUID) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(

@@ -41,7 +41,7 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
 
                 convoy_descs.extend([
                     f'### {convoy['name']}\n'
-                    f'Current location: **{tile_obj['settlements'][0]['name']}**\n'
+                    f'Current location: **{tile_obj['settlements'][0]['name']}**\n' if tile_obj['settlements'] else f'Current location: **({convoy['x']}, {convoy['y']})**',
                     'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
                 ])
 

@@ -26,10 +26,8 @@ async def vehicle_menu(df_state: DFState):
     vehicle_embed = discord.Embed()
     vehicle_embed = df_embed_author(vehicle_embed, df_state)
     vehicle_embed.description = '\n'.join([
-        # f'# {self.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['base_desc']}*',
-        
         '## Stats'
     ])
     vehicle_embed = df_embed_vehicle_stats(vehicle_embed, df_state.vehicle_obj)
@@ -47,7 +45,7 @@ class VehicleView(discord.ui.View):
 
         add_nav_buttons(self, self.df_state)
 
-        self.add_item(VehicleSelect(self.df_state))
+        # self.add_item(VehicleSelect(self.df_state))
 
 
 class VehicleSelect(discord.ui.Select):

@@ -110,6 +110,21 @@ async def get_convoy(convoy_id: UUID) -> dict:
     return response.json()
 
 
+async def move_cargo(convoy_id: UUID, cargo_id: UUID, dest_vehicle_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            f'{DF_API_HOST}/convoy/cargo/move',
+            params={
+                'convoy_id': convoy_id,
+                'cargo_id': cargo_id,
+                'dest_vehicle_id': dest_vehicle_id,
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
 async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(

@@ -11,6 +11,7 @@ import                                discord
 from discord_app               import api_calls, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
+import discord_app.convoy_views
 
 from discord_app.df_state      import DFState
 
@@ -49,7 +50,7 @@ async def cargo_menu(df_state: DFState):
         f'  - Weight: **{df_state.cargo_obj['weight']}** kg',
     ])
 
-    cargo_view = CargoView(
+    cargo_view = ConvoyCargoView(
         df_state=df_state,
         recipient_vendor_obj=recipient_vendor_obj
     )
@@ -65,23 +66,66 @@ class ConvoyCargoView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(ConvoyCargoSelect(self.df_state))
+        # self.add_item(ConvoyCargoSelect(self.df_state))
+
+        self.add_item(MoveCargoVehicleSelect(self.df_state))
 
         if recipient_vendor_obj:
-            self.add_item(MapButton(
-                convoy_info=self.df_state.convoy_obj,
-                recipient_info=recipient_vendor_obj
-            ))
+            self.add_item(MapButton(self.df_state.convoy_obj, recipient_vendor_obj))
+
+
+class MoveCargoVehicleSelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, row: int=2):
+        self.df_state = df_state
+
+        if self.df_state.cargo_obj['intrinsic']:
+            disabled = True
+        else:
+            disabled = False
+
+        options = [
+            discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
+            for vehicle in self.df_state.convoy_obj['vehicles']
+            if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']
+        ]
+        if not options:
+            options = discord.SelectOption(label='none', value='none')
+            disabled = True
+        
+        super().__init__(
+            placeholder='Select vehicle to move this cargo into',
+            options=options,
+            custom_id='select_vehicle',
+            disabled=disabled,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        dest_vehicle = next((
+            v for v in self.df_state.convoy_obj['vehicles']
+            if v['vehicle_id'] == self.values[0]
+        ), None)
+
+        self.df_state.convoy_obj = await api_calls.move_cargo(
+            self.df_state.convoy_obj['convoy_id'],
+            self.df_state.cargo_obj['cargo_id'],
+            dest_vehicle['vehicle_id']
+        )
+
+        await discord_app.convoy_views.convoy_menu(self.df_state)
 
 
 class ConvoyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
-        options=[
-            discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
-            for cargo in self.df_state.convoy_obj['all_cargo']
-        ]
+        options = []
+        for vehicle in self.df_state.convoy_obj['vehicles']:
+            for cargo in vehicle['cargo']:
+                if not cargo['intrinsic']:
+                    options.append(discord.SelectOption(label=f'{cargo['name']} ({vehicle['name']})', value=cargo['cargo_id']))
         
         super().__init__(
             placeholder='Select cargo to inspect',
@@ -99,23 +143,6 @@ class ConvoyCargoSelect(discord.ui.Select):
         ), None)
 
         await cargo_menu(df_state=self.df_state)
-
-
-class VendorCargoView(discord.ui.View):
-    ''' Overarching convoy button menu '''
-    def __init__(self, df_state: DFState, recipient_vendor_obj: dict = None):
-        self.df_state = df_state
-        super().__init__(timeout=120)
-
-        add_nav_buttons(self, self.df_state)
-
-        self.add_item(VendorCargoSelect(self.df_state))
-
-        if recipient_vendor_obj:
-            self.add_item(MapButton(
-                convoy_info=self.df_state.convoy_obj,
-                recipient_info=recipient_vendor_obj
-            ))
 
 
 class VendorCargoSelect(discord.ui.Select):
@@ -146,22 +173,27 @@ class VendorCargoSelect(discord.ui.Select):
 
 
 class MapButton(discord.ui.Button):
-    def __init__(self, convoy_info: dict, recipient_info: dict):
-        super().__init__(label='Map to Recipient', custom_id='map_button', style=discord.ButtonStyle.blurple)
-        self.convoy_info = convoy_info
-        self.recipient_info = recipient_info
+    def __init__(self, convoy_obj: dict, recipient_obj: dict, row: int=1):
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Map to Recipient',
+            custom_id='map_button',
+            row=row
+        )
+        self.convoy_obj = convoy_obj
+        self.recipient_obj = recipient_obj
     
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
-        convoy_x = self.convoy_info['x']
-        convoy_y = self.convoy_info['y']
+        convoy_x = self.convoy_obj['x']
+        convoy_y = self.convoy_obj['y']
 
-        recipient_x = self.recipient_info['x']
-        recipient_y = self.recipient_info['y']
+        recipient_x = self.recipient_obj['x']
+        recipient_y = self.recipient_obj['y']
 
         embed = discord.Embed(
-            title=f'Map relative to {self.convoy_info['name']}',
+            title=f'Map relative to {self.convoy_obj['name']}',
             description=textwrap.dedent('''
                 🟨 - Your convoy's location
                 🟦 - Recipient vendor's location
@@ -174,7 +206,7 @@ class MapButton(discord.ui.Button):
             lowlighted=[(recipient_x, recipient_y)],
         )
 
-        map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
+        map_embed.set_footer(text='Your interaction is still up above, just scroll up or dismiss this message to return to it.')
 
         await interaction.followup.send(
             embed=map_embed,

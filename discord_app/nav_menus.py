@@ -30,7 +30,7 @@ class NavBackButton(discord.ui.Button):
             disabled = True
 
         super().__init__(
-            style=discord.ButtonStyle.blurple,
+            style=discord.ButtonStyle.gray,
             label='⬅ Back',
             disabled=disabled,
             custom_id='nav_back_button',
@@ -50,7 +50,7 @@ class NavMainMenuButton(discord.ui.Button):
         self.df_state = df_state
 
         super().__init__(
-            style=discord.ButtonStyle.blurple,
+            style=discord.ButtonStyle.gray,
             label='Main Menu',
             custom_id='nav_main_menu_button',
             row=0,
@@ -66,7 +66,7 @@ class NavConvoyButton(discord.ui.Button):
         self.df_state = df_state
 
         super().__init__(
-            style=discord.ButtonStyle.blurple,
+            style=discord.ButtonStyle.gray,
             label='Convoy',
             custom_id='nav_convoy_button',
             row=0,
@@ -87,7 +87,7 @@ class NavVendorsButton(discord.ui.Button):
             disabled = False
 
         super().__init__(
-            style=discord.ButtonStyle.blurple,
+            style=discord.ButtonStyle.gray,
             label='Vendors',
             disabled=disabled,
             custom_id='nav_vendor_button',

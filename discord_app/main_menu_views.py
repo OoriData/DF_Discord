@@ -34,18 +34,21 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
 
     if user_obj:
         if user_obj['convoys']:  # If the user has convoys
-            convoy_descs = '\n'.join([
-                f'### {convoy['name']}\n'
-                f'Current location: ({convoy['x']}, {convoy['y']})\n'
-                'Vehicles:\n' + '\n'.join([f'  - {vehicle['name']}' for vehicle in convoy['vehicles']])
-                for convoy in user_obj['convoys']
-            ])
+            convoy_descs = []
+            for convoy in user_obj['convoys']:
+                tile_obj = await api_calls.get_tile(convoy['x'], convoy['y'])
+
+                convoy_descs.extend([
+                    f'### {convoy['name']}\n'
+                    f'Current location: **{tile_obj['settlements'][0]['name']}**\n'
+                    'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
+                ])
 
             description = '\n'.join([
                 '# Desolate Frontiers',
                 'Welcome to the Desolate Frontiers!',
                 'Select a convoy:',
-                convoy_descs
+                '\n'.join(convoy_descs)
             ])
         else:  # If the user doesn't have convoys
             description = '\n'.join([
@@ -86,9 +89,8 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
 
 class MainMenuView(discord.ui.View):
     def __init__(self, df_state: DFState):
-        super().__init__()
-
         self.df_state = df_state
+        super().__init__()
 
         self.clear_items()
 

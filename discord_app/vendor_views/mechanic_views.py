@@ -243,7 +243,7 @@ class CargoSelect(discord.ui.Select):
 
         options=[
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
-            for cargo in self.df_state.vendor_obj['all_cargo']
+            for cargo in self.df_state.vendor_obj['cargo_inventory']
             if cargo.get('part')
         ]
         

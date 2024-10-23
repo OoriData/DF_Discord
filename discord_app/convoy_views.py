@@ -30,19 +30,16 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 async def convoy_menu(df_state: DFState, edit: bool=True):
     # TODO: call an embed with the ConvoySelect if the df_state doesn't have a convoy_obj
 
-    convoy_embed, image_file = await make_convoy_embed(df_state)
+    embed, image_file = await make_convoy_embed(df_state)
 
-    convoy_view = ConvoyView(df_state)
+    view = ConvoyView(df_state)
 
-    df_state.previous_embed = convoy_embed
-    df_state.previous_view = convoy_view
-    df_state.previous_attachments = [image_file]
     if edit:
-        await df_state.interaction.response.edit_message(embed=convoy_embed, view=convoy_view, attachments=[image_file])
+        await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
         # await asyncio.sleep(5)
         # print(df_state.interaction.message.attachments[0].proxy_url)
     else:
-        await df_state.interaction.followup.send(embed=convoy_embed, view=convoy_view, files=[image_file])
+        await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
 
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
@@ -145,7 +142,7 @@ def vehicles_embed_str(vehicles: list[dict], detailed: Optional[bool] = False) -
         vehicles_str += '\n'.join(vehicles_list)
 
     else:
-        vehicles_str = '*No vehicles in convoy. Buy one by using /vendors and navigating one of the settlement\'s dealerships.*'
+        vehicles_str = '*No vehicles in convoy. Buy one at the dealership.*'
 
     return vehicles_str
 
@@ -157,22 +154,18 @@ class ConvoyView(discord.ui.View):
             df_state: DFState
     ):
         self.df_state = df_state
-        super().__init__(timeout=120)  # TODO: Add view timeout as a configurable option
+        super().__init__()
 
         add_nav_buttons(self, df_state)
 
-        if self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
-            self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=2))
-        else:
+        self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=2))
+        self.add_item(cargo_views.ConvoyCargoSelect(df_state=self.df_state, row=3))
+        
+        if not self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
             self.send_convoy_button.disabled = True
 
         if self.df_state.convoy_obj['journey']:  # If the convoy is already on a journey
             self.send_convoy_button.disabled = True
-
-        if self.df_state.convoy_obj['all_cargo']:  # If the convoy has any (displayable) cargo
-            self.add_item(cargo_views.ConvoyCargoSelect(df_state=self.df_state, row=3))
-        else:  # If the convoy has no (displayable) cargo
-            self.remove_item(self.all_cargo_destinations_button)
 
         recipients = []
         # Get all cargo recipient locations and put em in a tuple with the name of the cargo
@@ -345,6 +338,7 @@ class SendConvoyConfirmView(discord.ui.View):
 
     @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send', row=1)
     async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.df_state.interaction = interaction
         try:
             self.df_state.convoy_obj = await api_calls.send_convoy(self.df_state.convoy_obj['convoy_id'], self.prospective_journey_dict['journey_id'])
         except RuntimeError as e:

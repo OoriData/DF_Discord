@@ -41,7 +41,7 @@ class VehicleView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__(timeout=120)
+        super().__init__()
 
         add_nav_buttons(self, self.df_state)
 
@@ -52,15 +52,22 @@ class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
+        placeholder = 'Select vehicle to inspect'
+        disabled = False
         options=[
             discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
             for vehicle in self.df_state.convoy_obj['vehicles']
         ]
+        if not options:
+            placeholder = 'No vehicles in convoy'
+            disabled = True
+            options=[discord.SelectOption(label='None', value='None')]
         
         super().__init__(
-            placeholder='Select vehicle to inspect',
+            placeholder=placeholder,
             options=options,
             custom_id='select_vehicle',
+            disabled=disabled,
             row=row
         )
 

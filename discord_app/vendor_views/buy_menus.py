@@ -520,7 +520,6 @@ class CargoConfirmBuyButton(discord.ui.Button):
             return
         
         cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
-        delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
@@ -529,6 +528,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
             f'Purchased {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${cart_price}'
         ]
         if self.df_state.cargo_obj['recipient']:
+            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
             desc.append(f'Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of $**{delivery_reward}**')
         embed.description = '\n'.join(desc)
 

@@ -83,17 +83,19 @@ class MoveCargoVehicleSelect(discord.ui.Select):
         else:
             disabled = False
 
+        placeholder = 'Select cargo to inspect'
         options = [
             discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
             for vehicle in self.df_state.convoy_obj['vehicles']
             if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']
         ]
         if not options:
-            options = discord.SelectOption(label='none', value='none')
+            placeholder = 'No valid vehicles to move cargo into'
             disabled = True
+            options = [discord.SelectOption(label='none', value='none')]
         
         super().__init__(
-            placeholder='Select vehicle to move this cargo into',
+            placeholder=placeholder,
             options=options,
             custom_id='select_vehicle',
             disabled=disabled,
@@ -121,16 +123,23 @@ class ConvoyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
+        placeholder = 'Select cargo to inspect'
+        disabled = False
         options = []
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
                     options.append(discord.SelectOption(label=f'{cargo['name']} ({vehicle['name']})', value=cargo['cargo_id']))
+        if not options:
+            placeholder = 'No cargo in convoy'
+            disabled = True
+            options = [discord.SelectOption(label='None', value='None')]
         
         super().__init__(
-            placeholder='Select cargo to inspect',
+            placeholder=placeholder,
             options=options,
             custom_id='select_cargo',
+            disabled=disabled,
             row=row
         )
 

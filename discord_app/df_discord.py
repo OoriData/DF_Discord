@@ -278,18 +278,18 @@ class Desolate_Cog(commands.Cog):
                         ping = f'<@{discord_user.id}>\n'
 
                         # Compile message content from unseen dialogues
-                        ping_deets = [
+                        notification = [
                             message['content']
                             for dialogue in unseen_dialogue_dicts
                             for message in dialogue['messages']
                         ]
-                        ping += '\n'.join(ping_deets)
+                        notifications = '\n'.join(notification)
 
                         embed = discord.Embed()
-                        embed.description = ping[:4096]
+                        embed.description = notifications[:4096]
 
                         # Send notification in the appropriate channel (limited to 2000 characters)
-                        await notification_channel.send(embed=embed)  # TODO: handle longer messages
+                        await notification_channel.send(content=ping, embed=embed)  # TODO: handle longer messages
                         logger.info(ansi_color(f'Sent notification to user {discord_user.nick} ({discord_user.id})', 'green'))
 
                         # Mark dialogue as seen after sending notification

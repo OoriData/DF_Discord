@@ -47,6 +47,19 @@ class VehicleView(discord.ui.View):
 
         # self.add_item(VehicleSelect(self.df_state))
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):

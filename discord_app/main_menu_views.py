@@ -126,6 +126,19 @@ class MainMenuView(discord.ui.View):
         self.df_state.interaction = interaction
         # await interaction.response.send_modal(ConvoyNameModal(self.df_state))
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class MainMenuSingleConvoyButton(discord.ui.Button):
     def __init__(self, df_state: DFState):

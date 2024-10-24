@@ -42,7 +42,6 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, edi
     else:
         await df_state.interaction.followup.send(embed=embed, view=view, files=[])
 
-
 class DialogueView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(
@@ -52,11 +51,26 @@ class DialogueView(discord.ui.View):
     ):
         self.df_state = df_state
         self.page = page
-        super().__init__()  # TODO: Add view timeout as a configurable option
+        super().__init__(timeout=5)  # TODO: Add view timeout as a configurable option
+        
+
 
         add_nav_buttons(self, df_state)
 
         add_dialogue_buttons(self, df_state, page)
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
 
 class DialogueNextButton(discord.ui.Button):
     ''' Button for navigating between convoy dialogues '''

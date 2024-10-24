@@ -44,7 +44,6 @@ class Desolate_Cog(commands.Cog):
     async def on_ready(self):
         'Called when the bot is ready to start taking commands'
         global SETTLEMENTS_CACHE
-        global DF_USERS_CACHE
 
         await self.bot.tree.sync()
 
@@ -59,16 +58,7 @@ class Desolate_Cog(commands.Cog):
                 SETTLEMENTS_CACHE.extend(sett['settlements'])
 
         logger.debug(ansi_color('Initializing users cache...', 'yellow'))
-        DF_USERS_CACHE = []
-        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
-        df_users = guild.members
-        for df_user in df_users:
-            try:
-                user_dict = await api_calls.get_user_by_discord(df_user.id)
-                DF_USERS_CACHE.append((user_dict['user_id'], df_user))
-            except RuntimeError as e:
-                logger.debug(f'user is not registered: {e}')
-                continue
+        self.update_user_cache.start()
 
         df_guild = self.bot.get_guild(DF_GUILD_ID)
         logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
@@ -101,37 +91,18 @@ class Desolate_Cog(commands.Cog):
             msg = f'something went wrong: {e}'
             await interaction.response.send_message(msg)
 
-    @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
-    async def df_register(self, interaction: discord.Interaction):
-        global DF_USERS_CACHE
-        try:
-            new_user_id = await api_calls.new_user(interaction.user.name, interaction.user.id)
-            await interaction.response.send_message(textwrap.dedent(f'''
-                User **{interaction.user.name}** successfully created
-                user id: `{new_user_id}`
-            '''))
-            DF_USERS_CACHE.append((new_user_id, interaction.user))
-        except Exception as e:
-            await interaction.response.send_message(e)
-
-    # i can't imagine this command seeing a whole lot of use, but added it anyway
-    # @app_commands.command(name='get-user', description='Get a user object based on its ID (probably an admin command or smth)')
-    # async def get_user(self, interaction: discord.Interaction, discord_id: str=None):
-    #     if not discord_id:
-    #         discord_id = interaction.user.id
-
-    #     if discord_id.startswith('<@'):
-    #         discord_id = discord_id.strip('<@>')  # allows users to @ individuals to get their profile info
-
-    #     user_info = await api_calls.get_user_by_discord(interaction.user.id)
-        
-    #     await interaction.response.send_message(textwrap.dedent(f'''
-    #         user id: `{user_info['user_id']}`
-    #         username: `{user_info['username']}`
-    #         discord id: `{user_info['discord_id']}`
-    #         join date: `{user_info['join_date']}`
-    #         convoys: `{', '.join([f'{convoy['name']}' for convoy in user_info['convoys']])}`
-    #     '''))
+    # @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
+    # async def df_register(self, interaction: discord.Interaction):
+    #     global DF_USERS_CACHE
+    #     try:
+    #         new_user_id = await api_calls.new_user(interaction.user.name, interaction.user.id)
+    #         await interaction.response.send_message(textwrap.dedent(f'''
+    #             User **{interaction.user.name}** successfully created
+    #             user id: `{new_user_id}`
+    #         '''))
+    #         DF_USERS_CACHE.append((new_user_id, interaction.user))
+    #     except Exception as e:
+    #         await interaction.response.send_message(e)
 
     @app_commands.command(name='df-vendors', description='Open the Desolate Frontiers buy menu')
     async def df_vendors(self, interaction: discord.Interaction):
@@ -263,36 +234,71 @@ class Desolate_Cog(commands.Cog):
     async def df_help(self, interaction: discord.Interaction):
         await interaction.response.send_message(DF_HELP, ephemeral=True)
 
+    @tasks.loop(minutes=5)
+    async def update_user_cache(self):
+        global DF_USERS_CACHE
+        if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
+            DF_USERS_CACHE = {}
+
+        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        current_member_ids = set(member.id for member in guild.members)  # Create a set of current members' IDs
+
+        for cached_member_id in list(DF_USERS_CACHE.keys()):  # Remove users from cache who are no longer in the guild
+            if cached_member_id not in current_member_ids:
+                del DF_USERS_CACHE[cached_member_id]
+
+        for member in guild.members:  # Update cache with current members
+            if member.id in DF_USERS_CACHE:  # If the member is already in the cache, skip the API call
+                continue
+            
+            try:  # Fetch user data via API only if they aren't in the cache
+                user_dict = await api_calls.get_user_by_discord(member.id)
+                DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
+            except RuntimeError as e:  # Just skip unregistered users
+                logger.debug(f'user is not registered: {e}')
+                continue
+
     @tasks.loop(minutes=1)
     async def notifier(self):
         global DF_USERS_CACHE
 
         notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
+        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
 
-        for df_id, discord_user in DF_USERS_CACHE:
-            logger.info(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})')
-            try:
-                unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
+        for discord_user_id, df_id in DF_USERS_CACHE.items():
+            discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
-                if unseen_dialogue_dicts:
-                    ping = f'<@{discord_user.id}>\n'
+            if discord_user:
+                logger.info(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})')
+                try:
+                    # Fetch unseen dialogue for the DF user
+                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
 
-                    ping_deets = [
-                        message['content']
-                        for dialogue in unseen_dialogue_dicts
-                        for message in dialogue['messages']
-                    ]
-                    ping +='\n'.join(ping_deets)
+                    if unseen_dialogue_dicts:
+                        ping = f'<@{discord_user.id}>\n'
 
-                    await notification_channel.send(ping[:2000])  # TODO: handle longer messages
-                    logger.info(ansi_color(f'sent notification to user {discord_user.nick} ({discord_user.id})', 'green'))
+                        # Compile message content from unseen dialogues
+                        ping_deets = [
+                            message['content']
+                            for dialogue in unseen_dialogue_dicts
+                            for message in dialogue['messages']
+                        ]
+                        ping += '\n'.join(ping_deets)
 
-                    await api_calls.mark_dialogue_as_seen(df_id)
-            except RuntimeError as e:
-                logger.error(f'Error fetching notifications: {e}')
-                continue
+                        embed = discord.Embed()
+                        embed.description = ping[:4096]
 
-    # XXX user cache update function? for when new users are registered from within a menu or smth
+                        # Send notification in the appropriate channel (limited to 2000 characters)
+                        await notification_channel.send(embed=embed)  # TODO: handle longer messages
+                        logger.info(ansi_color(f'Sent notification to user {discord_user.nick} ({discord_user.id})', 'green'))
+
+                        # Mark dialogue as seen after sending notification
+                        await api_calls.mark_dialogue_as_seen(df_id)
+                except RuntimeError as e:
+                    logger.error(f'Error fetching notifications: {e}')
+                    continue
+            else:
+                logger.error(f'Discord user with ID {discord_user_id} not found in guild')
 
 
 def main():

@@ -299,7 +299,7 @@ class DestinationSelect(discord.ui.Select):
             embed=convoy_embed,
             view=SendConvoyConfirmView(
                 df_state=self.df_state,
-                prospective_journey_dict=prospective_journey_plus_misc['journey']
+                prospective_journey_plus_misc=prospective_journey_plus_misc
             ),
             attachments=[image_file]
         )
@@ -310,25 +310,55 @@ class SendConvoyConfirmView(discord.ui.View):
     def __init__(
             self,
             df_state: DFState,
-            prospective_journey_dict: dict
+            prospective_journey_plus_misc: dict
     ):
         self.df_state = df_state
-        self.prospective_journey_dict = prospective_journey_dict
+        self.prospective_journey_plus_misc = prospective_journey_plus_misc
         
         super().__init__(timeout=120)
 
         add_nav_buttons(self, self.df_state)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.red, custom_id='cancel_send', row=1)
+        self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
+
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.blurple, custom_id='cancel_send', row=1)
     async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):
         # TODO: Make it so that when you press the cancel button it gives you some sort of feedback rather than just deleting the whole thing
         await convoy_menu(self.df_state)
 
-    @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send', row=1)
-    async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
+
+class ConfirmJourneyButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict, row: int=1):
+        self.df_state = df_state
+        self.prospective_journey_plus_misc = prospective_journey_plus_misc
+        
+        label = 'Embark upon Journey'
+        disabled = False
+
+        resource_constraints = []
+        for resource in ['fuel', 'water', 'food']:
+            if self.df_state.convoy_obj[resource] < self.prospective_journey_plus_misc[f'{resource}_expense']:
+                resource_constraints.append(resource)
+        
+        if resource_constraints:
+            label = f'Not enough {', '.join(resource_constraints)}'
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=label,
+            disabled=disabled,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
         try:
-            self.df_state.convoy_obj = await api_calls.send_convoy(self.df_state.convoy_obj['convoy_id'], self.prospective_journey_dict['journey_id'])
+            self.df_state.convoy_obj = await api_calls.send_convoy(
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                journey_id=self.prospective_journey_plus_misc['journey']['journey_id']
+            )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return

@@ -76,6 +76,7 @@ class DialogueView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
+        
 
 class DialogueNextButton(discord.ui.Button):
     ''' Button for navigating between convoy dialogues '''

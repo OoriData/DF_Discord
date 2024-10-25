@@ -238,6 +238,19 @@ class ConvoyView(discord.ui.View):
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 async def send_convoy_menu(df_state: DFState):
     convoy_embed, image_file = await make_convoy_embed(df_state)

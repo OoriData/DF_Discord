@@ -28,18 +28,23 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 
 
 async def convoy_menu(df_state: DFState, edit: bool=True):
+    await df_state.interaction.response.defer()
     # TODO: call an embed with the ConvoySelect if the df_state doesn't have a convoy_obj
 
     embed, image_file = await make_convoy_embed(df_state)
 
     view = ConvoyView(df_state)
 
-    if edit:
-        await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
-        # await asyncio.sleep(5)
-        # print(df_state.interaction.message.attachments[0].proxy_url)
-    else:
-        await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
+    og_message: discord.InteractionMessage = await df_state.interaction.original_response()
+    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
+    # await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
+    # await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
+    # if edit:
+    #     await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
+    #     # await asyncio.sleep(5)
+    #     # print(df_state.interaction.message.attachments[0].proxy_url)
+    # else:
+    #     await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
 
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
@@ -241,16 +246,15 @@ class ConvoyView(discord.ui.View):
 
 
 async def send_convoy_menu(df_state: DFState):
-    convoy_embed, image_file = await make_convoy_embed(df_state)
+    await df_state.interaction.response.defer()
+
+    embed, image_file = await make_convoy_embed(df_state)
 
     df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
-    destination_view = DestinationView(df_state=df_state, df_map=df_map)
+    view = DestinationView(df_state=df_state, df_map=df_map)
 
-    df_state.previous_embed = convoy_embed
-    df_state.previous_view = destination_view
-    df_state.previous_attachments = [image_file]
-
-    await df_state.interaction.response.edit_message(embed=convoy_embed, view=destination_view, attachments=[image_file])
+    og_message: discord.InteractionMessage = await df_state.interaction.original_response()
+    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
 
 
 class DestinationView(discord.ui.View):
@@ -312,6 +316,7 @@ class DestinationSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+        await self.df_state.interaction.response.defer()
 
         dest_x, dest_y = map(int, self.values[0].split(','))  # Get the destination coords
 
@@ -319,16 +324,15 @@ class DestinationSelect(discord.ui.Select):
 
         prospective_journey_plus_misc = route_choices[0]  # TODO: handle multiple routes
 
-        convoy_embed, image_file = await make_convoy_embed(self.df_state, prospective_journey_plus_misc)
+        embed, image_file = await make_convoy_embed(self.df_state, prospective_journey_plus_misc)
 
-        await interaction.response.edit_message(
-            embed=convoy_embed,
-            view=SendConvoyConfirmView(
-                df_state=self.df_state,
-                prospective_journey_plus_misc=prospective_journey_plus_misc
-            ),
-            attachments=[image_file]
+        view = SendConvoyConfirmView(
+            df_state=self.df_state,
+            prospective_journey_plus_misc=prospective_journey_plus_misc
         )
+
+        og_message: discord.InteractionMessage = await self.df_state.interaction.original_response()
+        await self.df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
 
 
 class SendConvoyConfirmView(discord.ui.View):

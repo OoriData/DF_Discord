@@ -35,7 +35,8 @@ async def get_map(x_min: int = None, x_max: int = None, y_min: int = None, y_max
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             f'{DF_API_HOST}/map/get',
-            params=params
+            params=params,
+            timeout=10
         )
 
     _check_code(response)

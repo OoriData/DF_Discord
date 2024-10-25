@@ -238,6 +238,19 @@ class ConvoyView(discord.ui.View):
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 async def send_convoy_menu(df_state: DFState):
     convoy_embed, image_file = await make_convoy_embed(df_state)
@@ -260,6 +273,19 @@ class DestinationView(discord.ui.View):
         add_nav_buttons(self, self.df_state)
 
         self.add_item(DestinationSelect(self.df_state, df_map))
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
 
 
 class DestinationSelect(discord.ui.Select):
@@ -346,6 +372,19 @@ class SendConvoyConfirmView(discord.ui.View):
             return
 
         await convoy_menu(self.df_state)
+    
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
 
 
 class CargoView(discord.ui.View):
@@ -434,6 +473,19 @@ class CargoView(discord.ui.View):
         embed.set_footer(text=f'Page [{index + 1} / {len(cargo_menu)}]')
         self.current_embed = embed
         await interaction.response.edit_message(embed=embed, view=self, attachments=[])
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
 
     
 class MapButton(discord.ui.Button):

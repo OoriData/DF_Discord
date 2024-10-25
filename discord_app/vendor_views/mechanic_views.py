@@ -58,6 +58,19 @@ class MechVehicleDropdownView(discord.ui.View):
         # await interaction.response.send_message('this don\'t do nothin yet!')
         pass
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState):
@@ -149,6 +162,19 @@ class MechView(discord.ui.View):
         # await interaction.response.send_message('this don\'t do nothin yet!')
         pass
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class MechVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -220,6 +246,19 @@ class MechVehicleView(discord.ui.View):
         vendor_cargo = self.df_state.vendor_obj['cargo_inventory']
         await self.handle_part_lists(interaction, vendor_cargo, is_vendor=True)
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class CargoSelectView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -229,6 +268,19 @@ class CargoSelectView(discord.ui.View):
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
         self.add_item(CargoSelect(self.df_state))
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
 
 
 class CargoSelect(discord.ui.Select):
@@ -321,6 +373,19 @@ class InstallConfirmView(discord.ui.View):
 
         await interaction.response.send_message(embed=embed, view=view)
 
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
 
 class PostInstallView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -328,3 +393,16 @@ class PostInstallView(discord.ui.View):
         super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()

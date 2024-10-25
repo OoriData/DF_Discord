@@ -19,7 +19,7 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, edi
 
     convoy_name = await api_calls.get_convoy(char_b_id)
     convoy_name = convoy_name['name']
-    sender_name = 'Master Chief'  # FIXME: This is just a placeholder since I can't access the sender's name yet
+    sender_name = 'The Joker'  # FIXME: This is just a placeholder since I can't access the sender's name yet
 
     display_messages = []
     for message in dialogue_obj['messages']:

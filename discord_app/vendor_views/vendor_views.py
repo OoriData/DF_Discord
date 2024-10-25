@@ -25,6 +25,31 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 # TODO: send message if user tries to iterate through menu with a length of zero
 # TODO: Add universal BackButtonView that just allows users to go back to the main vendor menu after they complete a transaction
 
+SERVICE_KEYS = {
+    'fuel': ('Fuel', '{number} liter(s)'),
+    'water': ('Water', '{number} liter(s)'),
+    'food': ('Food', '{number} serving(s)'),
+    'cargo_inventory': ('Cargo', '{number} item(s)'),
+    'vehicle_inventory': ('Vehicles', '{number} vehicle(s)'),
+    'repair_price': ('Mechanic Services', 'Available')
+}
+
+
+def vendor_services(vendor_obj: dict):
+    services = []
+    for key in list(SERVICE_KEYS.keys()):
+        if vendor_obj[key]:
+            if isinstance(vendor_obj[key], list):
+                number = len(vendor_obj[key])
+            else:
+                number = vendor_obj[key]
+            services.append((
+                SERVICE_KEYS[key][0],
+                SERVICE_KEYS[key][1].format(number=number)
+            ))
+
+    return services
+
 
 async def vendor_menu(df_state: DFState, edit: bool=True):
     vendor_embed = discord.Embed()
@@ -50,9 +75,21 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
             await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
             return
         
+        vendor_displayables = []
+        for vendor in tile_obj['settlements'][0]['vendors']:
+            displayable_services = []
+            for key in list(SERVICE_KEYS.keys()):
+                if vendor[key]:
+                    displayable_services.append(f'  - {SERVICE_KEYS[key][0]}')
+
+            vendor_displayables.append('\n'.join([
+                f'- **{vendor['name']}**',
+                '\n'.join(displayable_services)
+            ]))
+        
         vendor_embed.description = '\n'.join([
             f'## {tile_obj['settlements'][0]['name']}',
-            '\n'.join([f'- {vendor['name']}' for vendor in tile_obj['settlements'][0]['vendors']]),
+            '\n'.join(vendor_displayables),
             'Select a vendor:'
         ])
 
@@ -180,34 +217,3 @@ class SellButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
         await discord_app.vendor_views.sell_menus.sell_menu(self.df_state)
-
-
-def vendor_services(vendor: dict):
-    service_keys = {
-        'fuel': 'Fuel Refilling',
-        'water': 'Drinking Water',
-        'food': 'Food',
-        'cargo_inventory': 'Commerce Items',
-        'vehicle_inventory': 'Vehicles',
-        'repair_price': 'Mechanical Repairs'
-    }
-    # XXX stop being lazy! list comprehension this
-    services = []
-    for key in list(service_keys.keys()):
-        if vendor[key]:
-            services.append((service_keys[key], '✅ **Available!**'))
-
-    return services
-
-
-def vendor_resources(vendor: dict):
-    ''' Quickly get which resources a vendor sells/buys '''
-    resources = []
-    if vendor['fuel']:
-        resources.append('fuel')
-    elif vendor['water']:
-        resources.append('water')
-    elif vendor['food']:
-        resources.append('food')
-    
-    return resources

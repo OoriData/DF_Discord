@@ -8,6 +8,7 @@ import                                textwrap
 
 import                                discord
 
+import discord_app.cargo_views
 from discord_app               import discord_timestamp
 from discord_app               import api_calls, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
@@ -23,12 +24,25 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 async def vehicle_menu(df_state: DFState):
+    part_list = []
+    for category, part in df_state.vehicle_obj['parts'].items():
+        if not part:  # If the part slot is empty
+            part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+            continue
+
+        part_list.append(discord_app.cargo_views.format_part(part))
+    displayable_vehicle_parts = '\n'.join(part_list)
+
     vehicle_embed = discord.Embed()
     vehicle_embed = df_embed_author(vehicle_embed, df_state)
     vehicle_embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['base_desc']}*',
-        '## Stats'
+        '',
+        f'Value: **${df_state.vehicle_obj['value']:,}**',
+        '### Parts',
+        displayable_vehicle_parts,
+        '### Stats'
     ])
     vehicle_embed = df_embed_vehicle_stats(vehicle_embed, df_state.vehicle_obj)
 

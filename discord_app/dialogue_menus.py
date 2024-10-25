@@ -4,11 +4,11 @@ from uuid                  import UUID
 
 import                            discord
 
-from discord_app           import api_calls, df_embed_author
+from discord_app           import api_calls, df_embed_author, discord_timestamp
 from discord_app.nav_menus import add_nav_buttons
 from discord_app.df_state  import DFState
 
-def add_dialogue_buttons(view: discord.ui.View, df_state: DFState, page: int):
+def add_dialogue_buttons(view: discord.ui.View, df_state: DFState, page: int):  # FIXME: probably just remove this and add items individually
     view.add_item(DialogueBackButton(df_state=df_state, page=page))
     view.add_item(DialogueNextButton(df_state=df_state, page=page))
 
@@ -16,16 +16,23 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, edi
     # TODO: call an embed with the ConvoySelect if the df_state doesn't have a convoy_obj
 
     dialogue_obj = await api_calls.get_dialogue_by_char_ids(char_a_id, char_b_id)
+
+    convoy_name = await api_calls.get_convoy(char_b_id)
+    convoy_name = convoy_name['name']
+    sender_name = 'Master Chief'  # FIXME: This is just a placeholder since I can't access the sender's name yet
+
     display_messages = []
     for message in dialogue_obj['messages']:
-        display_messages.append(f'**{message['role']}**:\n{message['content']}')
+        # display_messages.append(f'**{message['role']}**:\n{message['content']}')
+        timestamp = discord_timestamp(format_letter='f', formatted_time=message['timestamp'])
+        display_messages.append(f'{timestamp}:\n{message['content']}')
     if not display_messages:
         display_messages = ['Nobody\'s spoken here yet.']
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
-        f'## Dialogue between {char_a_id} & {char_b_id}',
+        f'## Dialogue between {convoy_name} & {sender_name}',
         # '\n\n'.join(display_messages)
         display_messages[page]
     ])
@@ -53,8 +60,6 @@ class DialogueView(discord.ui.View):
         self.page = page
         super().__init__()  # TODO: Add view timeout as a configurable option
         
-
-
         add_nav_buttons(self, df_state)
 
         add_dialogue_buttons(self, df_state, page)

@@ -236,7 +236,14 @@ class MapButton(discord.ui.Button):
             ephemeral=True
         )
 
-def format_part(part):
+def format_part(part_cargo: dict):
+    if part_cargo.get('cargo_id'):
+        part = part_cargo['part']
+        name = part_cargo['name']
+    else:
+        part = part_cargo
+        name = part['name'] if part.get('name') else None
+
     fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
     lbft = round(part['Nm'] * 0.7376) if part.get('Nm') else None
     horsepower = round(part['kW'] * 1.34102) if part.get('kW') else None
@@ -248,7 +255,7 @@ def format_part(part):
 
     part_bits = [
         f'- {part['category'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['category'].replace('_', ' ').capitalize()}',
-        f'  - **{part['name']}**' if part.get('name') else None,
+        f'  - **{name}**',
 
         f'  - {part['capacity']} L ({fuel_gal} gal)' if part.get('capacity') else None,
 

@@ -193,35 +193,23 @@ class ConvoyView(discord.ui.View):
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
         await interaction.response.defer()
-        user_cargo = self.df_state.convoy_obj['all_cargo']
-        recipients = []
-        # Get all cargo recipient locations and put em in a tuple with the name of the cargo
-        for cargo in user_cargo:
-            if cargo['recipient']:
-                cargo_tuple = (cargo['recipient'], cargo['name'])
-                if cargo_tuple not in recipients:
-                    # add vendor id and cargo name as a tuple
-                    recipients.append(cargo_tuple)
 
-        # For each vendor ID found in the cargo tuple, get vendor's location and add it to destinations
-        destinations = []
+        cargo_for_delivery = [cargo for cargo in self.df_state.convoy_obj['all_cargo'] if cargo['recipient']]
+
+        deliveries = []
         recipient_coords = []
-        for cargo_tuple in recipients:
-            vendor = await api_calls.get_vendor(cargo_tuple[0])
-            destination = await api_calls.get_tile(vendor['x'], vendor['y'])
+        for cargo in cargo_for_delivery:  # For each deliverable cargo, get vendor's details and add it to destinations
+            recipient_vendor = await api_calls.get_vendor(cargo['recipient'])
 
             # Grab destination name to display to user
-            dest_name = destination['settlements'][0]['name']
-            destinations.append(f'- **{dest_name}** ({cargo_tuple[1]})')
-            # And recipient_coords for map rendering
-            dest_coords = (destination['settlements'][0]['x'], destination['settlements'][0]['y'])
-            recipient_coords.append(dest_coords)
-        
-        dest_string = '\n'.join(destinations)
+            deliveries.append(f'- {cargo['name']}\n  - Deliver to **{recipient_vendor['name']}**\n  - ${cargo['delivery_reward'] * cargo['quantity']} total delivery reward')
 
-        convoy_x = self.df_state.convoy_obj['x']
-        convoy_y = self.df_state.convoy_obj['y']
-        convoy_coords = [(convoy_x, convoy_y)]
+            # And recipient_coords for map rendering
+            recipient_coords.append((recipient_vendor['x'], recipient_vendor['y']))
+        
+        dest_string = '\n'.join(deliveries)
+
+        convoy_coords = [(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])]
 
         dest_embed = discord.Embed(
             title=f'All cargo destinations in {self.df_state.convoy_obj['name']}',
@@ -230,11 +218,11 @@ class ConvoyView(discord.ui.View):
 
         map_embed, image_file = await add_map_to_embed(
             embed=dest_embed,
-            lowlighted=convoy_coords,
-            highlighted=recipient_coords,
+            highlighted=convoy_coords,
+            lowlighted=recipient_coords
         )
         
-        map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
+        map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
@@ -337,7 +325,7 @@ class DestinationSelect(discord.ui.Select):
             embed=convoy_embed,
             view=SendConvoyConfirmView(
                 df_state=self.df_state,
-                prospective_journey_dict=prospective_journey_plus_misc['journey']
+                prospective_journey_plus_misc=prospective_journey_plus_misc
             ),
             attachments=[image_file]
         )
@@ -348,25 +336,55 @@ class SendConvoyConfirmView(discord.ui.View):
     def __init__(
             self,
             df_state: DFState,
-            prospective_journey_dict: dict
+            prospective_journey_plus_misc: dict
     ):
         self.df_state = df_state
-        self.prospective_journey_dict = prospective_journey_dict
+        self.prospective_journey_plus_misc = prospective_journey_plus_misc
         
         super().__init__(timeout=120)
 
         add_nav_buttons(self, self.df_state)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.red, custom_id='cancel_send', row=1)
+        self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
+
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.blurple, custom_id='cancel_send', row=1)
     async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):
         # TODO: Make it so that when you press the cancel button it gives you some sort of feedback rather than just deleting the whole thing
         await convoy_menu(self.df_state)
 
-    @discord.ui.button(label='Confirm Journey', style=discord.ButtonStyle.green, custom_id='confirm_send', row=1)
-    async def confirm_journey_button(self, interaction: discord.Interaction, button: discord.Button):
+
+class ConfirmJourneyButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict, row: int=1):
+        self.df_state = df_state
+        self.prospective_journey_plus_misc = prospective_journey_plus_misc
+        
+        label = 'Embark upon Journey'
+        disabled = False
+
+        resource_constraints = []
+        for resource in ['fuel', 'water', 'food']:
+            if self.df_state.convoy_obj[resource] < self.prospective_journey_plus_misc[f'{resource}_expense']:
+                resource_constraints.append(resource)
+        
+        if resource_constraints:
+            label = f'Not enough {', '.join(resource_constraints)}'
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=label,
+            disabled=disabled,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
         try:
-            self.df_state.convoy_obj = await api_calls.send_convoy(self.df_state.convoy_obj['convoy_id'], self.prospective_journey_dict['journey_id'])
+            self.df_state.convoy_obj = await api_calls.send_convoy(
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                journey_id=self.prospective_journey_plus_misc['journey']['journey_id']
+            )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
@@ -516,7 +534,7 @@ class MapButton(discord.ui.Button):
             lowlighted=[(recipient_x, recipient_y)],
         )
 
-        map_embed.set_footer(text='Your vendor interaction is still up above, just scroll up or dismiss this message to return to it.')
+        map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
 
         await interaction.response.defer()
         await interaction.followup.send(

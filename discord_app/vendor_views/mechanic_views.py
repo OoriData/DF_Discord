@@ -52,7 +52,7 @@ class MechVehicleDropdownView(discord.ui.View):
 
         self.add_item(VehicleSelect(df_state))
     
-    @discord.ui.button(label='Repair wear and AP for all vehicles', style=discord.ButtonStyle.green, custom_id='repair_all', disabled=True)
+    @discord.ui.button(label='Repair wear and AP for all vehicles', style=discord.ButtonStyle.green, custom_id='repair_all', row=1, disabled=True)
     async def repair_all_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
         # await interaction.response.send_message('this don\'t do nothin yet!')
@@ -213,7 +213,7 @@ class MechVehicleView(discord.ui.View):
         
         part_list = []
         for cargo in part_cargos_to_display:
-            part_list.append(discord_app.cargo_views.format_part(cargo['part']))
+            part_list.append(discord_app.cargo_views.format_part(cargo))
         displayable_vehicle_parts = '\n'.join(part_list)
 
         embed = discord.Embed()
@@ -228,7 +228,7 @@ class MechVehicleView(discord.ui.View):
         ])
         embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
 
-        view = CargoSelectView(self.df_state)
+        view = CargoSelectView(self.df_state, part_cargos_to_display)
 
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -261,13 +261,13 @@ class MechVehicleView(discord.ui.View):
 
 
 class CargoSelectView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, part_cargos_to_display):
         self.df_state = df_state
         super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
-        self.add_item(CargoSelect(self.df_state))
+        self.add_item(CargoSelect(self.df_state, part_cargos_to_display))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -284,12 +284,13 @@ class CargoSelectView(discord.ui.View):
 
 
 class CargoSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, part_cargos_to_display):
         self.df_state = df_state
+        self.part_cargos_to_display = part_cargos_to_display
 
         options=[
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
-            for cargo in self.df_state.vendor_obj['cargo_inventory']
+            for cargo in part_cargos_to_display
             if cargo.get('part')
         ]
         

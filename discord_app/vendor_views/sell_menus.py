@@ -144,7 +144,7 @@ class ResourceSellQuantityEmbed(discord.Embed):
             f'## {df_state.vendor_obj['name']}',
             f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/Serving',
             f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]} Liters/Servings',
-            f'### Sale: {self.sale_quantity} Liters/Servings | ${sale_price:,}'
+            f'### Sale: {self.sale_quantity:,.2f} Liters/Servings | ${sale_price:,.0f}'
         ])
 
 
@@ -195,7 +195,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Buy {self.sale_quantity}L of {self.resource_type} | ${sale_price}',
+            label=f'Buy {self.sale_quantity:,.2f}L of {self.resource_type} | ${sale_price:,.0f}',
             row=row
         )
 
@@ -219,7 +219,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'## {self.df_state.vendor_obj['name']}',
-            f'Sold {self.sale_quantity} Liters/Servings of {self.resource_type} for ${sale_price}'
+            f'Sold {self.sale_quantity:,.2f} Liters/Servings of {self.resource_type} for ${sale_price:,.0f}'
         ])
 
         view = PostSellView(self.df_state)

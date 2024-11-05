@@ -139,7 +139,7 @@ class ResourceBuyQuantityEmbed(discord.Embed):
             f'## {df_state.vendor_obj['name']}',
             f'### Buying {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/Serving',
             f'{self.df_state.convoy_obj['name']}\'s capacity for {self.resource_type}: {self.df_state.convoy_obj[f'max_{self.resource_type}']}',
-            f'### Cart: {self.cart_quantity} Liters/Servings | ${cart_price:,}'
+            f'### Cart: {self.cart_quantity:,.2f} Liters/Servings | ${cart_price:,.0f}'
         ])
 
 
@@ -281,7 +281,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Buy {self.cart_quantity}L of {self.resource_type} | ${cart_price}',
+            label=f'Buy {self.cart_quantity:,.2f}L of {self.resource_type} | ${cart_price:,.0f}',
             row=row
         )
 
@@ -305,7 +305,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'## {self.df_state.vendor_obj['name']}',
-            f'Purchased {self.cart_quantity} Liters/Servings of {self.resource_type} for ${cart_price}'
+            f'Purchased {self.cart_quantity:,.2f} Liters/Servings of {self.resource_type} for ${cart_price:,.0f}'
         ])
 
         view = PostBuyView(self.df_state)
@@ -498,7 +498,7 @@ class CargoBuyQuantityEmbed(discord.Embed):
                 f'**Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of ${delivery_reward}**'
             ])
         desc.append(
-            f'### Cart: {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,}'
+            f'### Cart: {self.cart_quantity:,} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,}'
         )
 
         self.description = '\n'.join(desc)

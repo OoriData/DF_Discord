@@ -109,7 +109,8 @@ class ChooseVendorView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(VendorSelect(self.df_state, vendors))
+        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, vendors))
+        self.add_item(VendorSelect(self.df_state, vendors, row=2))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

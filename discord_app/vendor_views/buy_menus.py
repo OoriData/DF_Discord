@@ -22,6 +22,76 @@ API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.getenv('DF_API_HOST')
 
 
+class TopUpButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, vendors, row: int=1):
+        self.df_state = df_state
+        self.vendors = vendors
+
+        self.resource_vendors = {}
+        self.top_up_price = 0
+
+        resource_types = ['fuel', 'water', 'food']
+        available_resources = []
+
+        for resource_type in resource_types:
+            # Calculate convoy's need for each resource
+            convoy_need = self.df_state.convoy_obj[f'max_{resource_type}'] - self.df_state.convoy_obj[resource_type]
+            if convoy_need > 0:
+                # Find the vendor with the lowest price for this resource
+                vendor = min(
+                    (v for v in vendors if v.get(f'{resource_type}_price') is not None),
+                    key=lambda v: v[f'{resource_type}_price'],
+                    default=None
+                )
+                if vendor:
+                    # Calculate top-up cost and track vendor info for each resource
+                    self.top_up_price += convoy_need * vendor[f'{resource_type}_price']
+                    self.resource_vendors[resource_type] = {
+                        'vendor_id': vendor['vendor_id'],
+                        'price': vendor[f'{resource_type}_price'],
+                        'convoy_need': convoy_need
+                    }
+                    available_resources.append(resource_type)
+
+        # Display available resources in the button label
+        available_resources_str = ', '.join(available_resources)
+        
+        # Disable button if convoy doesn't have enough money
+        disabled = self.top_up_price > self.df_state.convoy_obj['money']
+
+        # Initialize the button with calculated values
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=f'Top up {available_resources_str} | ${self.top_up_price:,.0f}',
+            disabled=disabled,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        try:
+            # Attempt to top up each resource from its respective vendor
+            for resource_type, vendor_info in self.resource_vendors.items():
+                self.df_state.convoy_obj = await api_calls.buy_resource(
+                    vendor_id=vendor_info['vendor_id'],
+                    convoy_id=self.df_state.convoy_obj['convoy_id'],
+                    resource_type=resource_type,
+                    quantity=vendor_info['convoy_need']
+                )
+            
+            # Success response
+            embed = discord.Embed(description=f'Topped up all resources for ${self.top_up_price:,.0f}')
+            embed = df_embed_author(embed, self.df_state)
+            view = discord.ui.View()
+            discord_app.nav_menus.add_nav_buttons(view, self.df_state)
+            await interaction.response.edit_message(embed=embed, view=view)
+
+        except RuntimeError as e:
+            # Handle error response
+            await interaction.response.send_message(content=str(e), ephemeral=True)
+
+
 async def buy_menu(df_state: DFState):
     resources_list = []
     if df_state.vendor_obj['fuel']:

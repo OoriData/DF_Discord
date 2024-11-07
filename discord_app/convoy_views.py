@@ -322,17 +322,21 @@ class DestinationSelect(discord.ui.Select):
 
         route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
 
-        prospective_journey_plus_misc = route_choices[0]  # TODO: handle multiple routes
+        await route_menu(self.df_state, route_choices)
 
-        embed, image_file = await make_convoy_embed(self.df_state, prospective_journey_plus_misc)
 
-        view = SendConvoyConfirmView(
-            df_state=self.df_state,
-            prospective_journey_plus_misc=prospective_journey_plus_misc
-        )
+async def route_menu(df_state: DFState, route_choices):
+    prospective_journey_plus_misc = route_choices[0]  # TODO: handle multiple routes
 
-        og_message: discord.InteractionMessage = await self.df_state.interaction.original_response()
-        await self.df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
+    embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
+
+    view = SendConvoyConfirmView(
+        df_state=df_state,
+        prospective_journey_plus_misc=prospective_journey_plus_misc
+    )
+
+    og_message: discord.InteractionMessage = await df_state.interaction.original_response()
+    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
 
 
 class SendConvoyConfirmView(discord.ui.View):

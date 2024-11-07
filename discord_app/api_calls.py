@@ -236,7 +236,7 @@ async def buy_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qua
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
                 'resource_type': resource_type,
-                'quantity': quantity
+                'quantity': round(quantity, 2)  # Rounding to catch floating point errors
             }
         )
 
@@ -252,7 +252,7 @@ async def sell_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qu
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
                 'resource_type': resource_type,
-                'quantity': quantity
+                'quantity': round(quantity, 2)  # Rounding to catch floating point errors
             }
         )
 

@@ -258,13 +258,13 @@ async def send_convoy_menu(df_state: DFState):
 
 
 class DestinationView(discord.ui.View):
-    def __init__(self, df_state: DFState, df_map: dict):
+    def __init__(self, df_state: DFState, df_map: dict, page=0):
         self.df_state = df_state
         super().__init__()
 
         add_nav_buttons(self, self.df_state)
 
-        self.add_item(DestinationSelect(self.df_state, df_map))
+        self.add_item(DestinationSelect(self.df_state, df_map, page))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -281,32 +281,48 @@ class DestinationView(discord.ui.View):
 
 
 class DestinationSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, df_map):
+    def __init__(self, df_state: DFState, df_map, page: int):
         self.df_state = df_state
+        self.df_map = df_map
+        self.page = page
 
-        convoy_x = self.df_state.convoy_obj['x']
-        convoy_y = self.df_state.convoy_obj['y']
+        convoy_x, convoy_y = self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y']
         
-        setts = []
-        for row in df_map['tiles']:
-            for sett in row:
-                setts.extend(sett['settlements'])
-
-        settlements_with_distances = [  # Calculate the Euclidean distance for each settlement and store in a list
-            (sett['name'], sett['x'], sett['y'], math.sqrt((sett['x'] - convoy_x) ** 2 + (sett['y'] - convoy_y) ** 2))
-            for sett in setts
+        # Gather recipient vendor IDs from the convoy's cargo, mapping them to cargo names
+        recipient_to_cargo_names = {}
+        for cargo in self.df_state.convoy_obj['all_cargo']:
+            recipient = cargo['recipient']
+            if recipient:
+                recipient_to_cargo_names.setdefault(recipient, []).append(cargo['name'])
+        
+        settlements = [    # Flatten settlements list from map tiles, calculate distances, and filter out same-tile settlements
+            (
+                sett['name'],
+                sett['x'],
+                sett['y'],
+                math.sqrt((sett['x'] - convoy_x) ** 2 + (sett['y'] - convoy_y) ** 2),
+                [cargo_name for vendor in sett['vendors'] if vendor['vendor_id'] in recipient_to_cargo_names
+                 for cargo_name in recipient_to_cargo_names[vendor['vendor_id']]]  # List of cargo names
+            )
+            for row in self.df_map['tiles']
+            for tile in row
+            for sett in tile['settlements']
+            if not (sett['x'] == convoy_x and sett['y'] == convoy_y)  # Exclude settlements on the same tile as convoy
         ]
 
-        sorted_settlements = sorted(settlements_with_distances, key=lambda x: x[3])  # Sort settlements by distance (smallest to largest)
+        # Sort settlements, prioritizing cargo destinations and then by distance
+        sorted_settlements = sorted(
+            settlements,
+            key=lambda x: (not x[4], x[3])  # Sort by presence of cargo names (True first), then by distance
+        )
 
-        coords_dict = {sett_name: f'{x},{y}' for sett_name, x, y, _ in sorted_settlements}  # Prepare dictionary and sorted names
-        
-        sett_names = [sett_name for sett_name, _, _, _ in sorted_settlements]  # Get the sorted settlement names
+        # Paginate the sorted settlements
+        DESTS_PER_PAGE = 23
+        page_start, page_end = self.page * DESTS_PER_PAGE, (self.page + 1) * DESTS_PER_PAGE
+        max_pages = (len(sorted_settlements) - 1) // DESTS_PER_PAGE
 
-        options = [  # Create SelectOption objects, limited to the first 25
-            discord.SelectOption(label=sett_name, value=coords_dict[sett_name])
-            for sett_name in sett_names
-        ][:25]
+        # Create the SelectOption list with pagination controls
+        options = self._create_pagination_options(sorted_settlements[page_start:page_end], page, max_pages)
         
         super().__init__(
             placeholder='Where to?',
@@ -314,15 +330,37 @@ class DestinationSelect(discord.ui.Select):
             custom_id='destination_select',
         )
 
+    def _create_pagination_options(self, settlements, current_page, max_pages):
+        options = []
+        
+        if current_page > 0:  # Add 'previous page' option if not on the first page
+            options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
+        
+        for sett_name, x, y, _, cargo_names in settlements:
+            # Label includes settlement name and cargo names if this is a cargo destination
+            label = f'{sett_name} ({', '.join(cargo_names)})' if cargo_names else sett_name
+            options.append(discord.SelectOption(label=label, value=f'{x},{y}'))
+        
+        if current_page < max_pages:  # Add 'next page' option if not on the last page
+            options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
+
+        return options
+
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
         await self.df_state.interaction.response.defer()
+        
+        if self.values[0] in {'prev_page', 'next_page'}:  # If the choice is a page change
+            self.page += -1 if self.values[0] == 'prev_page' else 1
+            view = DestinationView(df_state=self.df_state, df_map=self.df_map, page=self.page)
+            og_message = await self.df_state.interaction.original_response()
+            await self.df_state.interaction.followup.edit_message(og_message.id, view=view)
+        
+        else:  # If the choice is a destination
+            dest_x, dest_y = map(int, self.values[0].split(','))  # Extract destination coordinates
 
-        dest_x, dest_y = map(int, self.values[0].split(','))  # Get the destination coords
-
-        route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
-
-        await route_menu(self.df_state, route_choices)
+            route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
+            await route_menu(self.df_state, route_choices)
 
 
 async def route_menu(df_state: DFState, route_choices):

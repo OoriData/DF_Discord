@@ -96,7 +96,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
         else:
             disabled = False
 
-        placeholder = 'Select cargo to inspect'
+        placeholder = 'Select vehicle to move cargo into'
         options = [
             discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
             for vehicle in self.df_state.convoy_obj['vehicles']

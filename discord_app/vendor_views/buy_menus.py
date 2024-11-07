@@ -56,13 +56,17 @@ class TopUpButton(discord.ui.Button):
         # Display available resources in the button label
         available_resources_str = ', '.join(available_resources)
         
-        # Disable button if convoy doesn't have enough money
-        disabled = self.top_up_price > self.df_state.convoy_obj['money']
+        if self.top_up_price == 0:  # If nothing to top up
+            label = 'Convoy is already topped up'
+            disabled = True
+        else:
+            label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
+            disabled = self.top_up_price > self.df_state.convoy_obj['money']  # Disable button if convoy doesn't have enough money
 
         # Initialize the button with calculated values
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label=f'Top up {available_resources_str} | ${self.top_up_price:,.0f}',
+            label=label,
             disabled=disabled,
             row=row
         )

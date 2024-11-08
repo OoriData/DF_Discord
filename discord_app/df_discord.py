@@ -66,7 +66,7 @@ class Desolate_Cog(commands.Cog):
         logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
         
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
-        self.notifier.start()  
+        self.notifier.start()
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
@@ -238,6 +238,7 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
+        # logger.info('\n\nUPDATE_USER_CACHE')
         global DF_USERS_CACHE
         if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
             DF_USERS_CACHE = {}
@@ -256,12 +257,19 @@ class Desolate_Cog(commands.Cog):
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
+                logger.info(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) has been added to DF_USERS_CACHE', 'green'))
             except RuntimeError as e:  # Just skip unregistered users
-                logger.debug(f'user is not registered: {e}')
+                logger.info(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue
+
+        # guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        # for discord_user_id, df_id in DF_USERS_CACHE.items():
+        #     discord_user = guild.get_member(discord_user_id)
+        #     print(f'{discord_user.name} ({df_id})')
 
     @tasks.loop(minutes=1)
     async def notifier(self):
+        # logger.info('\n\nNOTIFICATIONS')
         global DF_USERS_CACHE
 
         notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
@@ -271,36 +279,37 @@ class Desolate_Cog(commands.Cog):
             discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
             if discord_user:
-                logger.info(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})')
+                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
                 try:
                     # Fetch unseen dialogue for the DF user
                     unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
+                    logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
                     if unseen_dialogue_dicts:
-                        ping = f'<@{discord_user.id}>\n'
+                        ping = f'<@{discord_user.id}>'
+                        await notification_channel.send(ping)
 
                         # Compile message content from unseen dialogues
-                        notification = [
+                        notifications = [
                             message['content']
                             for dialogue in unseen_dialogue_dicts
                             for message in dialogue['messages']
                         ]
-                        notifications = '\n'.join(notification)
 
-                        embed = discord.Embed()
-                        embed.description = notifications[:4096]
+                        for notification in notifications:
+                            embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                            await notification_channel.send(embed=embed)
 
-                        # Send notification in the appropriate channel (limited to 2000 characters)
-                        await notification_channel.send(content=ping, embed=embed)  # TODO: handle longer messages
-                        logger.info(ansi_color(f'Sent notification to user {discord_user.nick} ({discord_user.id})', 'green'))
+                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
                         # Mark dialogue as seen after sending notification
-                        await api_calls.mark_dialogue_as_seen(df_id)
+                        # await api_calls.mark_dialogue_as_seen(df_id)  # XXX UNCOMMENT ME BEFORE PROD!!!!!!
+
                 except RuntimeError as e:
-                    logger.error(f'Error fetching notifications: {e}')
+                    logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
                     continue
             else:
-                logger.error(f'Discord user with ID {discord_user_id} not found in guild')
+                logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
 
 
 def main():

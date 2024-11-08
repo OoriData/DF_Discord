@@ -134,7 +134,8 @@ async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
                 'convoy_id': convoy_id,
                 'dest_x': dest_x,
                 'dest_y': dest_y
-            }
+            },
+            timeout=10
         )
 
     _check_code(response)

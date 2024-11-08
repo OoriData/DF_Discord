@@ -303,7 +303,7 @@ class Desolate_Cog(commands.Cog):
                         logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
                         # Mark dialogue as seen after sending notification
-                        # await api_calls.mark_dialogue_as_seen(df_id)  # XXX UNCOMMENT ME BEFORE PROD!!!!!!
+                        await api_calls.mark_dialogue_as_seen(df_id)
 
                 except RuntimeError as e:
                     logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))

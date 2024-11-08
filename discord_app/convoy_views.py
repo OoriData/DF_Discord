@@ -355,35 +355,61 @@ class DestinationSelect(discord.ui.Select):
             await route_menu(self.df_state, route_choices)
 
 
-async def route_menu(df_state: DFState, route_choices):
-    prospective_journey_plus_misc = route_choices[0]  # TODO: handle multiple routes
+async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0):
+    prospective_journey_plus_misc = route_choices[route_index]
 
     embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
+    embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
     view = SendConvoyConfirmView(
         df_state=df_state,
-        prospective_journey_plus_misc=prospective_journey_plus_misc
+        prospective_journey_plus_misc=prospective_journey_plus_misc,
+        route_choices=route_choices,
+        route_index=route_index
     )
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
     await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
 
 
+class NextJourneyButton(discord.ui.Button):
+    ''' Loads alternative journey '''
+    def __init__(self, df_state: DFState, routes: list, index: int):
+        super().__init__(label='Show Next Route', custom_id='alt_route', style=discord.ButtonStyle.blurple, row=2)
+        self.df_state = df_state
+        self.routes = routes
+        self.index = index
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        await self.df_state.interaction.response.defer()
+
+        self.index += 1  # ensures that route index will route
+        self.index = self.index % len(self.routes)
+        
+        await route_menu(self.df_state, self.routes, self.index)
+
 class SendConvoyConfirmView(discord.ui.View):
     '''Confirm button before sending convoy somewhere'''
     def __init__(
             self,
             df_state: DFState,
-            prospective_journey_plus_misc: dict
+            prospective_journey_plus_misc: dict,
+            route_choices: list,
+            route_index: int = 0
     ):
         self.df_state = df_state
         self.prospective_journey_plus_misc = prospective_journey_plus_misc
-        
+        self.route_choices = route_choices
+        self.route_index = route_index
+
         super().__init__(timeout=120)
 
         add_nav_buttons(self, self.df_state)
 
         self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
+        if len(route_choices) > 1:
+            self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
 
     @discord.ui.button(label='Cancel', style=discord.ButtonStyle.blurple, custom_id='cancel_send', row=1)
     async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):

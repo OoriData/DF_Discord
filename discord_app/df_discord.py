@@ -106,131 +106,131 @@ class Desolate_Cog(commands.Cog):
     #     except Exception as e:
     #         await interaction.response.send_message(e)
 
-    @app_commands.command(name='df-vendors', description='Open the Desolate Frontiers buy menu')
-    async def df_vendors(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    # @app_commands.command(name='df-vendors', description='Open the Desolate Frontiers buy menu')
+    # async def df_vendors(self, interaction: discord.Interaction):
+    #     await interaction.response.defer()
         
-        user_dict = await api_calls.get_user_by_discord(interaction.user.id)
-        user_convoy = user_dict['convoys'][0]  # XXX: just assuming one convoy for now
+    #     user_dict = await api_calls.get_user_by_discord(interaction.user.id)
+    #     user_convoy = user_dict['convoys'][0]  # XXX: just assuming one convoy for now
 
-        tile_dict = await api_calls.get_tile(user_convoy['x'], user_convoy['y'])
+    #     tile_dict = await api_calls.get_tile(user_convoy['x'], user_convoy['y'])
 
-        # TODO: handle multiple settlements eventually
+    #     # TODO: handle multiple settlements eventually
 
-        if not tile_dict['settlements']:
-            await interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
-            return
+    #     if not tile_dict['settlements']:
+    #         await interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
+    #         return
 
-        settlement_embed = discord.Embed(title=f'{tile_dict['settlements'][0]['name']} vendors',)
-        settlement_embed.description = '\n'.join([f'- {vendor['name']}' for vendor in tile_dict['settlements'][0]['vendors']])
-        settlement_embed.description += '\n**Use the arrows to select the vendor you want to interact with**'
+    #     settlement_embed = discord.Embed(title=f'{tile_dict['settlements'][0]['name']} vendors',)
+    #     settlement_embed.description = '\n'.join([f'- {vendor['name']}' for vendor in tile_dict['settlements'][0]['vendors']])
+    #     settlement_embed.description += '\n**Use the arrows to select the vendor you want to interact with**'
 
-        convoy_balance = f'{user_dict['money']:,}'
-        settlement_embed.set_author(name=f'{user_convoy['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
+    #     convoy_balance = f'{user_dict['money']:,}'
+    #     settlement_embed.set_author(name=f'{user_convoy['name']} | ${convoy_balance}', icon_url=interaction.user.avatar.url)
 
-        view=vendor_views.VendorMenuView(
-            interaction=interaction,
-            user_info=user_dict,
-            menu=tile_dict['settlements'][0]['vendors'],
-            menu_type='vendor'
-        )
+    #     view=vendor_views.VendorMenuView(
+    #         interaction=interaction,
+    #         user_info=user_dict,
+    #         menu=tile_dict['settlements'][0]['vendors'],
+    #         menu_type='vendor'
+    #     )
 
-        await interaction.followup.send(embed=settlement_embed, view=view)
+    #     await interaction.followup.send(embed=settlement_embed, view=view)
 
-    @app_commands.command(name='df-new-convoy', description='Create a new convoy')
-    async def new_convoy(self, interaction: discord.Interaction, new_convoy_name: str=None):
-        await interaction.response.defer()
+    # @app_commands.command(name='df-new-convoy', description='Create a new convoy')
+    # async def new_convoy(self, interaction: discord.Interaction, new_convoy_name: str=None):
+    #     await interaction.response.defer()
 
-        if not new_convoy_name:
-            new_convoy_name = f'{interaction.user.name}\'s Convoy'
+    #     if not new_convoy_name:
+    #         new_convoy_name = f'{interaction.user.name}\'s Convoy'
 
-        user_dict = await api_calls.get_user_by_discord(interaction.user.id)
+    #     user_dict = await api_calls.get_user_by_discord(interaction.user.id)
 
-        # hit api post to create new convoy
-        convoy_id = await api_calls.new_convoy(user_dict['user_id'], new_convoy_name)
+    #     # hit api post to create new convoy
+    #     convoy_id = await api_calls.new_convoy(user_dict['user_id'], new_convoy_name)
 
-        #hit api again to retrieve new convoy's information so that it can be displayed to user
-        convoy_dict = await api_calls.get_convoy(convoy_id)
+    #     #hit api again to retrieve new convoy's information so that it can be displayed to user
+    #     convoy_dict = await api_calls.get_convoy(convoy_id)
 
-        convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
+    #     convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
 
-        await interaction.followup.send(embed=convoy_embed, file=image_file)
+    #     await interaction.followup.send(embed=convoy_embed, file=image_file)
 
     
-    @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
-    async def df_convoys(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    # @app_commands.command(name='df-convoy', description='Bring up a menu with information pertaining to your convoys')
+    # async def df_convoys(self, interaction: discord.Interaction):
+    #     await interaction.response.defer()
 
-        # First, get user ID from discord_id
-        user_dict = await api_calls.get_user_by_discord(interaction.user.id)
+    #     # First, get user ID from discord_id
+    #     user_dict = await api_calls.get_user_by_discord(interaction.user.id)
 
-        convoy_dict = user_dict['convoys'][0]  # XXX: handle more convoys
+    #     convoy_dict = user_dict['convoys'][0]  # XXX: handle more convoys
 
-        convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
+    #     convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict)
 
-        await interaction.followup.send(
-            embed=convoy_embed,
-            file=image_file,
-            view=convoy_views.ConvoyView(
-                interaction=interaction,
-                convoy_dict=convoy_dict,
-                previous_embed=convoy_embed,
-                previous_attachments=[image_file]
-            )
-        )
+    #     await interaction.followup.send(
+    #         embed=convoy_embed,
+    #         file=image_file,
+    #         view=convoy_views.ConvoyView(
+    #             interaction=interaction,
+    #             convoy_dict=convoy_dict,
+    #             previous_embed=convoy_embed,
+    #             previous_attachments=[image_file]
+    #         )
+    #     )
 
-    async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
-            self,
-            interaction: discord.Interaction,
-            current: str,
-    ) -> list[app_commands.Choice[str]]:
-        # setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS_CACHE}
-        # sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
+    # async def settlements_autocomplete(  # TODO: move these all to a seperate file, or just to the top of this one
+    #         self,
+    #         interaction: discord.Interaction,
+    #         current: str,
+    # ) -> list[app_commands.Choice[str]]:
+    #     # setts_dict = {sett['name']: f'{sett['name']} is at coords ({sett['x']}, {sett['y']})' for sett in SETTLEMENTS_CACHE}
+    #     # sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 
-        # discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
-        # instead, save the coordinates as a string, (example: '50,9'), and when it gets handled the program will revert the numbers in the string back to int
-        coords_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
-        sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
+    #     # discord.py does not like when Choice.value is not a string, even though `value` has a type hint of `any`
+    #     # instead, save the coordinates as a string, (example: '50,9'), and when it gets handled the program will revert the numbers in the string back to int
+    #     coords_dict = {sett['name']: f'{sett['x']},{sett['y']}' for sett in SETTLEMENTS_CACHE}
+    #     sett_names = [sett['name'] for sett in SETTLEMENTS_CACHE]  # cities the users can select from
 
-        logger.debug(ansi_color(coords_dict, 'green'))
+    #     logger.debug(ansi_color(coords_dict, 'green'))
 
-        choices = [
-            app_commands.Choice(name=sett_name, value=coords_dict[sett_name])
-            for sett_name in sett_names if current.lower() in sett_name.lower()
-            # for city in city_names if current.lower() in city.lower()
-        ][:25]
-        return choices
+    #     choices = [
+    #         app_commands.Choice(name=sett_name, value=coords_dict[sett_name])
+    #         for sett_name in sett_names if current.lower() in sett_name.lower()
+    #         # for city in city_names if current.lower() in city.lower()
+    #     ][:25]
+    #     return choices
 
-    @app_commands.command(name='df-send-convoy', description='Send your convoy on a journey to a given city.')
-    @app_commands.autocomplete(sett=settlements_autocomplete)
-    async def send_convoy(self, interaction: discord.Interaction, sett: str):
-        await interaction.response.defer()
+    # @app_commands.command(name='df-send-convoy', description='Send your convoy on a journey to a given city.')
+    # @app_commands.autocomplete(sett=settlements_autocomplete)
+    # async def send_convoy(self, interaction: discord.Interaction, sett: str):
+    #     await interaction.response.defer()
 
-        user_dict = await api_calls.get_user_by_discord(interaction.user.id)
+    #     user_dict = await api_calls.get_user_by_discord(interaction.user.id)
 
-        convoy_dict = user_dict['convoys'][0]  # XXX: handle more convoys
+    #     convoy_dict = user_dict['convoys'][0]  # XXX: handle more convoys
 
-        dest_x, dest_y = map(int, sett.split(','))  # Get the destination coords out of the autocomplete
+    #     dest_x, dest_y = map(int, sett.split(','))  # Get the destination coords out of the autocomplete
 
-        # Now, find routes that user can take to destination
-        try:
-            route_choices = await api_calls.find_route(convoy_dict['convoy_id'], dest_x, dest_y)
-        except RuntimeError as e:
-            await interaction.followup.send(content=e, ephemeral=True)
-            return
-        prospective_journey_plus_misc = route_choices[0]
+    #     # Now, find routes that user can take to destination
+    #     try:
+    #         route_choices = await api_calls.find_route(convoy_dict['convoy_id'], dest_x, dest_y)
+    #     except RuntimeError as e:
+    #         await interaction.followup.send(content=e, ephemeral=True)
+    #         return
+    #     prospective_journey_plus_misc = route_choices[0]
 
-        convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict, prospective_journey_plus_misc)
+    #     convoy_embed, image_file = await convoy_views.make_convoy_embed(interaction, convoy_dict, prospective_journey_plus_misc)
 
-        await interaction.followup.send(
-            embed=convoy_embed,
-            file=image_file,
-            view = convoy_views.SendConvoyConfirmView(
-                interaction=interaction,
-                convoy_dict=convoy_dict,
-                prospective_journey_dict=prospective_journey_plus_misc['journey']
-            )
-        )
+    #     await interaction.followup.send(
+    #         embed=convoy_embed,
+    #         file=image_file,
+    #         view = convoy_views.SendConvoyConfirmView(
+    #             interaction=interaction,
+    #             convoy_dict=convoy_dict,
+    #             prospective_journey_dict=prospective_journey_plus_misc['journey']
+    #         )
+    #     )
 
     @app_commands.command(name='df-help', description='Show the help message')
     async def df_help(self, interaction: discord.Interaction):

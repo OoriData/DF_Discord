@@ -238,7 +238,8 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
-        # logger.info('\n\nUPDATE_USER_CACHE')
+        asyncio.sleep(55)
+        
         global DF_USERS_CACHE
         if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
             DF_USERS_CACHE = {}
@@ -262,14 +263,8 @@ class Desolate_Cog(commands.Cog):
                 logger.info(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue
 
-        # guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
-        # for discord_user_id, df_id in DF_USERS_CACHE.items():
-        #     discord_user = guild.get_member(discord_user_id)
-        #     print(f'{discord_user.name} ({df_id})')
-
     @tasks.loop(minutes=1)
     async def notifier(self):
-        # logger.info('\n\nNOTIFICATIONS')
         global DF_USERS_CACHE
 
         notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)

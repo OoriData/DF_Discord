@@ -22,9 +22,6 @@ API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.getenv('DF_API_HOST')
 
-# TODO: send message if user tries to iterate through menu with a length of zero
-# TODO: Add universal BackButtonView that just allows users to go back to the main vendor menu after they complete a transaction
-
 SERVICE_KEYS = {
     'fuel': ('Fuel', '{number} liter(s)'),
     'water': ('Water', '{number} liter(s)'),

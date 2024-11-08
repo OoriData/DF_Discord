@@ -68,19 +68,15 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
     # Prepare the DFState object
     df_state = DFState(
         user_obj=user_obj,
-        interaction=interaction,
-        previous_embed=None,  # Will be assigned in like 5 lines
-        previous_view=None,   # Will be assigned in like 8 lines
+        interaction=interaction
     )
 
     # Send the main menu message
     main_menu_embed = discord.Embed()
     main_menu_embed = df_embed_author(main_menu_embed, df_state)
     main_menu_embed.description = description
-    df_state.previous_embed = main_menu_embed
 
     main_menu_view = MainMenuView(df_state)
-    df_state.previous_view = main_menu_view
 
     if edit:
         await interaction.response.edit_message(embed=main_menu_embed, view=main_menu_view, attachments=[])

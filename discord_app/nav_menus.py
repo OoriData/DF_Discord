@@ -24,7 +24,7 @@ class NavBackButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-        if self.df_state.previous_embed:
+        if self.df_state.back_stack:
             disabled = False
         else:
             disabled = True
@@ -34,14 +34,16 @@ class NavBackButton(discord.ui.Button):
             label='⬅ Back',
             disabled=disabled,
             custom_id='nav_back_button',
-            row=0,
+            row=0
         )
 
     async def callback(self, interaction: discord.Interaction):
+        previous_menu = self.df_state.back_stack.pop()
+
         await interaction.response.edit_message(
-            embed=self.df_state.previous_embed,
-            view=self.df_state.previous_view,
-            attachments=self.df_state.previous_attachments
+            embeds=previous_menu.embeds,
+            view=previous_menu.view,
+            attachments=previous_menu.attachments
         )
 
 
@@ -53,7 +55,7 @@ class NavMainMenuButton(discord.ui.Button):
             style=discord.ButtonStyle.gray,
             label='Main Menu',
             custom_id='nav_main_menu_button',
-            row=0,
+            row=0
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -69,7 +71,7 @@ class NavConvoyButton(discord.ui.Button):
             style=discord.ButtonStyle.gray,
             label='Convoy',
             custom_id='nav_convoy_button',
-            row=0,
+            row=0
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -91,7 +93,7 @@ class NavVendorsButton(discord.ui.Button):
             label='Vendors',
             disabled=disabled,
             custom_id='nav_vendor_button',
-            row=0,
+            row=0
         )
 
     async def callback(self, interaction: discord.Interaction):

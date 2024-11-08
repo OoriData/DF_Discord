@@ -24,9 +24,7 @@ class DFState:
             vehicle_obj=None,
             cargo_obj=None,
             interaction=None,
-            previous_embed=None,
-            previous_view=None,
-            previous_attachments=None
+            back_stack=None
     ):
         self.user_obj = user_obj
         self.vendor_obj = vendor_obj
@@ -35,6 +33,26 @@ class DFState:
         self.cargo_obj = cargo_obj
 
         self.interaction: discord.Interaction = interaction
-        self.previous_embed: discord.Embed = previous_embed
-        self.previous_view: discord.ui.View = previous_view
-        self.previous_attachments: discord.Attachment = previous_attachments
+
+        self.back_stack = back_stack or []
+
+    async def append_back_stack(self, interaction: discord.Interaction):
+        menu = await interaction.original_response()
+
+        self.back_stack.append(DFMenu(
+            embeds=menu.embeds,
+            view=discord.ui.View.from_message(menu),
+            attachments=menu.attachments
+        ))
+
+
+class DFMenu:
+    def __init__(
+            self,
+            embeds: list[discord.Embed],
+            view: discord.ui.View,
+            attachments: list[discord.Attachment]
+    ):
+        self.embeds = embeds
+        self.view = view
+        self.attachments = attachments

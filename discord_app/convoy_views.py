@@ -37,14 +37,6 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
     await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
-    # await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
-    # await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
-    # if edit:
-    #     await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[image_file])
-    #     # await asyncio.sleep(5)
-    #     # print(df_state.interaction.message.attachments[0].proxy_url)
-    # else:
-    #     await df_state.interaction.followup.send(embed=embed, view=view, files=[image_file])
 
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:

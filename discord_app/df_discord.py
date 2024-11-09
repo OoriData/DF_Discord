@@ -234,7 +234,8 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='df-help', description='Show the help message')
     async def df_help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(DF_HELP, ephemeral=True)
+        help_embed = discord.Embed(description=DF_HELP)
+        await interaction.response.send_message(embed=help_embed, ephemeral=True)
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):

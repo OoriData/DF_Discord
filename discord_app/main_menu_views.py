@@ -169,7 +169,7 @@ class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
         super().__init__()
 
         self.username_input = discord.ui.TextInput(
-            label='New username',
+            label='Desolate Frontiers username',
             style=discord.TextStyle.short,
             required=True,
             default=discord_nickname,
@@ -202,5 +202,7 @@ class ConvoyNameModal(discord.ui.Modal, title='Name your new convoy'):
         self.df_state.interaction = interaction
         convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
         self.df_state.convoy_obj = await api_calls.get_convoy(convoy_id)
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_views.convoy_menu(self.df_state)

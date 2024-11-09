@@ -87,7 +87,7 @@ class Desolate_Cog(commands.Cog):
                 icon_url=interaction.user.avatar.url
             )
 
-            await interaction.followup.send(embed=map_embed, file=image_file)
+            await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
         except Exception as e:
             msg = f'something went wrong: {e}'

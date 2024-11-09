@@ -267,44 +267,45 @@ class Desolate_Cog(commands.Cog):
     async def notifier(self):
         global DF_USERS_CACHE
 
-        notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
-        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        if isinstance(DF_USERS_CACHE, dict):  # If the cache has been initialized
+            notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
+            guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
 
-        for discord_user_id, df_id in DF_USERS_CACHE.items():
-            discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
+            for discord_user_id, df_id in DF_USERS_CACHE.items():
+                discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
-            if discord_user:
-                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
-                try:
-                    # Fetch unseen dialogue for the DF user
-                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
-                    logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+                if discord_user:
+                    logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
+                    try:
+                        # Fetch unseen dialogue for the DF user
+                        unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
+                        logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
-                    if unseen_dialogue_dicts:
-                        ping = f'<@{discord_user.id}>'
-                        await notification_channel.send(ping)
+                        if unseen_dialogue_dicts:
+                            ping = f'<@{discord_user.id}>'
+                            await notification_channel.send(ping)
 
-                        # Compile message content from unseen dialogues
-                        notifications = [
-                            message['content']
-                            for dialogue in unseen_dialogue_dicts
-                            for message in dialogue['messages']
-                        ]
+                            # Compile message content from unseen dialogues
+                            notifications = [
+                                message['content']
+                                for dialogue in unseen_dialogue_dicts
+                                for message in dialogue['messages']
+                            ]
 
-                        for notification in notifications:
-                            embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
-                            await notification_channel.send(embed=embed)
+                            for notification in notifications:
+                                embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                                await notification_channel.send(embed=embed)
 
-                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
+                            logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
-                        # Mark dialogue as seen after sending notification
-                        await api_calls.mark_dialogue_as_seen(df_id)
+                            # Mark dialogue as seen after sending notification
+                            await api_calls.mark_dialogue_as_seen(df_id)
 
-                except RuntimeError as e:
-                    logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
-                    continue
-            else:
-                logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
+                    except RuntimeError as e:
+                        logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
+                        continue
+                else:
+                    logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
 
 
 def main():

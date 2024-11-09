@@ -69920,5 +69920,8 @@
                 "settlements": []
             }
         ]
-    ]
+    ],
+    "highlight_locations": [[40, 40], [41, 41]],
+    "lowlight_locations": [[4, 26], [5, 26], [6, 26]],
+    "highlight_color": "red"
 }

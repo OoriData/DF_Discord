@@ -3,6 +3,7 @@
 from __future__                import annotations
 import                                os
 import                                textwrap
+import                                math
 
 import                                discord
 
@@ -118,7 +119,13 @@ async def buy_menu(df_state: DFState):
 
         if cargo['recipient']:
             cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
-            cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ${cargo['delivery_reward']:,}'
+            cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,}*** *each*'
+            margin = round(cargo['delivery_reward'] / cargo['base_price'])
+            cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
+            tile_distance = math.sqrt((cargo['recipient_vendor']['x'] - df_state.vendor_obj['x']) ** 2 + (cargo['recipient_vendor']['y'] - df_state.vendor_obj['y']) ** 2)
+            distance_km = 50 * tile_distance
+            distance_miles = 30 * tile_distance
+            cargo_str += f'\n  - Distance: {distance_km:,.0f} km ({distance_miles:,.0f} miles)'
 
         cargo_list.append(cargo_str)
     displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'

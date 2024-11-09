@@ -45,9 +45,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
     convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
-    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:.2f}**\n/{df_state.convoy_obj['max_fuel']:.2f} liters')
-    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:.2f}**\n/{df_state.convoy_obj['max_water']:.2f} liters')
-    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:.2f}**\n/{df_state.convoy_obj['max_food']:.2f} meals')
+    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.2f} liters')
+    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.2f} liters')
+    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.2f} meals')
 
     convoy_embed.add_field(name='Fuel Efficiency', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
     convoy_embed.add_field(name='Top Speed', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
@@ -104,7 +104,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
         distance_km = 50 * len(prospective_journey_plus_misc['journey']['route_x'])
         distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
-        convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km} km**\n{distance_miles} miles')
+        convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km:,} km**\n{distance_miles} miles')
 
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
@@ -372,23 +372,6 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
     await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
 
 
-class NextJourneyButton(discord.ui.Button):
-    ''' Loads alternative journey '''
-    def __init__(self, df_state: DFState, routes: list, index: int):
-        super().__init__(label='Show Next Route', custom_id='alt_route', style=discord.ButtonStyle.blurple, row=2)
-        self.df_state = df_state
-        self.routes = routes
-        self.index = index
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-        await self.df_state.interaction.response.defer()
-
-        self.index += 1  # ensures that route index will route
-        self.index = self.index % len(self.routes)
-        
-        await route_menu(self.df_state, self.routes, self.index)
-
 class SendConvoyConfirmView(discord.ui.View):
     '''Confirm button before sending convoy somewhere'''
     def __init__(
@@ -407,14 +390,32 @@ class SendConvoyConfirmView(discord.ui.View):
 
         add_nav_buttons(self, self.df_state)
 
-        self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
         if len(route_choices) > 1:
             self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
+        self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.blurple, custom_id='cancel_send', row=1)
-    async def cancel_journey_button(self, interaction: discord.Interaction, button: discord.Button):
-        # TODO: Make it so that when you press the cancel button it gives you some sort of feedback rather than just deleting the whole thing
-        await convoy_menu(self.df_state)
+
+class NextJourneyButton(discord.ui.Button):
+    ''' Loads alternative journey '''
+    def __init__(self, df_state: DFState, routes: list, index: int, row: int=1):
+        self.df_state = df_state
+        self.routes = routes
+        self.index = index
+        super().__init__(
+            label='Show Next Route',
+            custom_id='alt_route',
+            style=discord.ButtonStyle.blurple,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        await self.df_state.interaction.response.defer()
+
+        self.index += 1  # ensures that route index will route
+        self.index = self.index % len(self.routes)
+        
+        await route_menu(self.df_state, self.routes, self.index)
 
 
 class ConfirmJourneyButton(discord.ui.Button):

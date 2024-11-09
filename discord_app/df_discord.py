@@ -238,11 +238,11 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
-        await asyncio.sleep(55)
-        
         global DF_USERS_CACHE
         if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
             DF_USERS_CACHE = {}
+        else:
+            await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
         current_member_ids = set(member.id for member in guild.members)  # Create a set of current members' IDs
@@ -301,7 +301,7 @@ class Desolate_Cog(commands.Cog):
                             # Mark dialogue as seen after sending notification
                             await api_calls.mark_dialogue_as_seen(df_id)
 
-                    except RuntimeError as e:
+                    except Exception as e:
                         logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
                         continue
                 else:

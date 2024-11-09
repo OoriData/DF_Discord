@@ -71,9 +71,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         eta = df_state.convoy_obj['journey']['eta']
         convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
 
-        progress_percent = ((df_state.convoy_obj['journey']['progress']) / len(df_state.convoy_obj['journey']['route_x'])) * 100
-        progress_in_km = df_state.convoy_obj['journey']['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
-        progress_in_miles = df_state.convoy_obj['journey']['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
+        progress_percent = ((journey['progress']) / len(journey['route_x'])) * 100
+        progress_in_km = journey['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
+        progress_in_miles = journey['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
         convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
         convoy_embed, image_file = await add_map_to_embed(
@@ -630,5 +630,8 @@ class ConvoySelect(discord.ui.Select):
             c for c in self.df_state.user_obj['convoys']
             if c['convoy_id'] == self.values[0]
         ), None)
+
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_menu(self.df_state)

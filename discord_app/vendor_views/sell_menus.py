@@ -455,28 +455,28 @@ class SellCargoSelect(discord.ui.Select):
 
 
 class CargoSellQuantityEmbed(discord.Embed):
-    def __init__(self, df_state: DFState, cart_quantity: int=1):
+    def __init__(self, df_state: DFState, sale_quantity: int=1):
         self.df_state = df_state
-        self.cart_quantity = cart_quantity
+        self.sale_quantity = sale_quantity
         super().__init__()
         
         self = df_embed_author(self, self.df_state)
         
-        sale_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
-        sale_weight = self.cart_quantity * self.df_state.cargo_obj['weight']
+        sale_volume = self.sale_quantity * self.df_state.cargo_obj['volume']
+        sale_weight = self.sale_quantity * self.df_state.cargo_obj['weight']
 
         desc = [f'## {self.df_state.vendor_obj['name']}']
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
             desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${self.df_state.cargo_obj['delivery_reward']:,} per item')
-            sale_price = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
         else:
             desc.append(f'### Selling {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['base_price']:,} per item')
-            sale_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['base_price']
         desc.extend([
             f'*{self.df_state.cargo_obj['base_desc']}*',
             f'- Sale volume: {sale_volume:,}L',
             f'- Sale weight: {sale_weight:,}kg',
-            f'### Cart: {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'
+            f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'
         ])
 
         self.description = '\n'.join(desc)
@@ -486,20 +486,20 @@ class CargoSellQuantityEmbed(discord.Embed):
 
 
 class CargoSellQuantityView(discord.ui.View):
-    def __init__(self, df_state: DFState, cart_quantity: int=1):
+    def __init__(self, df_state: DFState, sale_quantity: int=1):
         self.df_state = df_state
-        self.cart_quantity = cart_quantity
+        self.sale_quantity = sale_quantity
         super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))
-        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, -1, cargo_for_sale=self.df_state.cargo_obj))
-        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 1, cargo_for_sale=self.df_state.cargo_obj))
-        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 10, cargo_for_sale=self.df_state.cargo_obj))
-        self.add_item(QuantitySellButton(self.df_state, self.cart_quantity, 'max', cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, -1, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 1, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 10, cargo_for_sale=self.df_state.cargo_obj))
+        self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 'max', cargo_for_sale=self.df_state.cargo_obj))
 
-        self.add_item(CargoConfirmSellButton(self.df_state, self.cart_quantity, row=2))
+        self.add_item(CargoConfirmSellButton(self.df_state, self.sale_quantity, row=2))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -519,17 +519,20 @@ class CargoConfirmSellButton(discord.ui.Button):
     def __init__(
             self,
             df_state: DFState,
-            cart_quantity: int,
+            sale_quantity: int,
             row: int=1
     ):
         self.df_state = df_state
-        self.cart_quantity = cart_quantity
+        self.sale_quantity = sale_quantity
 
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
+        else:
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['base_price']
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price}',
+            label=f'Sell {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price}',
             row=row
         )
 
@@ -541,22 +544,22 @@ class CargoConfirmSellButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.cart_quantity
+                quantity=self.sale_quantity
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
         
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
-        delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+        sale_price = self.sale_quantity * self.df_state.cargo_obj['base_price']
+        delivery_reward = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         desc = [f'## {self.df_state.vendor_obj['name']}']
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
-            desc.append(f'Delivered {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${delivery_reward}')
+            desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${delivery_reward}')
         else:
-            desc.append(f'Sold {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${cart_price}')
+            desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${sale_price}')
         embed.description = '\n'.join(desc)
 
         view = PostSellView(self.df_state)

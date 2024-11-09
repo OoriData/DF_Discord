@@ -320,28 +320,23 @@ async def add_map_to_embed(
             y_min = min(highlight_y_values + lowlight_y_values, default=0)
             y_max = max(highlight_y_values + lowlight_y_values, default=0)
 
-            # Apply some padding unless there's only one point
-            if x_min == x_max and y_min == y_max:
-                x_padding = 16
-                y_padding = 9
-            else:
-                x_padding = 3
-                y_padding = 3
+            # Apply padding consistently and ensure minimum boundary is 0
+            x_padding = 3 if x_min != x_max else 16
+            y_padding = 3 if y_min != y_max else 9
 
-            # Set the map edges, adjusted by padding
             map_edges = {
-                'x_min': x_min - x_padding,
+                'x_min': max(0, x_min - x_padding),
                 'x_max': x_max + x_padding,
-                'y_min': y_min - y_padding,
+                'y_min': max(0, y_min - y_padding),
                 'y_max': y_max + y_padding
             }
 
             # Adjust highlight and lowlight coordinates relative to the top-left corner
             top_left = (map_edges['x_min'], map_edges['y_min'])
             if highlighted:
-                highlighted = [(x - top_left[0], y - top_left[1]) for x, y in highlighted]
+                highlighted = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in highlighted]
             if lowlighted:
-                lowlighted = [(x - top_left[0], y - top_left[1]) for x, y in lowlighted]
+                lowlighted = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in lowlighted]
 
     else:
         # No highlights or lowlights provided, don't compute boundaries

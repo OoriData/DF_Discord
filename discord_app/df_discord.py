@@ -238,7 +238,7 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
-        asyncio.sleep(55)
+        await asyncio.sleep(55)
         
         global DF_USERS_CACHE
         if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary

@@ -76,13 +76,14 @@ This thing's still in Alpha, so things *will* break and that the game *is not* f
 - You'll be managing a logistics company, running convoys of land vehicles across the remains of the US, carrying all manner of useful goods. 🚛
 - To get started, run **`/desolate-frontiers`** to get your account signed up for our system. You'll also get to name your first convoy there! 💻
   - **Be patient with these buttons, please! Don't button mash!** we're working on speeding up their responsiveness, but we totally understand that it's a bit frustrating that it takes up to 5 seconds to get feedback from pressing them sometimes.
-  - Also, **your interaction will time out sometimes!** This is a bit of a technical limitaiton on the discord side of things; we're working on figuring out a more clever solution for this ASAP; it annoys us even more than it annoys you!
+  - Also, **your interaction will time out sometimes!** This is a bit of a technical limitaiton on the discord side of things; we're working on figuring out a more clever solution for this ASAP; it annoys us even more than it annoys you, and it'll annoy you a whole lot!
     - in the meantime, if your interaction times out, you can just call **`/desolate-frontiers`** again!
 - Next, you'll need to buy a vehicle. 🚗
   - Use the gray button with a city name to investigate the vendors in the city you spawned in, and head to the ~~dealership~~ stealership to get yourself some wheels.
   - The menus there are a little janky. We're cookin' on 'em!
 - After that, you're gonna need to buy some **Fuel** from the gas station, which you can also access from the `city name` button. ⛽️
   - **Your vehicle has a gas tank!** While you can buy more jerry cans if you wanna cary more fuel, you can just buy fuel straight from the blue `buy fuel` button to fill up your tank.
+    - Your vehicle doesn't have capacity for water or food, though. That's handled in the next bullet!
   - Next, grab some water from the market; (imaginatively named) **Water Jerry Cans**
   - Finally, you'll wanna buy some **MRE boxes** to feed your crew, also at the market.
   - Note that these jerry cans and MREs you buy are already full! No need to refill them before you move on to the next step.

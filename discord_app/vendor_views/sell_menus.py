@@ -551,12 +551,12 @@ class CargoConfirmSellButton(discord.ui.Button):
             return
         
         sale_price = self.sale_quantity * self.df_state.cargo_obj['base_price']
-        delivery_reward = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         desc = [f'## {self.df_state.vendor_obj['name']}']
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            delivery_reward = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
             desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${delivery_reward}')
         else:
             desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${sale_price}')

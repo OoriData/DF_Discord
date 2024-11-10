@@ -11,14 +11,14 @@ from discord_app.df_state   import DFState
 
 def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
     if df_state.convoy_obj:
-        author_name = f'{df_state.convoy_obj['name']} - ${df_state.convoy_obj['money']:,.0f}'
+        name = f'{df_state.convoy_obj['name']} - ${df_state.convoy_obj['money']:,.0f}'
     elif df_state.user_obj:
-        author_name = f'{df_state.user_obj['username']} - ${df_state.user_obj['money']:,.0f}'
+        name = f'{df_state.user_obj['username']} - ${df_state.user_obj['money']:,.0f}'
     else:
-        author_name = df_state.interaction.user.display_name
+        name = df_state.interaction.user.display_name
 
     embed.set_author(
-        name=author_name,
+        name=name,
         icon_url=df_state.interaction.user.avatar.url
     )
     return embed

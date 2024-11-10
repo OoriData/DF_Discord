@@ -295,6 +295,10 @@ class Desolate_Cog(commands.Cog):
 
                             for notification in notifications:
                                 embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                                embed.set_author(
+                                    name=discord_user.display_name,
+                                    icon_url=discord_user.avatar.url
+                                )
                                 await notification_channel.send(embed=embed)
 
                             logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))

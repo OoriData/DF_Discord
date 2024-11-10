@@ -11,3 +11,12 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DF_GUILD_ID: ${DF_GUILD_ID}
       DF_CHANNEL_ID: ${DF_CHANNEL_ID}
+  
+  df_map:
+    build:
+      context: ./map_render
+    image: df_map
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "9100:9100"  # outie:innie

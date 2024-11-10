@@ -16,15 +16,15 @@ RUN \
 
 # In case Docker is running as root, narrow the attack surface to the host
 # by doing as much as we can as an unprivileged user
-RUN useradd --create-home df-discord
-USER df-discord
-WORKDIR /home/df-discord/code
+RUN useradd --create-home df-map
+USER df-map
+WORKDIR /home/df-map/code
 
 # Use a virtualenv to avoid messing with the container's system Python
 # No use doing venv activate in a RUN command, because it's just a temporary shell
 # Besides, it definitely wouldn't work for Docker containers derived from this image
 # Can't use $HOME in the ENV command
-ENV VIRTUALENV=/home/df-discord/venv
+ENV VIRTUALENV=/home/df-map/venv
 RUN python3 -m venv $VIRTUALENV
 ENV PATH="$VIRTUALENV/bin:$PATH"
 
@@ -34,11 +34,11 @@ COPY ./constraints.txt ./constraints.txt
 
 RUN python -m pip install --upgrade pip
 
-WORKDIR /home/df-discord/code
-RUN --mount=type=cache,target=/home/df-discord/.cache/pip,sharing=locked python -m pip install --upgrade -r requirements.txt -c constraints.txt
+WORKDIR /home/df-map/code
+RUN --mount=type=cache,target=/home/df-map/.cache/pip,sharing=locked python -m pip install --upgrade -r requirements.txt -c constraints.txt
 
-COPY . /home/df-discord/code/
+COPY . /home/df-map/code/
 
-WORKDIR /home/df-discord/code
+WORKDIR /home/df-map/code
 
-CMD python -m discord_app.df_discord
+CMD hypercorn server:app --workers=4 --bind=0.0.0.0:9100

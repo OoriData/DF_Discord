@@ -78,20 +78,20 @@ class Desolate_Cog(commands.Cog):
     async def df_map(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        try:
-            map_embed = discord.Embed()
-            map_embed, image_file = await add_map_to_embed(map_embed)
+        # try:
+        map_embed = discord.Embed()
+        map_embed, image_file = await add_map_to_embed(map_embed)
 
-            map_embed.set_author(
-                name=interaction.user.name,
-                icon_url=interaction.user.avatar.url
-            )
+        map_embed.set_author(
+            name=interaction.user.name,
+            icon_url=interaction.user.avatar.url
+        )
 
-            await interaction.followup.send(embed=map_embed, file=image_file)
+        await interaction.followup.send(embed=map_embed, file=image_file)
 
-        except Exception as e:
-            msg = f'something went wrong: {e}'
-            await interaction.followup.send(msg)
+        # except Exception as e:
+        #     msg = f'something went wrong: {e}'
+        #     await interaction.followup.send(msg)
 
     # @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     # async def df_register(self, interaction: discord.Interaction):

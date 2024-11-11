@@ -152,6 +152,7 @@ def render_map(
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
+    print(highlights)
     if not highlight_color:
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
@@ -189,7 +190,7 @@ def render_map(
             )
 
     def draw_highlight(x, y):
-        if highlights and (x, y) in highlights:  # Check if this tile is in the highlights
+        if highlights and [x, y] in highlights:  # Check if this tile is in the highlights
             draw.rectangle(  # Draw an outline around this tile if it's a highlight
                 [
                     x * TILE_SIZE + HIGHLIGHT_OUTLINE_OFFSET,
@@ -202,7 +203,7 @@ def render_map(
             )
 
     def draw_lowlight(x, y):
-        if lowlights and (x, y) in lowlights:  # Check if this tile is in the lowlights
+        if lowlights and [x, y] in lowlights:  # Check if this tile is in the lowlights
             draw.rectangle(  # Draw an inline around this tile if it's a lowlight
                 [
                     x * TILE_SIZE + LOWLIGHT_INLINE_OFFSET,

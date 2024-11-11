@@ -106,13 +106,11 @@ async def add_map_to_embed(
         else:
             tiles = (await api_calls.get_map())['tiles']
 
-        # FIXME: Convert into an API call to the map_render component
         # Render the map with the given tiles and any highlights or lowlights
-        rendered_map = render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
+        rendered_map_bytes = await api_calls.render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
 
         # Save the rendered map to an in-memory file (BytesIO object)
-        with BytesIO() as image_binary:
-            rendered_map.save(image_binary, 'PNG')
+        with BytesIO(rendered_map_bytes) as image_binary:
             image_binary.seek(0)
 
             file_name = 'map.png'

@@ -14,6 +14,7 @@ curl -X POST "http://localhost:9100/render-map" -H "Content-Type: application/js
 '''
 from io import BytesIO
 from typing import Any
+import warnings
 # import logger
 
 # import fire
@@ -42,9 +43,9 @@ from map_render import render_map
 
 app = FastAPI()
 
-@app.post("/arbitrary-json")
+@app.post('/arbitrary-json')
 async def receive_arbitrary_json(data: Any = Body(...)):
-    return {"received_data": data}
+    return {'received_data': data}
 
 
 @app.post('/render-map')
@@ -59,7 +60,12 @@ async def render_map_http(data: Any = Body(...)):
         "lowlight_color" (optional): str
     '''
     assert 'tiles' in data
-    map_img = render_map(data['tiles'], data.get('highlight_locations'), data.get('lowlight_locations'),
+    unknown_keys = set([
+        k for k in data.keys() if k not in ('tiles', 'highlights', 'lowlights', 'highlight_color', 'lowlight_color')
+    ])
+    if unknown_keys:
+        warnings.warn(f'unknown keys used: {unknown_keys}')
+    map_img = render_map(data['tiles'], data.get('highlights'), data.get('lowlights'),
                data.get('highlight_color'), data.get('lowlight_color'))
     
     # Convert the Pillow image to bytes
@@ -74,4 +80,4 @@ async def render_map_http(data: Any = Body(...)):
 async def health_check():
     '''Health check for Docker, etc.'''
     # Feel free to test any dependent resources (e.g. working DB connections) here
-    return {"status": "OK"}
+    return {'status': 'OK'}

@@ -20,6 +20,8 @@ LOG_LEVEL = "INFO"
 
 DF_API_HOST = "http://localhost:1337"
 
+DF_MAP_RENDERER = "http://localhost:9100"
+
 DISCORD_TOKEN = "SECRET REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"  # Discord bot/app to use
 # Find this as the "Copy Secret Reference" option in the dropdown for the credential in 1Password
 

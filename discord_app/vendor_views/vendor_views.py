@@ -52,103 +52,23 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
     vendor_embed = discord.Embed()
     vendor_embed = df_embed_author(vendor_embed, df_state)
 
-    if df_state.vendor_obj:  # If a vendor has been selected
-        vendor_embed.description = '\n'.join([
-            f'## {df_state.vendor_obj['name']}',
-            'Available Services:'
-        ])
-        
-        for service, availability in vendor_services(df_state.vendor_obj):
-            vendor_embed.add_field(
-                name=service,
-                value=availability,
-            )
+    vendor_embed.description = '\n'.join([
+        f'## {df_state.vendor_obj['name']}',
+        'Available Services:'
+    ])
+    
+    for service, availability in vendor_services(df_state.vendor_obj):
+        vendor_embed.add_field(
+            name=service,
+            value=availability,
+        )
 
-        vendor_view = VendorView(df_state)
-
-    else:  # If no vendor selected, go select one
-        tile_obj = await api_calls.get_tile(df_state.convoy_obj['x'], df_state.convoy_obj['y'])
-        if not tile_obj['settlements']:
-            await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
-            return
-        
-        vendor_displayables = []
-        for vendor in tile_obj['settlements'][0]['vendors']:
-            displayable_services = []
-            for key in list(SERVICE_KEYS.keys()):
-                if vendor[key]:
-                    displayable_services.append(f'  - {SERVICE_KEYS[key][0]}')
-
-            vendor_displayables.append('\n'.join([
-                f'- **{vendor['name']}**',
-                '\n'.join(displayable_services)
-            ]))
-        
-        vendor_embed.description = '\n'.join([
-            f'## {tile_obj['settlements'][0]['name']}',
-            '\n'.join(vendor_displayables),
-            'Select a vendor:'
-        ])
-
-        vendor_view = ChooseVendorView(df_state, tile_obj['settlements'][0]['vendors'])
+    vendor_view = VendorView(df_state)
 
     if edit:
         await df_state.interaction.response.edit_message(embed=vendor_embed, view=vendor_view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=vendor_embed, view=vendor_view)
-
-
-class ChooseVendorView(discord.ui.View):
-    ''' Overarching convoy button menu '''
-    def __init__(self, df_state: DFState, vendors):
-        self.df_state = df_state
-        super().__init__(timeout=120)
-
-        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
-
-        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, vendors))
-        self.add_item(VendorSelect(self.df_state, vendors, row=2))
-
-    async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
-
-
-class VendorSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, vendors, row: int=1):
-        self.df_state = df_state
-        self.vendors = vendors
-
-        options=[
-            discord.SelectOption(label=vendor['name'], value=vendor['vendor_id'])
-            for vendor in self.vendors
-        ]
-        
-        super().__init__(
-            placeholder='Select vendor to visit',
-            options=options,
-            custom_id='select_vendor',
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.vendor_obj = next((
-            v for v in self.vendors
-            if v['vendor_id'] == self.values[0]
-        ), None)
-
-        await vendor_menu(self.df_state)
 
 
 class VendorView(discord.ui.View):

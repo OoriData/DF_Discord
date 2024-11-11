@@ -78,20 +78,20 @@ class Desolate_Cog(commands.Cog):
     async def df_map(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        # try:
-        map_embed = discord.Embed()
-        map_embed, image_file = await add_map_to_embed(map_embed)
+        try:
+            map_embed = discord.Embed()
+            map_embed, image_file = await add_map_to_embed(map_embed)
 
-        map_embed.set_author(
-            name=interaction.user.name,
-            icon_url=interaction.user.avatar.url
-        )
+            map_embed.set_author(
+                name=interaction.user.name,
+                icon_url=interaction.user.avatar.url
+            )
 
-        await interaction.followup.send(embed=map_embed, file=image_file)
+            await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
-        # except Exception as e:
-        #     msg = f'something went wrong: {e}'
-        #     await interaction.followup.send(msg)
+        except Exception as e:
+            msg = f'something went wrong: {e}'
+            await interaction.followup.send(msg)
 
     # @app_commands.command(name='df-register', description='Register a new Desolate Frontiers user')
     # async def df_register(self, interaction: discord.Interaction):
@@ -234,15 +234,16 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='df-help', description='Show the help message')
     async def df_help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(DF_HELP, ephemeral=True)
+        help_embed = discord.Embed(description=DF_HELP)
+        await interaction.response.send_message(embed=help_embed, ephemeral=True)
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
-        asyncio.sleep(55)
-        
         global DF_USERS_CACHE
         if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
             DF_USERS_CACHE = {}
+        else:
+            await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
         current_member_ids = set(member.id for member in guild.members)  # Create a set of current members' IDs
@@ -267,44 +268,49 @@ class Desolate_Cog(commands.Cog):
     async def notifier(self):
         global DF_USERS_CACHE
 
-        notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
-        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        if isinstance(DF_USERS_CACHE, dict):  # If the cache has been initialized
+            notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
+            guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
 
-        for discord_user_id, df_id in DF_USERS_CACHE.items():
-            discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
+            for discord_user_id, df_id in DF_USERS_CACHE.items():
+                discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
-            if discord_user:
-                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
-                try:
-                    # Fetch unseen dialogue for the DF user
-                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
-                    logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+                if discord_user:
+                    logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
+                    try:
+                        # Fetch unseen dialogue for the DF user
+                        unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
+                        logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
-                    if unseen_dialogue_dicts:
-                        ping = f'<@{discord_user.id}>'
-                        await notification_channel.send(ping)
+                        if unseen_dialogue_dicts:
+                            ping = f'<@{discord_user.id}>'
+                            await notification_channel.send(ping)
 
-                        # Compile message content from unseen dialogues
-                        notifications = [
-                            message['content']
-                            for dialogue in unseen_dialogue_dicts
-                            for message in dialogue['messages']
-                        ]
+                            # Compile message content from unseen dialogues
+                            notifications = [
+                                message['content']
+                                for dialogue in unseen_dialogue_dicts
+                                for message in dialogue['messages']
+                            ]
 
-                        for notification in notifications:
-                            embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
-                            await notification_channel.send(embed=embed)
+                            for notification in notifications:
+                                embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                                embed.set_author(
+                                    name=discord_user.display_name,
+                                    icon_url=discord_user.avatar.url
+                                )
+                                await notification_channel.send(embed=embed)
 
-                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
+                            logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
-                        # Mark dialogue as seen after sending notification
-                        await api_calls.mark_dialogue_as_seen(df_id)
+                            # Mark dialogue as seen after sending notification
+                            await api_calls.mark_dialogue_as_seen(df_id)
 
-                except RuntimeError as e:
-                    logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
-                    continue
-            else:
-                logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
+                    except Exception as e:
+                        logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
+                        continue
+                else:
+                    logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
 
 
 def main():

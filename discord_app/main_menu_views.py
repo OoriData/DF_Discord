@@ -39,11 +39,20 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
             for convoy in user_obj['convoys']:
                 tile_obj = await api_calls.get_tile(convoy['x'], convoy['y'])
 
-                convoy_descs.extend([
-                    f'### {convoy['name']}\n'
-                    f'Current location: **{tile_obj['settlements'][0]['name']}**\n' if not convoy['journey'] else f'In Transit: **({convoy['x']}, {convoy['y']})**',  # XXX: make this journey percentage or origin/dest (or both) or smth
-                    'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
-                ])
+                if convoy['journey']:
+                    destination = await api_calls.get_tile(convoy['journey']['dest_x'], convoy['journey']['dest_y'])
+                    progress_percent = ((convoy['journey']['progress']) / len(convoy['journey']['route_x'])) * 100
+                    convoy_descs.extend([
+                        f'### {convoy['name']}\n'
+                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%**',
+                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
+                    ])
+                else:
+                    convoy_descs.extend([
+                        f'### {convoy['name']}\n'
+                        f'Arrived at: **{tile_obj['settlements'][0]['name']}**\n' if tile_obj['settlements'] else f'Arrived at: **({convoy['x']}, {convoy['y']})**\n',
+                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
+                    ])
 
             description = '\n'.join([
                 '# Desolate Frontiers',
@@ -148,6 +157,10 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
+        
         await convoy_views.convoy_menu(self.df_state)
 
 
@@ -156,7 +169,7 @@ class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
         super().__init__()
 
         self.username_input = discord.ui.TextInput(
-            label='New username',
+            label='Desolate Frontiers username',
             style=discord.TextStyle.short,
             required=True,
             default=discord_nickname,
@@ -189,5 +202,7 @@ class ConvoyNameModal(discord.ui.Modal, title='Name your new convoy'):
         self.df_state.interaction = interaction
         convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
         self.df_state.convoy_obj = await api_calls.get_convoy(convoy_id)
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_views.convoy_menu(self.df_state)

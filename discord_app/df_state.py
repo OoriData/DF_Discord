@@ -19,6 +19,7 @@ class DFState:
     def __init__(
             self,
             user_obj=None,
+            sett_obj=None,
             vendor_obj=None,
             convoy_obj=None,
             vehicle_obj=None,
@@ -27,6 +28,7 @@ class DFState:
             back_stack=None
     ):
         self.user_obj = user_obj
+        self.sett_obj = sett_obj
         self.vendor_obj = vendor_obj
         self.convoy_obj = convoy_obj
         self.vehicle_obj = vehicle_obj

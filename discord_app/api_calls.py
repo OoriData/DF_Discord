@@ -5,7 +5,8 @@ from uuid import UUID
 
 import           httpx
 
-DF_API_HOST = os.environ.get('DF_API_HOST')
+DF_API_HOST = os.environ['DF_API_HOST']
+DF_MAP_RENDERER = os.environ['DF_MAP_RENDERER']
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 API_INTERNAL_SERVER_ERROR = 500
@@ -17,6 +18,32 @@ def _check_code(response: httpx.Response):
     elif response.status_code != API_SUCCESS_CODE:
         msg = response.json()['detail']
         raise RuntimeError(msg)
+    
+
+async def render_map(
+        tiles: list[list[dict]],
+        highlights: list[list] = None,
+        lowlights: list[list] = None,
+        highlight_color = None,
+        lowlight_color = None
+):
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            f'{DF_MAP_RENDERER}/render-map',
+            json={  # Sending data as JSON in the body
+                'tiles': tiles,
+                'highlights': highlights,
+                'lowlights': lowlights,
+                'highlight_color': highlight_color,
+                'lowlight_color': lowlight_color,
+            }
+        )
+    
+    # Check response status
+    _check_code(response)
+
+    # Read the response content as bytes
+    return await response.aread()
 
 
 async def get_map(x_min: int = None, x_max: int = None, y_min: int = None, y_max: int = None) -> dict:

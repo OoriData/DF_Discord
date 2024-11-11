@@ -8,6 +8,16 @@ services:
     environment:
       LOG_LEVEL: ${LOG_LEVEL}
       DF_API_HOST: ${DF_API_HOST}
+      DF_MAP_RENDERER: http://df_map:9100
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DF_GUILD_ID: ${DF_GUILD_ID}
       DF_CHANNEL_ID: ${DF_CHANNEL_ID}
+  
+  df_map:
+    build:
+      context: ./map_render
+    image: df_map
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "9100:9100"  # outie:innie

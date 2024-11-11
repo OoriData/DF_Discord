@@ -12,6 +12,7 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DF_GUILD_ID: ${DF_GUILD_ID}
       DF_CHANNEL_ID: ${DF_CHANNEL_ID}
+    restart: always
   
   df_map:
     build:
@@ -21,3 +22,4 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
     ports:
       - "9100:9100"  # outie:innie
+    restart: always

@@ -263,6 +263,9 @@ class Desolate_Cog(commands.Cog):
             except RuntimeError as e:  # Just skip unregistered users
                 logger.info(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue
+            except Exception as e:
+                logger.error(ansi_color(f'Error updating the cache for user {member.name}: {e}', 'red'))
+
 
     @tasks.loop(minutes=1)
     async def notifier(self):

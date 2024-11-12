@@ -502,6 +502,9 @@ class BuyVehicleButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        
+        # self.df_state.convoy_obj = await api_calls.get_convoy(self.df_state.convoy_obj['convoy_id'])
+        print('buy button', self.df_state.convoy_obj['user_metadata'])
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)

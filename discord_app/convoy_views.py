@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -33,10 +33,15 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
 
     embed, image_file = await make_convoy_embed(df_state)
 
+    embeds = [embed]
+    if df_state.user_obj.get('metadata'):
+        if df_state.user_obj['metadata'].get('tutorial'):
+            embeds.append(tutorial_embed(df_state))
+
     view = ConvoyView(df_state)
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
-    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
+    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
 
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
@@ -175,6 +180,17 @@ class ConvoyView(discord.ui.View):
         
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
+
+        # if self.df_state.user_obj.get('metadata'):
+        #     if self.df_state.user_obj['metadata'].get('tutorial'):
+        #         for item in self.children:
+        #             item.disabled = True
+
+        #         # match case or smth
+        #         for item in self.children:
+        #             if item.custom_id == 'nav_sett_button':
+        #                 item.disabled = False
+            
 
     @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
     async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button):

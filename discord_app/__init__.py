@@ -99,3 +99,84 @@ This thing's still in Alpha, so things *will* break and that the game *is not* f
 Happy trails! The game will be updated frequently, and we will be listening closely for any feedback you've got. Have fun!
 -# You can show this message at any time with **`/df-help`**
 '''
+
+
+def tutorial_embed(df_state: DFState) -> discord.Embed:
+    ERROR_DESC = 'tutorial error! 😵‍💫 please ping the devs!'
+    FOOTER = '\n\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again'
+
+    tutorial_embed = discord.Embed(color=discord.Color.from_rgb(0, 255, 0))
+    tutorial_embed.set_author(name='Desolate Frontiers Tutorial', icon_url='https://i.imgur.com/OSPCcye.png')
+
+    if not df_state.convoy_obj.get('user_metadata'):
+        tutorial_embed.description = ERROR_DESC + FOOTER
+        return tutorial_embed
+    if not df_state.convoy_obj['user_metadata'].get('tutorial'):
+        tutorial_embed.description = ERROR_DESC + FOOTER
+        return tutorial_embed
+
+    match df_state.convoy_obj['user_metadata']['tutorial']:
+        case 1:
+            tutorial_embed.description = '\n'.join([
+                "## Welcome to the **Desolate Frontiers**!",
+                "### You aren\'t going anywhere without a vehicle, so you\'ll need to go buy one. 🚗",
+                f"1. Hit the gray `{df_state.sett_obj['name']}` button to check out the vendors",
+                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} stealership`",
+                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "- Select the vehicle you'd like to purchase with the `Vehicle Inventory` dropdown",
+                "- Inspect the vehicle you've chosen. If it suits you, you can hit the green `Buy Vehicle| $XX,XXX` button.",
+                f"  - If you want to inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
+            ])
+        case 2:
+            tutorial_embed.description = '\n'.join([
+                "### Now that you have a vehicle, you'll need water and food for your convoy's crew to sustain themselves on their travels. 🍕 💧",
+                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
+                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "- Use the `Cargo Inventory` dropdown to select `Water Jerry Cans`",
+                "- Hit the blurple `+1` button to add an additional jerry can to your cart",
+                "- Hit the green `Buy 2 Water Jerry Cans(s)` button to complete the purchase",
+                "  - *`Water Jerry Cans` are sold full of water*",
+                "- **Repeat this process, but with the `MRE Boxes`, which contain food**"
+                "  - You only need 1 MRE box to get on the road"
+                "  - *`MRE Boxes` are also sold with a full compliment of MREs*",
+            ])
+        case 3:
+            tutorial_embed.description = '\n'.join([
+                "### Now that you have rations, you're gonna need to buy some fuel as well. The cheap-ass dealership sold you a vehicle with an empty tank. ⛽️",
+                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
+                "- Hit the `Top up fuel | $XXX` button to fill your empty tank",
+                "  - This button is a convenience so that you don't have to bother individually buying all the resources you deplete on your travels",
+            ])
+        case 4:
+            tutorial_embed.description = '\n'.join([
+                "### With the basics down, it's time for your first delivery. 📦",
+                f"1. One last time, hit the gray `{df_state.sett_obj['name']}` button",
+                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
+                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "- Select the cargo you'd like to purchase with the `Cargo Inventory` dropdown",
+                "  - The 💵 emojis represent how much profit margin the delivery will net you",
+                "  - Consider that alongside the distance you'll have to travel to make the delivery; a high margin delivery which requires you go cross-country will cost you in both time and resources.",
+                "- Hit the blurple `max (+X)` button to add the maximum number of this cargo to your cart",
+                "- Hit the green `Buy X cargo(s)` button to complete the purchase",
+            ])
+        case 5:
+            tutorial_embed.description = '\n'.join([
+                "### Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️",
+                f"1. Hit the gray `{df_state.convoy_obj['name']}` button",
+                "- Hit the green `Embark on new Journey` button",
+                "- Use the `Where to?` dropdown menu to select the destination of your goods",
+                "  - This destination will have the name of the cargo bound for it in parentheses after its name",
+                "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
+                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps. Start this step back from the top, and select a destination in between your current location and the destination instead.**",
+                "",
+                "...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱",
+                "(If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.)",
+                "",
+                "**This is the end of the Desolate Frontiers tutorial. Good luck, and happy trails.",
+            ])
+        case _:
+            tutorial_embed.description = ERROR_DESC
+
+    tutorial_embed.description += FOOTER
+
+    return tutorial_embed

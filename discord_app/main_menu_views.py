@@ -126,7 +126,7 @@ class MainMenuView(discord.ui.View):
         self.df_state.interaction = interaction
         await interaction.response.send_modal(ConvoyNameModal(self.df_state))
 
-    @discord.ui.button(label='⚙ Options', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='⚙ Options', style=discord.ButtonStyle.blurple, disabled=True)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.interaction = interaction
 

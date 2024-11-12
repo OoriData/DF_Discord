@@ -84,19 +84,6 @@ async def get_tile(x: int, y: int) -> dict:
     return response.json()
 
 
-async def get_user_by_discord(discord_id: int) -> dict:
-    async with httpx.AsyncClient(verify=False) as client:
-        response = await client.get(
-            f'{DF_API_HOST}/user/get_by_discord_id',
-            params={
-                'discord_id': discord_id
-            }
-        )
-
-    _check_code(response)
-    return response.json()
-
-
 async def new_user(username: str, discord_id: int) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
@@ -105,6 +92,29 @@ async def new_user(username: str, discord_id: int) -> dict:
                 'username': username,
                 'discord_id': discord_id
             }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_user_by_discord(discord_id: int) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            f'{DF_API_HOST}/user/get_by_discord_id',
+            params={'discord_id': discord_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def update_user_metadata(user_id: UUID, new_metadata: dict) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/user/update_metadata',
+            params={'user_id': user_id},
+            json=new_metadata
         )
 
     _check_code(response)
@@ -129,9 +139,7 @@ async def get_convoy(convoy_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/convoy/get',
-            params={
-                'convoy_id': convoy_id,
-            }
+            params={'convoy_id': convoy_id,}
         )
 
     _check_code(response)

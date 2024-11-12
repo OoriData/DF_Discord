@@ -126,10 +126,15 @@ class MainMenuView(discord.ui.View):
         self.df_state.interaction = interaction
         await interaction.response.send_modal(ConvoyNameModal(self.df_state))
 
-    @discord.ui.button(label='⚙ Options', style=discord.ButtonStyle.blurple, disabled=True)
+    @discord.ui.button(label='⚙ Options', style=discord.ButtonStyle.blurple)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.interaction = interaction
-        # await interaction.response.send_modal(ConvoyNameModal(self.df_state))
+
+        self.df_state.user_obj['metadata'] = {'WOWIE': 'miku pipe bomb....'}
+
+        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+
+        await self.df_state.interaction.response.edit_message(content=self.df_state.user_obj['metadata'])
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

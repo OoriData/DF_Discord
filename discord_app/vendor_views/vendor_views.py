@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
 import discord_app.vendor_views.mechanic_views
@@ -62,26 +62,35 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
             name=service,
             value=availability,
         )
+    
+    embeds = [vendor_embed]
+    embeds = add_tutorial_embed(embeds, df_state)
 
     vendor_view = VendorView(df_state)
 
     if edit:
-        await df_state.interaction.response.edit_message(embed=vendor_embed, view=vendor_view, attachments=[])
+        await df_state.interaction.response.edit_message(embeds=embeds, view=vendor_view)
     else:
-        await df_state.interaction.followup.send(embed=vendor_embed, view=vendor_view)
+        await df_state.interaction.followup.send(embeds=embeds, view=vendor_view)
 
 
 class VendorView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__(timeout=120)
+        super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(BuyButton(df_state))
         self.add_item(MechanicButton(df_state))
         self.add_item(SellButton(df_state))
+
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+            for item in self.children:
+                item.disabled = item.custom_id != 'buy_button'
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

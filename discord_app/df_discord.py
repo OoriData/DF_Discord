@@ -76,7 +76,7 @@ class Desolate_Cog(commands.Cog):
         
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         try:
             map_embed = discord.Embed()
@@ -87,7 +87,7 @@ class Desolate_Cog(commands.Cog):
                 icon_url=interaction.user.avatar.url
             )
 
-            await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
+            await interaction.followup.send(embed=map_embed, file=image_file)
 
         except Exception as e:
             msg = f'something went wrong: {e}'

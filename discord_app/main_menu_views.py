@@ -96,7 +96,7 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
 class MainMenuView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         self.clear_items()
 

@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.vendor_views.vendor_views import SERVICE_KEYS
@@ -46,10 +46,13 @@ async def sett_menu(df_state: DFState, edit: bool=True):
         'Select a vendor:'
     ])
 
+    embeds = [embed]
+    embeds = add_tutorial_embed(embeds, df_state)
+
     view = SettView(df_state, df_state.sett_obj['vendors'])
 
     if edit:
-        await df_state.interaction.response.edit_message(embed=embed, view=view, attachments=[])
+        await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
@@ -58,13 +61,23 @@ class SettView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState, vendors):
         self.df_state = df_state
-        super().__init__(timeout=120)
+        super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, vendors))
         # self.add_item(WarehouseButton)
         self.add_item(VendorSelect(self.df_state, vendors, row=3))
+
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage in {1, 2, 3, 4}:
+            for item in self.children:
+                match tutorial_stage:
+                    case 1 | 2 | 4:
+                        item.disabled = item.custom_id != 'select_vendor'
+                    case 3:
+                        item.disabled = item.custom_id != 'top_up_button'
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

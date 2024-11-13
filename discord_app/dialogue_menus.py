@@ -89,7 +89,7 @@ class DialogueNextButton(discord.ui.Button):
             label='▶',
             custom_id='next_dialogue',
             row=1,
-        )  # TODO: Add view timeout as a configurable option
+        )
         
     async def callback(self, interaction: discord.Interaction):
         page = self.page + 1
@@ -107,7 +107,7 @@ class DialogueBackButton(discord.ui.Button):
             label='◀',
             custom_id='back_dialogue',
             row=1,
-        )  # TODO: Add view timeout as a configurable option
+        )
         
     async def callback(self, interaction: discord.Interaction):
         page = self.page - 1

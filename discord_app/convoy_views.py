@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, tutorial_embed
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -34,9 +34,7 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
     embed, image_file = await make_convoy_embed(df_state)
 
     embeds = [embed]
-    if df_state.user_obj.get('metadata'):
-        if df_state.user_obj['metadata'].get('tutorial'):
-            embeds.append(tutorial_embed(df_state))
+    embeds = add_tutorial_embed(embeds, df_state)
 
     view = ConvoyView(df_state)
 
@@ -181,16 +179,15 @@ class ConvoyView(discord.ui.View):
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
 
-        # if self.df_state.user_obj.get('metadata'):
-        #     if self.df_state.user_obj['metadata'].get('tutorial'):
-        #         for item in self.children:
-        #             item.disabled = True
-
-        #         # match case or smth
-        #         for item in self.children:
-        #             if item.custom_id == 'nav_sett_button':
-        #                 item.disabled = False
-            
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+            for item in self.children:
+                match tutorial_stage:  # Use match-case to handle different tutorial stages
+                    case 1 | 2 | 3 | 4:  # Enable 'nav_sett_button' only for stages 1-4, disable all others
+                        item.disabled = item.custom_id != 'nav_sett_button'
+                    case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
+                        item.disabled = item.custom_id != 'send_convoy_button'
 
     @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
     async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -258,11 +255,14 @@ async def send_convoy_menu(df_state: DFState):
 
     embed, image_file = await make_convoy_embed(df_state)
 
+    embeds = [embed]
+    embeds = add_tutorial_embed(embeds, df_state)
+
     df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
     view = DestinationView(df_state=df_state, df_map=df_map)
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
-    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
+    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
 
 
 class DestinationView(discord.ui.View):
@@ -273,6 +273,12 @@ class DestinationView(discord.ui.View):
         add_nav_buttons(self, self.df_state)
 
         self.add_item(DestinationSelect(self.df_state, df_map, page))
+
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+            for item in self.children:
+                item.disabled = item.custom_id != 'destination_select'
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -377,6 +383,9 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
     embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
     embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
+    embeds = [embed]
+    embeds = add_tutorial_embed(embeds, df_state)
+
     view = SendConvoyConfirmView(
         df_state=df_state,
         prospective_journey_plus_misc=prospective_journey_plus_misc,
@@ -385,7 +394,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
     )
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
-    await df_state.interaction.followup.edit_message(og_message.id, embed=embed, view=view, attachments=[image_file])
+    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
 
 
 class SendConvoyConfirmView(discord.ui.View):
@@ -402,13 +411,19 @@ class SendConvoyConfirmView(discord.ui.View):
         self.route_choices = route_choices
         self.route_index = route_index
 
-        super().__init__(timeout=120)
+        super().__init__()
 
         add_nav_buttons(self, self.df_state)
 
         if len(route_choices) > 1:
             self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
         self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
+
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+            for item in self.children:
+                item.disabled = not (item.custom_id == 'alt_route' or item.custom_id == 'confirm_journey_button')
 
 
 class NextJourneyButton(discord.ui.Button):
@@ -455,6 +470,7 @@ class ConfirmJourneyButton(discord.ui.Button):
             style=discord.ButtonStyle.green,
             label=label,
             disabled=disabled,
+            custom_id='confirm_journey_button',
             row=row
         )
 
@@ -493,7 +509,7 @@ class CargoView(discord.ui.View):
             interaction: discord.Interaction,
             convoy_dict: dict,
     ):
-        super().__init__(timeout=120)
+        super().__init__()
 
         self.interaction = interaction
         self.convoy_dict = convoy_dict

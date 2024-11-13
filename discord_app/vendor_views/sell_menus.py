@@ -360,7 +360,7 @@ class SellVehicleSelect(discord.ui.Select):
 class VehicleSellConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__(timeout=120)
+        super().__init__()
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 

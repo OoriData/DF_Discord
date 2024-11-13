@@ -101,19 +101,18 @@ Happy trails! The game will be updated frequently, and we will be listening clos
 '''
 
 
-def tutorial_embed(df_state: DFState) -> discord.Embed:
+def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
+    if (
+        not df_state.convoy_obj.get('user_metadata')
+        or not df_state.convoy_obj.get('user_metadata', {}).get('tutorial')
+    ):
+        return embeds
+
     ERROR_DESC = 'tutorial error! 😵‍💫 please ping the devs!'
     FOOTER = '\n\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again'
 
     tutorial_embed = discord.Embed(color=discord.Color.from_rgb(0, 255, 0))
     tutorial_embed.set_author(name='Desolate Frontiers Tutorial', icon_url='https://i.imgur.com/OSPCcye.png')
-
-    if not df_state.convoy_obj.get('user_metadata'):
-        tutorial_embed.description = ERROR_DESC + FOOTER
-        return tutorial_embed
-    if not df_state.convoy_obj['user_metadata'].get('tutorial'):
-        tutorial_embed.description = ERROR_DESC + FOOTER
-        return tutorial_embed
 
     match df_state.convoy_obj['user_metadata']['tutorial']:
         case 1:
@@ -130,14 +129,15 @@ def tutorial_embed(df_state: DFState) -> discord.Embed:
         case 2:
             tutorial_embed.description = '\n'.join([
                 "### Now that you have a vehicle, you'll need water and food for your convoy's crew to sustain themselves on their travels. 🍕 💧",
+                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
                 f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
                 "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
                 "- Use the `Cargo Inventory` dropdown to select `Water Jerry Cans`",
                 "- Hit the blurple `+1` button to add an additional jerry can to your cart",
                 "- Hit the green `Buy 2 Water Jerry Cans(s)` button to complete the purchase",
                 "  - *`Water Jerry Cans` are sold full of water*",
-                "- **Repeat this process, but with the `MRE Boxes`, which contain food**"
-                "  - You only need 1 MRE box to get on the road"
+                "- **Repeat this process, but with the `MRE Boxes`, which contain food**",
+                "  - You only need 1 MRE box to get on the road",
                 "  - *`MRE Boxes` are also sold with a full compliment of MREs*",
             ])
         case 3:
@@ -157,26 +157,42 @@ def tutorial_embed(df_state: DFState) -> discord.Embed:
                 "  - The 💵 emojis represent how much profit margin the delivery will net you",
                 "  - Consider that alongside the distance you'll have to travel to make the delivery; a high margin delivery which requires you go cross-country will cost you in both time and resources.",
                 "- Hit the blurple `max (+X)` button to add the maximum number of this cargo to your cart",
+                "  - **if you just hit the green buy button now, you'll only buy one! You want to make big deliveries**",
                 "- Hit the green `Buy X cargo(s)` button to complete the purchase",
             ])
         case 5:
             tutorial_embed.description = '\n'.join([
                 "### Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️",
-                f"1. Hit the gray `{df_state.convoy_obj['name']}` button",
+                "1. Hit the gray `convoy` button",
                 "- Hit the green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select the destination of your goods",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
                 "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
-                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps. Start this step back from the top, and select a destination in between your current location and the destination instead.**",
-                "",
-                "...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱",
-                "(If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.)",
-                "",
-                "**This is the end of the Desolate Frontiers tutorial. Good luck, and happy trails.",
+                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps.**",
+                "  - Start this step back from the top, and select a destination in between your current location and the recipient's location instead.",
+            ])
+        case 6:
+            tutorial_embed.description = '\n'.join([
+                "### Finishing this ~~fight~~ delivery... 🚛",
+                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
+                "- Hit the `Top up fuel | $XXX` button to refill your resources",
+                "- Hit the gray `convoy` button",
+                "- Hit the green `Embark on new Journey` button",
+                "- Use the `Where to?` dropdown menu to select the destination of your goods",
+                "  - This destination will have the name of the cargo bound for it in parentheses after its name",
+                "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
+                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps.**",
+                "  - Start this step back from the top, and select a destination in between your current location and the recipient's location instead.",
+            ])
+        case 7:
+            tutorial_embed.description = '\n'.join([
+                "### ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱",
+                "If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.",
             ])
         case _:
             tutorial_embed.description = ERROR_DESC
 
     tutorial_embed.description += FOOTER
 
-    return tutorial_embed
+    embeds.append(tutorial_embed)
+    return embeds

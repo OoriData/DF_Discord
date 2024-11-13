@@ -46,7 +46,7 @@ async def mechanic_menu(df_state: DFState):
 class MechVehicleDropdownView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
@@ -112,7 +112,7 @@ class VehicleSelect(discord.ui.Select):
 class MechView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
@@ -179,7 +179,7 @@ class MechView(discord.ui.View):
 class MechVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
@@ -263,7 +263,7 @@ class MechVehicleView(discord.ui.View):
 class CargoSelectView(discord.ui.View):
     def __init__(self, df_state: DFState, part_cargos_to_display):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
@@ -340,7 +340,7 @@ class CargoSelect(discord.ui.Select):
 class InstallConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
@@ -391,7 +391,7 @@ class InstallConfirmView(discord.ui.View):
 class PostInstallView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 

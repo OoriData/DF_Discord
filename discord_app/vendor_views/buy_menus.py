@@ -93,7 +93,7 @@ class TopUpButton(discord.ui.Button):
             embeds = [embed]
             embeds = add_tutorial_embed(embeds, self.df_state)
 
-            view = discord.ui.View()
+            view = discord.ui.View(timeout=600)
             discord_app.nav_menus.add_nav_buttons(view, self.df_state)
 
             user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
@@ -169,7 +169,7 @@ async def buy_menu(df_state: DFState):
 class BuyView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -255,7 +255,7 @@ class ResourceBuyQuantityView(discord.ui.View):
         self.df_state = df_state
         self.resource_type = resource_type
         self.cart_quantity = cart_quantity
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -487,7 +487,7 @@ class BuyVehicleSelect(discord.ui.Select):
 class VehicleBuyConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -638,7 +638,7 @@ class CargoBuyQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, cart_quantity: int=1):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -733,7 +733,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
 class PostBuyView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 

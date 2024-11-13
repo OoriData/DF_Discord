@@ -154,7 +154,7 @@ class ConvoyView(discord.ui.View):
             df_state: DFState
     ):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         add_nav_buttons(self, df_state)
 
@@ -268,7 +268,7 @@ async def send_convoy_menu(df_state: DFState):
 class DestinationView(discord.ui.View):
     def __init__(self, df_state: DFState, df_map: dict, page=0):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         add_nav_buttons(self, self.df_state)
 
@@ -411,7 +411,7 @@ class SendConvoyConfirmView(discord.ui.View):
         self.route_choices = route_choices
         self.route_index = route_index
 
-        super().__init__()
+        super().__init__(timeout=600)
 
         add_nav_buttons(self, self.df_state)
 
@@ -509,7 +509,7 @@ class CargoView(discord.ui.View):
             interaction: discord.Interaction,
             convoy_dict: dict,
     ):
-        super().__init__()
+        super().__init__(timeout=600)
 
         self.interaction = interaction
         self.convoy_dict = convoy_dict

@@ -62,7 +62,7 @@ class ConvoyCargoView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState, recipient_vendor_obj: dict = None):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 

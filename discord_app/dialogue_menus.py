@@ -58,7 +58,7 @@ class DialogueView(discord.ui.View):
     ):
         self.df_state = df_state
         self.page = page
-        super().__init__()  # TODO: Add view timeout as a configurable option
+        super().__init__(timeout=600)
         
         add_nav_buttons(self, df_state)
 

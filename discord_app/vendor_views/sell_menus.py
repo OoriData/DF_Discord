@@ -78,7 +78,7 @@ async def sell_menu(df_state: DFState):
 class SellView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -153,7 +153,7 @@ class ResourceSellQuantityView(discord.ui.View):
         self.df_state = df_state
         self.resource_type = resource_type
         self.sale_quantity = sale_quantity
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -360,7 +360,7 @@ class SellVehicleSelect(discord.ui.Select):
 class VehicleSellConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -489,7 +489,7 @@ class CargoSellQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, sale_quantity: int=1):
         self.df_state = df_state
         self.sale_quantity = sale_quantity
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
@@ -570,7 +570,7 @@ class CargoConfirmSellButton(discord.ui.Button):
 class PostSellView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 

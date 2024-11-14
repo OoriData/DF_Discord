@@ -259,9 +259,9 @@ class Desolate_Cog(commands.Cog):
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
-                logger.info(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) has been added to DF_USERS_CACHE', 'green'))
+                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) has been added to DF_USERS_CACHE', 'green'))
             except RuntimeError as e:  # Just skip unregistered users
-                logger.info(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
+                logger.debug(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue
             except Exception as e:
                 logger.error(ansi_color(f'Error updating the cache for user {member.name}: {e}', 'red'))
@@ -279,11 +279,11 @@ class Desolate_Cog(commands.Cog):
                 discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
                 if discord_user:
-                    logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
+                    logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
                     try:
                         # Fetch unseen dialogue for the DF user
                         unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
-                        logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+                        logger.debug(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
                         if unseen_dialogue_dicts:
                             ping = f'<@{discord_user.id}>'

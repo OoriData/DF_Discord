@@ -30,7 +30,7 @@ async def render_map(
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             f'{DF_MAP_RENDERER}/render-map',
-            json={  # Sending data as JSON in the body
+            json={  # Sending data as JSON in the body, as it's too large to send as a param
                 'tiles': tiles,
                 'highlights': highlights,
                 'lowlights': lowlights,

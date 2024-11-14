@@ -41,7 +41,9 @@ from map_render import render_map
 
 # WORKER_COUNT = 4
 
+
 app = FastAPI()
+
 
 @app.post('/arbitrary-json')
 async def receive_arbitrary_json(data: Any = Body(...)):
@@ -61,12 +63,24 @@ async def render_map_http(data: Any = Body(...)):
     '''
     assert 'tiles' in data
     unknown_keys = set([
-        k for k in data.keys() if k not in ('tiles', 'highlights', 'lowlights', 'highlight_color', 'lowlight_color')
+        k for k in data.keys() if k not in (
+            'tiles',
+            'highlights',
+            'lowlights',
+            'highlight_color',
+            'lowlight_color'
+        )
     ])
     if unknown_keys:
         warnings.warn(f'unknown keys used: {unknown_keys}')
-    map_img = render_map(data['tiles'], data.get('highlights'), data.get('lowlights'),
-               data.get('highlight_color'), data.get('lowlight_color'))
+
+    map_img = render_map(
+        data['tiles'],
+        data.get('highlights'),
+        data.get('lowlights'),
+        data.get('highlight_color'),
+        data.get('lowlight_color')
+    )
     
     # Convert the Pillow image to bytes
     img_byte_arr = BytesIO()

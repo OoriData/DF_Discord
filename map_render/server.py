@@ -20,11 +20,13 @@ import warnings
 # import fire
 # import hypercorn
 from fastapi.responses import StreamingResponse
-from fastapi import FastAPI, Body, status  #Request
+from fastapi import FastAPI, Body, HTTPException, status  #Request
 # from fastapi.responses import FileResponse  # , JSONResponse, StreamingResponse
 # from contextlib import asynccontextmanager
 
 from map_render import render_map
+from dflib.map_struct import deserialize_map
+
 
 # XXX: May not be needed: remove section after  few beats, if not
 # Context manager for the FastAPI app's lifespan: https://fastapi.tiangolo.com/advanced/events/
@@ -42,16 +44,63 @@ from map_render import render_map
 # WORKER_COUNT = 4
 
 
+def do_render_map(data):
+    assert 'tiles' in data
+    unknown_keys = {
+        k for k in data.keys() if k not in (
+            'tiles',
+            'highlights',
+            'lowlights',
+            'highlight_color',
+            'lowlight_color'
+        )
+    }
+    if unknown_keys:
+        warnings.warn(f'unknown keys used: {unknown_keys}', stacklevel=2)
+
+    map_img = render_map(
+        data['tiles'],
+        data.get('highlights'),
+        data.get('lowlights'),
+        data.get('highlight_color'),
+        data.get('lowlight_color')
+    )
+
+    # Convert the Pillow image to bytes
+    img_byte_arr = BytesIO()
+    map_img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    return img_byte_arr
+
+
 app = FastAPI()
 
 
-@app.post('/arbitrary-json')
-async def receive_arbitrary_json(data: Any = Body(...)):
-    return {'received_data': data}
+@app.post("/unpack-map")
+async def unpack_map_(data: bytes):
+    '''
+    Dev utility to unpack a map struct
+    '''
+    try:
+        map_data = deserialize_map(data)
+        return {"status": "success", "map": map_data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post('/render-map')
-async def render_map_http(data: Any = Body(...)):
+@app.post("/render-map")
+async def render_map_(data: bytes):
+    try:
+        data = deserialize_map(data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    img_byte_arr = do_render_map(data)
+    return StreamingResponse(img_byte_arr, media_type="image/png")
+
+
+@app.post('/render-map-json')
+async def render_map_json_(data: Any = Body(...)):  # noqa B008
     '''
     Request body is a top-level JSON object with keys:
 
@@ -61,32 +110,7 @@ async def render_map_http(data: Any = Body(...)):
         "highlight_color" (optional): str
         "lowlight_color" (optional): str
     '''
-    assert 'tiles' in data
-    unknown_keys = set([
-        k for k in data.keys() if k not in (
-            'tiles',
-            'highlights',
-            'lowlights',
-            'highlight_color',
-            'lowlight_color'
-        )
-    ])
-    if unknown_keys:
-        warnings.warn(f'unknown keys used: {unknown_keys}')
-
-    map_img = render_map(
-        data['tiles'],
-        data.get('highlights'),
-        data.get('lowlights'),
-        data.get('highlight_color'),
-        data.get('lowlight_color')
-    )
-    
-    # Convert the Pillow image to bytes
-    img_byte_arr = BytesIO()
-    map_img.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-
+    img_byte_arr = do_render_map(data)
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
 

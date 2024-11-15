@@ -1,0 +1,193 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dflib"
+dynamic = ["version"]
+description = "Desolate Frontiers open library"
+readme = "README.md"
+requires-python = ">=3.11"
+# FIXME: Should switch to Apache license, right?
+# Sigh had to spelunk in the code to find this. So what of the SPD license = "UNLICENSED"?
+license = "LicenseRef-Proprietary"
+keywords = []
+authors = [
+  { name = "Uche Ogbuji", email = "uche@oori.dev" },
+  { name = "Osi Ogbuji", email = "osi@oori.dev" },
+  { name = "Aidan Reese", email = "aidan@oori.dev" },
+  { name = "Jide Ogbuji", email = "jide@oori.dev" },
+  { name = "Udoka Ogbuji", email = "udoka@oori.dev" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+# https://hatch.pypa.io/latest/config/dependency/
+# Moved to reqs.txt, since we're Containerizing
+dependencies = [
+  "google-re2"
+]
+
+[project.urls]
+Documentation = "https://github.com/OoriData/DF_Discord"
+Issues = "https://github.com/OoriData/DF_Discord/issues"
+Source = "https://github.com/OoriData/DF_Discord/tree/main"
+
+[tool.hatch.version]
+path = "pylib/__about__.py"
+
+[tool.hatch.build]
+include = ["*.toml", "*.py"]
+
+# Rewriting path in distribution
+[tool.hatch.build.sources]
+"pylib" = "dflib"
+
+# Include non-python files in the distribution https://hatch.pypa.io/latest/config/build/#forced-inclusion
+# [tool.hatch.build.targets.wheel.force-include]
+# 'lang_server/static' = 'dflib/lang_server/static'
+
+[tool.hatch.envs.default]
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:test}"
+test-cov = "coverage run -m pytest {args:test}"
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  "black>=23.1.0",
+  "mypy>=1.0.0",
+  "ruff>=0.0.243",
+]
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:pylib test}"
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+  "typing",
+]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT003",
+  # Ignore checks for possible passwords
+  "S105", "S106", "S107",
+  # Ignore complexity
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # Ignore single quote complaints
+  "Q000", "Q001", "Q002",
+  # Ignore import formatting
+  "I001",
+  # Ignore print()s
+  "T201",
+  # Ignore capitalization
+  "N801", "N806",
+  # Ignore asserts
+  "S101",
+  # Ignore whitespace
+  "W293",
+  # Ignore SQL injection
+  "S608"
+]
+unfixable = [
+  # Don't touch unused imports
+  "F401",
+]
+
+[tool.ruff.isort]
+known-first-party = ["dflib"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"test/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.coverage.run]
+source_pkgs = ["dflib", "test"]
+branch = true
+parallel = true
+omit = [
+  "pylib/__about__.py",
+]
+
+[tool.coverage.paths]
+dflib = ["pylib", "*/pylib"]
+test = ["test", "*/test"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+# [project.scripts]
+# dflib = "dflib.cli:main"

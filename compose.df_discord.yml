@@ -12,6 +12,9 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DF_GUILD_ID: ${DF_GUILD_ID}
       DF_CHANNEL_ID: ${DF_CHANNEL_ID}
+      WASTELANDER_ROLE: ${WASTELANDER_ROLE}
+      ALPHA_ROLE: ${ALPHA_ROLE}
+      BETA_ROLE: ${BETA_ROLE}
     restart: unless-stopped
   
   df_map:

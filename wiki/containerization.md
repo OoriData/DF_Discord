@@ -15,7 +15,9 @@ DISCORD_TOKEN = "op://Oori DevOps/Oori - Desolate Frontiers - Discord Bot/creden
 
 DF_GUILD_ID = "1225943320078057582"    # Desolate Frontiers server
 DF_CHANNEL_ID = "1225943321067917406"  # #df-notifications
-ALPHA_ROLE = "1276397166838939680"     # Alpha Tester role in DF server
-BETA_ROLE = "1276393066684747796"      # Beta Tester role in DF server
+
+WASTELANDER_ROLE = "1306829775830257674"  # "Wastelander" role in DF server
+ALPHA_ROLE = "1276397166838939680"        # "Alpha Tester" role in DF server
+BETA_ROLE = "1276393066684747796"         # "Beta Tester" role in DF server
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")

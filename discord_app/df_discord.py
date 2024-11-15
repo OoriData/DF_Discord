@@ -22,13 +22,14 @@ from discord_app.vendor_views   import vendor_views
 from discord_app.main_menu_views import main_menu
 from discord_app.df_state       import DFState
 
-DF_API_HOST = os.environ.get('DF_API_HOST')
+DF_API_HOST = os.environ['DF_API_HOST']
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
-DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
-DF_GUILD_ID = int(os.environ.get('DF_GUILD_ID'))
-DF_CHANNEL_ID = int(os.environ.get('DF_CHANNEL_ID'))
-ALPHA_ROLE = int(os.environ.get('ALPHA_ROLE'))
-BETA_ROLE = int(os.environ.get('BETA_ROLE'))
+DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
+DF_GUILD_ID = int(os.environ['DF_GUILD_ID'])
+DF_CHANNEL_ID = int(os.environ['DF_CHANNEL_ID'])
+WASTELANDER_ROLE = int(os.environ['WASTELANDER_ROLE'])
+ALPHA_ROLE = int(os.environ['ALPHA_ROLE'])
+BETA_ROLE = int(os.environ['BETA_ROLE'])
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
@@ -59,6 +60,8 @@ class Desolate_Cog(commands.Cog):
             for sett in row:
                 SETTLEMENTS_CACHE.extend(sett['settlements'])
 
+        self.find_roles()
+
         logger.debug(ansi_color('Initializing users cache...', 'yellow'))
         self.update_user_cache.start()
 
@@ -70,19 +73,24 @@ class Desolate_Cog(commands.Cog):
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
         self.notifier.start()
 
-        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)  # Role setup
-        self.beta_role, self.alpha_role = None, None
+        logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
+
+    def find_roles(self):
+        '''Cache player roles'''
+        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+        self.wastelander_role, self.beta_role, self.alpha_role = None, None, None
         for role in guild.roles:
+            if role.id == WASTELANDER_ROLE:
+                self.wastelander_role = role
+                logger.info(ansi_color(f'Player Role: {self.wastelander_role.name}', 'yellow'))
             if role.id == ALPHA_ROLE:
                 self.alpha_role = role
-                logger.debug(ansi_color(f'Alpha Role: {self.alpha_role.name}', 'yellow'))
+                logger.info(ansi_color(f'Alpha Role: {self.alpha_role.name}', 'yellow'))
             if role.id == BETA_ROLE:
                 self.beta_role = role
-                logger.debug(ansi_color(f'Beta Role: {self.beta_role.name}', 'yellow'))
-            if self.alpha_role and self.beta_role:  # Break early if both roles are found
+                logger.info(ansi_color(f'Beta Role: {self.beta_role.name}', 'yellow'))
+            if self.wastelander_role and self.alpha_role and self.beta_role:  # Break early if all roles are found
                 break
-
-        logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
     @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
     async def df_main_menu(self, interaction: discord.Interaction):
@@ -266,23 +274,23 @@ class Desolate_Cog(commands.Cog):
             if cached_member_id not in current_member_ids:
                 del DF_USERS_CACHE[cached_member_id]
 
-        async def add_alpha_beta_roles(member):
+        async def add_discord_roles(member):
             user_role_ids = [role.id for role in member.roles]
-            if ALPHA_ROLE not in user_role_ids and BETA_ROLE not in user_role_ids:
+            if WASTELANDER_ROLE not in user_role_ids:
                 try:
-                    await member.add_roles(*[self.alpha_role, self.beta_role])
+                    await member.add_roles(*[self.wastelander_role, self.alpha_role, self.beta_role])
                 except HTTPException as e:
-                    logger.error(ansi_color(f'Couldn\'t add Alpha/Beta roles to user {member.display_name}: {e}', 'red'))
+                    logger.error(ansi_color(f'Couldn\'t add Player/Alpha/Beta roles to user {member.display_name}: {e}', 'red'))
 
         for member in guild.members:  # Update cache with current members
             if member.id in DF_USERS_CACHE:  # If the member is already in the cache, skip the API call
-                await add_alpha_beta_roles(member)  # Add Alpha/Beta roles
+                await add_discord_roles(member)  # Add Alpha/Beta roles
                 continue
             
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
-                await add_alpha_beta_roles(member)  # Add Alpha/Beta roles
+                await add_discord_roles(member)  # Add Alpha/Beta roles
                 logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) added to DF_USERS_CACHE', 'green'))
             except RuntimeError as e:  # Just skip unregistered users
                 logger.debug(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))

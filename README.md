@@ -30,8 +30,9 @@ DF_GUILD_ID = "1119003654800822302"    # (oori dev server)
 # Channel to send those notifications in
 DF_CHANNEL_ID = "1179194033923432578"  # (#bot-attic)
 
-ALPHA_ROLE = "1201669791866441748"  # ALPHA test role in oori dev server
-BETA_ROLE = "1201669724987990096"   # BETA test role in oori dev server
+WASTELANDER_ROLE = "1201669829140942970"  # "WASTELANDER test" role in oori dev server
+ALPHA_ROLE = "1201669791866441748"        # "ALPHA test" role in oori dev server
+BETA_ROLE = "1201669724987990096"         # "BETA test" role in oori dev server
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")
 

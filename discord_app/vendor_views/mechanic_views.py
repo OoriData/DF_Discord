@@ -72,6 +72,28 @@ class MechVehicleDropdownView(discord.ui.View):
         return await super().on_timeout()
 
 
+class VehicleSelectBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+    async def callback(self, interaction):
+        self.df_state.interaction = interaction
+        
+        await mechanic_menu(self.df_state)
+        return await super().callback(interaction)
+
+
 class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -114,6 +136,7 @@ class MechView(discord.ui.View):
         self.df_state = df_state
         super().__init__(timeout=600)
 
+        self.add_item(VehicleSelectBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
     @discord.ui.button(label='Repair', style=discord.ButtonStyle.green, custom_id='repair', row=1, disabled=True)
@@ -176,11 +199,47 @@ class MechView(discord.ui.View):
         return await super().on_timeout()
 
 
+class InstallPartBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+    async def callback(self, interaction):
+        self.df_state.interaction = interaction
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'# {self.df_state.vendor_obj['name']}',
+            f'## {self.df_state.vehicle_obj['name']}',
+            f'*{self.df_state.vehicle_obj['base_desc']}*',
+            '## Stats'
+        ])
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+
+        view = MechView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+        return await super().callback(interaction)
+
+
 class MechVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)
 
+        self.add_item(InstallPartBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
         # Disable the Convoy button if there's no cargo with a 'part' value
@@ -260,11 +319,33 @@ class MechVehicleView(discord.ui.View):
         return await super().on_timeout()
 
 
+class MechBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+    async def callback(self, interaction):
+        self.df_state.interaction = interaction
+        await mechanic_menu(self.df_state)
+        return await super().callback(interaction)
+
+
 class CargoSelectView(discord.ui.View):
     def __init__(self, df_state: DFState, part_cargos_to_display):
         self.df_state = df_state
         super().__init__(timeout=600)
 
+        self.add_item(CargoSelectBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
         self.add_item(CargoSelect(self.df_state, part_cargos_to_display))
@@ -281,6 +362,49 @@ class CargoSelectView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
+
+class CargoSelectBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+    async def callback(self, interaction):
+        self.df_state.interaction = interaction
+
+        part_list = []
+        for category, part in self.df_state.vehicle_obj['parts'].items():
+            if not part:  # If the part slot is empty
+                part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+                continue
+
+            part_list.append(discord_app.cargo_views.format_part(part))
+        displayable_vehicle_parts = '\n'.join(part_list)
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'## {self.df_state.vehicle_obj['name']}',
+            f'*{self.df_state.vehicle_obj['base_desc']}*',
+            '## Parts',
+            displayable_vehicle_parts,
+            '## Stats'
+        ])
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+
+        view = MechVehicleView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+        return await super().callback(interaction)
 
 
 class CargoSelect(discord.ui.Select):
@@ -337,11 +461,78 @@ class CargoSelect(discord.ui.Select):
         await interaction.response.edit_message(embed=embed, view=view)
 
 
+class PartConfirmBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+
+    async def handle_part_lists(self, interaction: discord.Interaction, cargo_source, is_vendor):  # XXX: redifened function
+        self.df_state.interaction = interaction
+
+        part_cargos_to_display = []
+        for cargo in cargo_source:
+            if cargo.get('part'):
+                try:
+                    check_dict = await api_calls.check_part_compatibility(self.df_state.vehicle_obj['vehicle_id'], cargo['cargo_id'])
+                    cargo['part'] = check_dict['part']
+                    cargo['part']['installation_price'] = check_dict['installation_price']
+                    
+                    # Only assign kit_price if the cargo is from a vendor
+                    if is_vendor:
+                        cargo['part']['kit_price'] = cargo['base_price']
+                    
+                    part_cargos_to_display.append(cargo)
+                except RuntimeError as e:
+                    print(f'part does not fit: {e}')
+                    continue
+        
+        part_list = []
+        for cargo in part_cargos_to_display:
+            part_list.append(discord_app.cargo_views.format_part(cargo))
+        displayable_vehicle_parts = '\n'.join(part_list)
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'# {self.df_state.vendor_obj['name']}',
+            f'## {self.df_state.vehicle_obj["name"]}',
+            f'*{self.df_state.vehicle_obj["base_desc"]}*',
+            '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
+            f'{displayable_vehicle_parts}',
+            '### Stats'
+        ])
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+
+        view = CargoSelectView(self.df_state, part_cargos_to_display)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        convoy_cargo = self.df_state.convoy_obj['all_cargo']
+        await self.handle_part_lists(interaction, convoy_cargo, is_vendor=False)
+        
+        return await super().callback(interaction)
+
+
 class InstallConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)
 
+        self.add_item(CargoSelectBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
     @discord.ui.button(label='Install part', style=discord.ButtonStyle.green, custom_id='confirm_install_part', row=1)

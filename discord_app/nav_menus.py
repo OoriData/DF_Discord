@@ -13,7 +13,8 @@ from discord_app.df_state import DFState
 
 
 def add_nav_buttons(view: discord.ui.View, df_state: DFState):
-    # view.add_item(NavBackButton(df_state))
+    if 'nav_back_button' not in [item.custom_id for item in view.children]:  # Only add back button if a back button wasn't already added
+        view.add_item(NavBackButton(df_state))
     view.add_item(NavMainMenuButton(df_state))
     view.add_item(NavConvoyButton(df_state))
     view.add_item(NavSettButton(df_state))
@@ -31,7 +32,7 @@ class NavBackButton(discord.ui.Button):
         super().__init__(
             style=discord.ButtonStyle.gray,
             label='⬅ Back',
-            disabled=disabled,
+            disabled=True,  # TODO: Use `disabled` once we figure out dynamic back buttons 😩
             custom_id='nav_back_button',
             row=0
         )

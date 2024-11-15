@@ -634,12 +634,34 @@ class CargoBuyQuantityEmbed(discord.Embed):
         self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
 
 
+class BuyBackButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label='⬅ Back',
+            custom_id='nav_back_button',
+            row=row
+        )
+
+    async def callback(self, interaction):
+        self.df_state.interaction = interaction
+        await buy_menu(self.df_state)
+        return await super().callback(interaction)
+
+
 class CargoBuyQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, cart_quantity: int=1):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
         super().__init__(timeout=600)
 
+        self.add_item(BuyBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(QuantityBuyButton(self.df_state, self.cart_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))

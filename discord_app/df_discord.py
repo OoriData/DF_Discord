@@ -10,7 +10,7 @@ from io                         import BytesIO
 
 import                                 discord
 import                                 httpx
-from discord                    import app_commands
+from discord                    import app_commands, HTTPException
 from discord.ext                import commands, tasks
 
 from utiloori.ansi_color        import ansi_color
@@ -27,6 +27,8 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 DF_GUILD_ID = int(os.environ.get('DF_GUILD_ID'))
 DF_CHANNEL_ID = int(os.environ.get('DF_CHANNEL_ID'))
+ALPHA_ROLE = int(os.environ.get('ALPHA_ROLE'))
+BETA_ROLE = int(os.environ.get('BETA_ROLE'))
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
@@ -67,6 +69,18 @@ class Desolate_Cog(commands.Cog):
         
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
         self.notifier.start()
+
+        guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)  # Role setup
+        self.beta_role, self.alpha_role = None, None
+        for role in guild.roles:
+            if role.id == ALPHA_ROLE:
+                self.alpha_role = role
+                logger.debug(ansi_color(f'Alpha Role: {self.alpha_role.name}', 'yellow'))
+            if role.id == BETA_ROLE:
+                self.beta_role = role
+                logger.debug(ansi_color(f'Beta Role: {self.beta_role.name}', 'yellow'))
+            if self.alpha_role and self.beta_role:  # Break early if both roles are found
+                break
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
@@ -252,14 +266,24 @@ class Desolate_Cog(commands.Cog):
             if cached_member_id not in current_member_ids:
                 del DF_USERS_CACHE[cached_member_id]
 
+        async def add_alpha_beta_roles(member):
+            user_role_ids = [role.id for role in member.roles]
+            if ALPHA_ROLE not in user_role_ids and BETA_ROLE not in user_role_ids:
+                try:
+                    await member.add_roles(*[self.alpha_role, self.beta_role])
+                except HTTPException as e:
+                    logger.error(ansi_color(f'Couldn\'t add Alpha/Beta roles to user {member.display_name}: {e}', 'red'))
+
         for member in guild.members:  # Update cache with current members
             if member.id in DF_USERS_CACHE:  # If the member is already in the cache, skip the API call
+                await add_alpha_beta_roles(member)  # Add Alpha/Beta roles
                 continue
             
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
-                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) has been added to DF_USERS_CACHE', 'green'))
+                await add_alpha_beta_roles(member)  # Add Alpha/Beta roles
+                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) added to DF_USERS_CACHE', 'green'))
             except RuntimeError as e:  # Just skip unregistered users
                 logger.debug(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue

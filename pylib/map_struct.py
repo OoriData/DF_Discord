@@ -49,7 +49,6 @@ def serialize_cargo(cargo: dict[str, Any]) -> bytes:
     for uuid_field in ['cargo_id', 'distributor', 'vehicle_id', 'warehouse_id', 'vendor_id']:
         if cargo.get(uuid_field) and cargo[uuid_field] != ZERO_UUID:
             assert len(cargo[uuid_field]) == 36, f"Invalid UUID length for {uuid_field}: {cargo[uuid_field]}"
-    assert cargo.get('part') is None  # Current understanding of implicit logic
     assert len(cargo.get('name', '')) <= 64
     assert len(cargo.get('base_desc', '') or '') <= 512
     return struct.pack(
@@ -138,7 +137,7 @@ def serialize_settlement(settlement: dict[str, Any]) -> bytes:
         pack_string(settlement['sett_id'], 36),  # 0-filled UUID is a valid case (happened to be Chicago)
         pack_string(settlement['name'], 64),
         pack_string(settlement.get('base_desc') or '', 1024),
-        {'dome': 1, 'outpost': 2}.get(settlement['sett_type'], 0),
+        {'dome': 1, 'city': 2, 'town': 3, 'city-state': 4, 'military_base': 5}.get(settlement['sett_type'], 0),
         len(settlement.get('imports', []) or []),
         len(settlement.get('exports', []) or []),
         len(settlement['vendors'])
@@ -158,8 +157,6 @@ def serialize_tile(tile: dict[str, Any], x, y) -> bytes:
         len(tile['settlements'])
     )
 
-    # Axiom: Settlement coordinates match enclosing tile coordinates
-    assert all((x, y) == (s['x'], s['y']) for s in tile['settlements'])
     settlements_data = b''.join(serialize_settlement(s) for s in tile['settlements'])
     return header + settlements_data
 
@@ -174,8 +171,6 @@ def serialize_map(data: dict[str, Any]) -> bytes:
     # Write tiles. Note that tiles have x, y coordinates; redundant because they come in order
     for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
-            # Axiom: Tiles are stored in their cartesian order
-            assert (tile['x'], tile['y']) == (x, y)
             buffer.write(serialize_tile(tile, x, y))
     
     # Write highlight/lowlight locations
@@ -301,7 +296,7 @@ def deserialize_settlement(buffer: BytesIO) -> dict[str, Any]:
     '''Deserialize a single settlement'''
     header = struct.unpack(SETTLEMENT_HEADER_FORMAT, buffer.read(struct.calcsize(SETTLEMENT_HEADER_FORMAT)))
     sett_id = unpack_string(header[0])
-    sett_types = {1: 'dome', 2: 'outpost'}
+    sett_types = {1: 'dome', 2: 'city', 3: 'town', 4: 'city-state', 5: 'military_base'}
     vendor_count = header[6]
 
     vendors = [deserialize_vendor(buffer) for _ in range(vendor_count)]

@@ -22,8 +22,8 @@ from io import BytesIO
 
 async def add_map_to_embed(
         embed: Optional[discord.Embed] = None,
-        highlighted: Optional[list[tuple[int, int]]] = None,
-        lowlighted: Optional[list[tuple[int, int]]] = None,
+        highlights: Optional[list[tuple[int, int]]] = None,
+        lowlights: Optional[list[tuple[int, int]]] = None,
         highlight_color: Optional[str] = None,
         lowlight_color: Optional[str] = None
 ) -> Tuple[discord.Embed, discord.File]:
@@ -33,8 +33,8 @@ async def add_map_to_embed(
     
     Arguments:
     - embed: Optional discord.Embed object (can be None, in which case a new one is created).
-    - highlighted: Optional list of (x, y) tuples for highlighting coordinates.
-    - lowlighted: Optional list of (x, y) tuples for lowlighting coordinates.
+    - highlights: Optional list of (x, y) tuples for highlighting coordinates.
+    - lowlights: Optional list of (x, y) tuples for lowlighting coordinates.
     - highlight_color: Optional color to use for highlighting.
     - lowlight_color: Optional color to use for lowlighting.
     
@@ -49,18 +49,18 @@ async def add_map_to_embed(
     map_edges = {'x_min': None, 'x_max': None, 'y_min': None, 'y_max': None}
     x_padding = y_padding = 0  # Defaults, will adjust based on coordinates
 
-    if highlighted or lowlighted:
+    if highlights or lowlights:
         # Compute boundaries if any coordinates are provided
-        if highlighted:
-            highlight_x_values = [coord[0] for coord in highlighted]
-            highlight_y_values = [coord[1] for coord in highlighted]
+        if highlights:
+            highlight_x_values = [coord[0] for coord in highlights]
+            highlight_y_values = [coord[1] for coord in highlights]
         else:
             highlight_x_values = []
             highlight_y_values = []
 
-        if lowlighted:
-            lowlight_x_values = [coord[0] for coord in lowlighted]
-            lowlight_y_values = [coord[1] for coord in lowlighted]
+        if lowlights:
+            lowlight_x_values = [coord[0] for coord in lowlights]
+            lowlight_y_values = [coord[1] for coord in lowlights]
         else:
             lowlight_x_values = []
             lowlight_y_values = []
@@ -85,10 +85,10 @@ async def add_map_to_embed(
 
             # Adjust highlight and lowlight coordinates relative to the top-left corner
             top_left = (map_edges['x_min'], map_edges['y_min'])
-            if highlighted:
-                highlighted = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in highlighted]
-            if lowlighted:
-                lowlighted = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in lowlighted]
+            if highlights:
+                highlights = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in highlights]
+            if lowlights:
+                lowlights = [(max(0, x - top_left[0]), max(0, y - top_left[1])) for x, y in lowlights]
 
     else:
         # No highlights or lowlights provided, don't compute boundaries
@@ -102,7 +102,7 @@ async def add_map_to_embed(
             tiles = (await api_calls.get_map())['tiles']
 
         # Render the map with the given tiles and any highlights or lowlights
-        rendered_map_bytes = await api_calls.render_map(tiles, highlighted, lowlighted, highlight_color, lowlight_color)
+        rendered_map_bytes = await api_calls.render_map(tiles, highlights, lowlights, highlight_color, lowlight_color)
 
         # Save the rendered map to an in-memory file (BytesIO object)
         with BytesIO(rendered_map_bytes) as image_binary:

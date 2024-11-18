@@ -5,6 +5,8 @@ from uuid import UUID
 
 import           httpx
 
+from dflib.map_struct import serialize_map
+
 DF_API_HOST = os.environ['DF_API_HOST']
 DF_MAP_RENDERER = os.environ['DF_MAP_RENDERER']
 API_SUCCESS_CODE = 200
@@ -30,13 +32,14 @@ async def render_map(
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             f'{DF_MAP_RENDERER}/render-map',
-            json={  # Sending data as JSON in the body, as it's too large to send as a param
+            headers={'Content-Type': 'application/octet-stream'},
+            data=serialize_map({
                 'tiles': tiles,
                 'highlights': highlights,
                 'lowlights': lowlights,
                 'highlight_color': highlight_color,
                 'lowlight_color': lowlight_color,
-            }
+            })
         )
     
     # Check response status

@@ -225,7 +225,7 @@ class MapButton(discord.ui.Button):
         map_embed, image_file = await add_map_to_embed(
             embed=embed,
             highlighted=[(convoy_x, convoy_y)],
-            lowlighted=[(recipient_x, recipient_y)],
+            lowlights=[(recipient_x, recipient_y)],
         )
 
         map_embed.set_footer(text='Your interaction is still up above, just scroll up or dismiss this message to return to it.')

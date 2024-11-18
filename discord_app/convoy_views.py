@@ -347,13 +347,13 @@ class DestinationSelect(discord.ui.Select):
     def _create_pagination_options(self, settlements, current_page, max_pages):
         options = []
         
-        if current_page > 0:  # Add 'previous page' option if not on the first page
-            options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
+        # if current_page > 0:  # Add 'previous page' option if not on the first page
+        #     options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
         
         for sett_name, x, y, _, cargo_names in settlements:
             # Label includes settlement name and cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(cargo_names)})' if cargo_names else sett_name
-            options.append(discord.SelectOption(label=label, value=f'{x},{y}'))
+            options.append(discord.SelectOption(label=label[:100], value=f'{x},{y}'))  # Only the first 100 chars of the label string
         
         if current_page < max_pages:  # Add 'next page' option if not on the last page
             options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))

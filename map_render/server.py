@@ -8,7 +8,9 @@ hypercorn server:app --workers=2 --bind=0.0.0.0:9100
 Try it out!
 
 ```sh
-curl -X POST "http://localhost:9100/render-map" -H "Content-Type: application/json" -d @map_render/test_map_obj.json \
+curl -X POST "http://localhost:9100/render-map" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @/tmp/test_map_obj.bin \
   --output /tmp/map.png
 ```
 '''
@@ -20,7 +22,7 @@ import warnings
 # import fire
 # import hypercorn
 from fastapi.responses import StreamingResponse
-from fastapi import FastAPI, Body, HTTPException, status  #Request
+from fastapi import FastAPI, Body, HTTPException, Request, status
 # from fastapi.responses import FileResponse  # , JSONResponse, StreamingResponse
 # from contextlib import asynccontextmanager
 
@@ -78,11 +80,21 @@ app = FastAPI()
 
 
 @app.post("/unpack-map")
-async def unpack_map_(data: bytes):
+async def unpack_map_(request: Request):
+# async def unpack_map_(data: bytes):
     '''
     Dev utility to unpack a map struct
+
+    ```sh
+curl -X POST "http://localhost:9100/unpack-map" \
+-H "Content-Type: application/octet-stream" \
+--data-binary @/tmp/test_map_obj.bin \
+--output /tmp/map.json
+    ```
     '''
     try:
+        # Read the raw binary data from the request body
+        data = await request.body()
         map_data = deserialize_map(data)
         return {"status": "success", "map": map_data}
     except Exception as e:
@@ -90,13 +102,25 @@ async def unpack_map_(data: bytes):
 
 
 @app.post("/render-map")
-async def render_map_(data: bytes):
+async def render_map_(request: Request):
+# async def unpack_map_(data: bytes):
+    '''
+    Dev utility to unpack a map struct
+
+    ```sh
+time curl -X POST "http://localhost:9100/render-map" \
+-H "Content-Type: application/octet-stream" \
+--data-binary @/tmp/test_map_obj.bin \
+--output /tmp/map.png
+    ```
+    '''
     try:
-        data = deserialize_map(data)
+        data = await request.body()
+        map_data = deserialize_map(data)
+        img_byte_arr = do_render_map(map_data)
+        return StreamingResponse(img_byte_arr, media_type="image/png")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    img_byte_arr = do_render_map(data)
-    return StreamingResponse(img_byte_arr, media_type="image/png")
 
 
 @app.post('/render-map-json')
@@ -109,6 +133,14 @@ async def render_map_json_(data: Any = Body(...)):  # noqa B008
         "lowlights" (optional): list[list]
         "highlight_color" (optional): str
         "lowlight_color" (optional): str
+
+    ```sh
+time curl -X POST "http://localhost:9100/render-map-json" \
+-H "Content-Type: application/json" \
+--data-binary @map_render/test_map_obj.json \
+--output /tmp/map.png
+    ```
+
     '''
     img_byte_arr = do_render_map(data)
     return StreamingResponse(img_byte_arr, media_type="image/png")

@@ -152,7 +152,6 @@ def render_map(
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
     '''
-    print(highlights)
     if not highlight_color:
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
@@ -269,7 +268,8 @@ def truncate_2d_list(matrix, top_left, bottom_right):
 
     # Check bounds to avoid IndexError
     if x1 < 0 or y1 < 0 or x2 >= len(matrix[0]) or y2 >= len(matrix):
-        raise ValueError('Coordinates are out of bounds')
+        msg = 'Coordinates are out of bounds'
+        raise ValueError(msg)
 
     # Extract the submatrix
     return [row[x1:x2 + 1] for row in matrix[y1:y2 + 1]]
@@ -277,12 +277,12 @@ def truncate_2d_list(matrix, top_left, bottom_right):
 
 if __name__ == '__main__':
     import json
-    with open('test_map_obj.json', 'r') as map_file:
+    with open('test_map_obj.json') as map_file:
         df_map_JSON = json.load(map_file)
 
-    highlight_locations = [(40, 40), (41, 41)]
-    lowlight_locations = [(4, 26), (5, 26), (6, 26)]
-    map_img = render_map(df_map_JSON['tiles'], highlight_locations, lowlight_locations, 'red')
+    highlights = [(40, 40), (41, 41)]
+    lowlights = [(4, 26), (5, 26), (6, 26)]
+    map_img = render_map(df_map_JSON['tiles'], highlights, lowlights, 'red')
     map_img.show()
 
     small_map = truncate_2d_list(df_map_JSON['tiles'], (25, 19), (39, 33))

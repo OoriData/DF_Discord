@@ -81,8 +81,8 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
-            highlighted=[(convoy_x, convoy_y)],
-            lowlighted=route_tiles,
+            highlights=[(convoy_x, convoy_y)],
+            lowlights=route_tiles,
         )
 
     elif prospective_journey_plus_misc:  # If a journey is being considered
@@ -111,14 +111,14 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
-            highlighted=[(convoy_x, convoy_y)],
-            lowlighted=route_tiles,
+            highlights=[(convoy_x, convoy_y)],
+            lowlights=route_tiles,
         )
 
     else:  # If the convoy is just chilling somewhere
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
-            highlighted=[(convoy_x, convoy_y)],
+            highlights=[(convoy_x, convoy_y)],
         )
 
     return convoy_embed, image_file
@@ -228,8 +228,8 @@ class ConvoyView(discord.ui.View):
 
         map_embed, image_file = await add_map_to_embed(
             embed=dest_embed,
-            highlighted=convoy_coords,
-            lowlighted=recipient_coords
+            highlights=convoy_coords,
+            lowlights=recipient_coords
         )
         
         map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
@@ -628,8 +628,8 @@ class MapButton(discord.ui.Button):
 
         map_embed, image_file = await add_map_to_embed(
             embed=embed,
-            highlighted=[(convoy_x, convoy_y)],
-            lowlighted=[(recipient_x, recipient_y)],
+            highlights=[(convoy_x, convoy_y)],
+            lowlights=[(recipient_x, recipient_y)],
         )
 
         map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')

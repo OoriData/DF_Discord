@@ -15,12 +15,14 @@ from dflib.datastruct import (TERRAIN_FORMAT, CARGO_HEADER_FORMAT, VEHICLE_HEADE
 
 ZERO_UUID = '00000000-0000-0000-0000-000000000000'
 
-# Helper function to handle UUID fields
+
 def process_uuid(uuid_val: str | None) -> str:
+    '''Helper function to handle UUID fields'''
     if uuid_val is None or uuid_val == '':
         return ZERO_UUID
     assert len(uuid_val) == 36, f"Invalid UUID length: {uuid_val}"
     return uuid_val
+
 
 def pack_string(s: str, length: int) -> bytes:
     '''Pack a string into fixed-length bytes with UTF-8 encoding'''
@@ -42,6 +44,7 @@ def pack_string(s: str, length: int) -> bytes:
         warnings.warn(f'String too long ({len(encoded)} > {length}): {s}', stacklevel=2)
         encoded = encoded[:length]
     return encoded.ljust(length, b'\0')
+
 
 def serialize_cargo(cargo: dict[str, Any]) -> bytes:
     '''Serialize a single cargo item'''
@@ -72,6 +75,7 @@ def serialize_cargo(cargo: dict[str, Any]) -> bytes:
         # int(cargo.get('part', 0) or 0),  # part for now is either 0 or 1 of them—0 stored as null at present; in theory could be multiple in future
     )
 
+
 def serialize_vehicle(vehicle: dict[str, Any]) -> bytes:
     '''Serialize a single vehicle'''
     assert len(vehicle.get('name', '')) <= 64
@@ -97,6 +101,7 @@ def serialize_vehicle(vehicle: dict[str, Any]) -> bytes:
         pack_string(process_uuid(vehicle.get('vendor_id')), 36),
         pack_string(process_uuid(vehicle.get('warehouse_id')), 36)
     )
+
 
 def serialize_vendor(vendor: dict[str, Any]) -> bytes:
     '''Serialize a single vendor'''
@@ -128,6 +133,7 @@ def serialize_vendor(vendor: dict[str, Any]) -> bytes:
 
     return header + cargo_data + vehicle_data
 
+
 def serialize_settlement(settlement: dict[str, Any]) -> bytes:
     '''Serialize a single settlement'''
     assert len(settlement.get('name', '')) <= 64
@@ -146,6 +152,7 @@ def serialize_settlement(settlement: dict[str, Any]) -> bytes:
     vendors_data = b''.join(serialize_vendor(v) for v in settlement['vendors'])
     return header + vendors_data
 
+
 def serialize_tile(tile: dict[str, Any], x, y) -> bytes:
     '''Serialize a single tile'''
     header = struct.pack(
@@ -160,6 +167,7 @@ def serialize_tile(tile: dict[str, Any], x, y) -> bytes:
     settlements_data = b''.join(serialize_settlement(s) for s in tile['settlements'])
     return header + settlements_data
 
+
 def serialize_map(data: dict[str, Any]) -> bytes:
     '''Serialize the entire map structure'''
     buffer = BytesIO()
@@ -172,7 +180,7 @@ def serialize_map(data: dict[str, Any]) -> bytes:
     for y, row in enumerate(tiles):
         for x, tile in enumerate(row):
             buffer.write(serialize_tile(tile, x, y))
-    
+
     # Write highlights/lowlights
     for location_list in [(data.get('highlights', []) or []), (data.get('lowlights', []) or [])]:
         buffer.write(struct.pack("!H", len(location_list)))
@@ -181,9 +189,11 @@ def serialize_map(data: dict[str, Any]) -> bytes:
 
     return buffer.getvalue()
 
+
 #
 # Server-side deserialization
 #
+
 
 def unpack_string(data: bytes) -> str:
     '''Unpack a null-terminated string from bytes'''
@@ -209,6 +219,7 @@ def unpack_string(data: bytes) -> str:
         # For any other string, return empty rather than crashing
         warnings.warn(f'Failed to decode bytes: {data}, returning empty string', stacklevel=2)
         return ''
+
 
 def deserialize_cargo(buffer: BytesIO) -> dict[str, Any]:
     '''Deserialize a single cargo item'''
@@ -244,6 +255,7 @@ def deserialize_cargo(buffer: BytesIO) -> dict[str, Any]:
 
     return cargo
 
+
 def deserialize_vehicle(buffer: BytesIO) -> dict[str, Any]:
     '''Deserialize a single vehicle'''
     data = struct.unpack(VEHICLE_HEADER_FORMAT, buffer.read(struct.calcsize(VEHICLE_HEADER_FORMAT)))
@@ -265,6 +277,7 @@ def deserialize_vehicle(buffer: BytesIO) -> dict[str, Any]:
         'vendor_id': unpack_string(data[13]),
         'warehouse_id': unpack_string(data[14])
     }
+
 
 def deserialize_vendor(buffer: BytesIO) -> dict[str, Any]:
     '''Deserialize a single vendor'''
@@ -292,6 +305,7 @@ def deserialize_vendor(buffer: BytesIO) -> dict[str, Any]:
         '_vehicle_inventory': vehicle_inventory
     }
 
+
 def deserialize_settlement(buffer: BytesIO) -> dict[str, Any]:
     '''Deserialize a single settlement'''
     header = struct.unpack(SETTLEMENT_HEADER_FORMAT, buffer.read(struct.calcsize(SETTLEMENT_HEADER_FORMAT)))
@@ -309,13 +323,14 @@ def deserialize_settlement(buffer: BytesIO) -> dict[str, Any]:
         'vendors': vendors
     }
 
+
 def deserialize_map(binary_data: bytes) -> dict[str, Any]:
     '''Deserialize the entire map structure'''
     buffer = BytesIO(binary_data)
-    
+
     # Read map dimensions
     height, width = struct.unpack("!HH", buffer.read(4))
-    
+
     # Read tiles
     tiles = []
     for y, _ in enumerate(range(height)):
@@ -337,17 +352,17 @@ def deserialize_map(binary_data: bytes) -> dict[str, Any]:
                 'settlements': settlements
             })
         tiles.append(row)
-    
+
     # Read highlights/lowlights
     highlights = []
     lowlights = []
-    
+
     for location_list in (highlights, lowlights):
         count = struct.unpack("!H", buffer.read(2))[0]
         for _ in range(count):
             x, y = struct.unpack("!HH", buffer.read(4))
             location_list.append([x, y])
-    
+
     return {
         'tiles': tiles,
         'highlights': highlights,

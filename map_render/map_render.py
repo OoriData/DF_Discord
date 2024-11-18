@@ -269,7 +269,8 @@ def truncate_2d_list(matrix, top_left, bottom_right):
 
     # Check bounds to avoid IndexError
     if x1 < 0 or y1 < 0 or x2 >= len(matrix[0]) or y2 >= len(matrix):
-        raise ValueError('Coordinates are out of bounds')
+        msg = 'Coordinates are out of bounds'
+        raise ValueError(msg)
 
     # Extract the submatrix
     return [row[x1:x2 + 1] for row in matrix[y1:y2 + 1]]
@@ -277,7 +278,7 @@ def truncate_2d_list(matrix, top_left, bottom_right):
 
 if __name__ == '__main__':
     import json
-    with open('test_map_obj.json', 'r') as map_file:
+    with open('test_map_obj.json') as map_file:
         df_map_JSON = json.load(map_file)
 
     highlight_locations = [(40, 40), (41, 41)]

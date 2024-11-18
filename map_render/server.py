@@ -60,6 +60,7 @@ def do_render_map(data):
     if unknown_keys:
         warnings.warn(f'unknown keys used: {unknown_keys}', stacklevel=2)
 
+    print(list(data.keys()))
     map_img = render_map(
         data['tiles'],
         data.get('highlights'),

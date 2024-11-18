@@ -280,9 +280,9 @@ if __name__ == '__main__':
     with open('test_map_obj.json') as map_file:
         df_map_JSON = json.load(map_file)
 
-    highlight_locations = [(40, 40), (41, 41)]
-    lowlight_locations = [(4, 26), (5, 26), (6, 26)]
-    map_img = render_map(df_map_JSON['tiles'], highlight_locations, lowlight_locations, 'red')
+    highlights = [(40, 40), (41, 41)]
+    lowlights = [(4, 26), (5, 26), (6, 26)]
+    map_img = render_map(df_map_JSON['tiles'], highlights, lowlights, 'red')
     map_img.show()
 
     small_map = truncate_2d_list(df_map_JSON['tiles'], (25, 19), (39, 33))

@@ -173,8 +173,8 @@ def serialize_map(data: dict[str, Any]) -> bytes:
         for x, tile in enumerate(row):
             buffer.write(serialize_tile(tile, x, y))
     
-    # Write highlight/lowlight locations
-    for location_list in [(data.get('highlight_locations', []) or []), (data.get('lowlight_locations', []) or [])]:
+    # Write highlights/lowlights
+    for location_list in [(data.get('highlights', []) or []), (data.get('lowlights', []) or [])]:
         buffer.write(struct.pack("!H", len(location_list)))
         for x, y in location_list:
             buffer.write(struct.pack("!HH", x, y))
@@ -338,11 +338,11 @@ def deserialize_map(binary_data: bytes) -> dict[str, Any]:
             })
         tiles.append(row)
     
-    # Read highlight/lowlight locations
-    highlight_locations = []
-    lowlight_locations = []
+    # Read highlights/lowlights
+    highlights = []
+    lowlights = []
     
-    for location_list in (highlight_locations, lowlight_locations):
+    for location_list in (highlights, lowlights):
         count = struct.unpack("!H", buffer.read(2))[0]
         for _ in range(count):
             x, y = struct.unpack("!HH", buffer.read(4))
@@ -350,6 +350,6 @@ def deserialize_map(binary_data: bytes) -> dict[str, Any]:
     
     return {
         'tiles': tiles,
-        'highlight_locations': highlight_locations,
-        'lowlight_locations': lowlight_locations
+        'highlights': highlights,
+        'lowlights': lowlights
     }

@@ -144,8 +144,6 @@ ignore = [
   "Q000", "Q001", "Q002",
   # Ignore import formatting
   "I001",
-  # Ignore print()s
-  "T201",
   # Ignore capitalization
   "N801", "N806",
   # Ignore asserts

@@ -29,16 +29,15 @@ RUN python3 -m venv $VIRTUALENV
 ENV PATH="$VIRTUALENV/bin:$PATH"
 
 # Copy the requirements.txt and constraints.txt files to the container
-COPY ./requirements.txt ./requirements.txt
-COPY ./constraints.txt ./constraints.txt
+COPY ./map_render/requirements.txt ./requirements.txt
+COPY ./map_render/constraints.txt ./constraints.txt
 
 RUN python -m pip install --upgrade pip
 
-WORKDIR /home/df-map/code
 RUN --mount=type=cache,target=/home/df-map/.cache/pip,sharing=locked python -m pip install --upgrade -r requirements.txt -c constraints.txt
 
-COPY . /home/df-map/code/
+COPY . .
+RUN pip install --upgrade .
 
-WORKDIR /home/df-map/code
-
+WORKDIR /home/df-map/code/map_render
 CMD hypercorn server:app --workers=4 --bind=0.0.0.0:9100

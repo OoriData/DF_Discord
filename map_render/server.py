@@ -22,7 +22,7 @@ import warnings
 # import fire
 # import hypercorn
 from fastapi.responses import StreamingResponse
-from fastapi import FastAPI, Body, HTTPException, Request, status
+from fastapi import FastAPI, Body, HTTPException, Request, status, Query
 # from fastapi.responses import FileResponse  # , JSONResponse, StreamingResponse
 # from contextlib import asynccontextmanager
 
@@ -60,7 +60,6 @@ def do_render_map(data):
     if unknown_keys:
         warnings.warn(f'unknown keys used: {unknown_keys}', stacklevel=2)
 
-    print(list(data.keys()))
     map_img = render_map(
         data['tiles'],
         data.get('highlights'),
@@ -80,7 +79,7 @@ def do_render_map(data):
 app = FastAPI()
 
 
-@app.post("/unpack-map")
+@app.post('/unpack-map')
 async def unpack_map_(request: Request):
 # async def unpack_map_(data: bytes):
     '''
@@ -97,13 +96,17 @@ curl -X POST "http://localhost:9100/unpack-map" \
         # Read the raw binary data from the request body
         data = await request.body()
         map_data = deserialize_map(data)
-        return {"status": "success", "map": map_data}
+        return {'status': 'success', 'map': map_data}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post("/render-map")
-async def render_map_(request: Request):
+@app.post('/render-map')
+async def render_map_(
+    request: Request,
+    highlight_color: str | None = Query(default=None, description='Highlight color to use'),
+    lowlight_color: str | None = Query(default=None, description='Highlight color to use')
+):
 # async def unpack_map_(data: bytes):
     '''
     Dev utility to unpack a map struct
@@ -118,8 +121,9 @@ time curl -X POST "http://localhost:9100/render-map" \
     try:
         data = await request.body()
         map_data = deserialize_map(data)
+        map_data.update({'highlight_color': highlight_color, 'lowlight_color': lowlight_color})
         img_byte_arr = do_render_map(map_data)
-        return StreamingResponse(img_byte_arr, media_type="image/png")
+        return StreamingResponse(img_byte_arr, media_type='image/png')
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -144,7 +148,7 @@ time curl -X POST "http://localhost:9100/render-map-json" \
 
     '''
     img_byte_arr = do_render_map(data)
-    return StreamingResponse(img_byte_arr, media_type="image/png")
+    return StreamingResponse(img_byte_arr, media_type='image/png')
 
 
 @app.get('/health-check', status_code=status.HTTP_200_OK, tags=['healthcheck'])

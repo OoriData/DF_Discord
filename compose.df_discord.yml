@@ -4,7 +4,8 @@ services:
   df_discord:
     build:
       context: .
-    image: df_discord
+      dockerfile: dockerfile
+    container_name: df_discord
     environment:
       LOG_LEVEL: ${LOG_LEVEL}
       DF_API_HOST: ${DF_API_HOST}
@@ -19,8 +20,9 @@ services:
   
   df_map:
     build:
-      context: ./map_render
-    image: df_map
+      context: .
+      dockerfile: map_render/dockerfile
+    container_name: df_map
     environment:
       LOG_LEVEL: ${LOG_LEVEL}
     ports:

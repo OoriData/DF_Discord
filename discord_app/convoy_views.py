@@ -48,9 +48,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
     convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
-    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.2f} liters')
-    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.2f} liters')
-    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.2f} meals')
+    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.0f} liters')
+    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
+    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
 
     convoy_embed.add_field(name='Fuel Efficiency', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
     convoy_embed.add_field(name='Top Speed', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
@@ -351,9 +351,10 @@ class DestinationSelect(discord.ui.Select):
             options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
         
         for sett_name, x, y, _, cargo_names in settlements:
-            # Label includes settlement name and cargo names if this is a cargo destination
-            label = f'{sett_name} ({', '.join(cargo_names)})' if cargo_names else sett_name
-            options.append(discord.SelectOption(label=label, value=f'{x},{y}'))
+            unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
+            # Label includes settlement name and unique cargo names if this is a cargo destination
+            label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
+            options.append(discord.SelectOption(label=label[:100], value=f'{x},{y}'))  # Only the first 100 chars of the label string
         
         if current_page < max_pages:  # Add 'next page' option if not on the last page
             options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))

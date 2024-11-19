@@ -7,17 +7,17 @@ name = "dflib"
 dynamic = ["version"]
 description = "Desolate Frontiers open library"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 # FIXME: Should switch to Apache license, right?
 # Sigh had to spelunk in the code to find this. So what of the SPD license = "UNLICENSED"?
 license = "LicenseRef-Proprietary"
 keywords = []
 authors = [
-  { name = "Uche Ogbuji", email = "uche@oori.dev" },
   { name = "Osi Ogbuji", email = "osi@oori.dev" },
+  { name = "Udoka Ogbuji", email = "udoka@oori.dev" },
+  { name = "Uche Ogbuji", email = "uche@oori.dev" },
   { name = "Aidan Reese", email = "aidan@oori.dev" },
   { name = "Jide Ogbuji", email = "jide@oori.dev" },
-  { name = "Udoka Ogbuji", email = "udoka@oori.dev" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -30,9 +30,7 @@ classifiers = [
 ]
 # https://hatch.pypa.io/latest/config/dependency/
 # Moved to reqs.txt, since we're Containerizing
-dependencies = [
-  "google-re2"
-]
+dependencies = []
 
 [project.urls]
 Documentation = "https://github.com/OoriData/DF_Discord"
@@ -47,7 +45,7 @@ include = ["*.toml", "*.py"]
 
 # Rewriting path in distribution
 [tool.hatch.build.sources]
-"pylib" = "dflib"
+"pylib" = "df-discord"
 
 # Include non-python files in the distribution https://hatch.pypa.io/latest/config/build/#forced-inclusion
 # [tool.hatch.build.targets.wheel.force-include]
@@ -159,7 +157,7 @@ unfixable = [
 ]
 
 [tool.ruff.isort]
-known-first-party = ["dflib"]
+known-first-party = ["df-discord"]
 
 [tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -177,7 +175,7 @@ omit = [
 ]
 
 [tool.coverage.paths]
-dflib = ["pylib", "*/pylib"]
+df-discord = ["pylib", "*/pylib"]
 test = ["test", "*/test"]
 
 [tool.coverage.report]

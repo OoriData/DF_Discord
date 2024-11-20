@@ -5,7 +5,7 @@ from uuid import UUID
 
 import           httpx
 
-from dflib.map_struct import serialize_map
+from df_discord.map_struct import serialize_map
 
 DF_API_HOST = os.environ['DF_API_HOST']
 DF_MAP_RENDERER = os.environ['DF_MAP_RENDERER']

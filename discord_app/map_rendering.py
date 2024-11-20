@@ -25,10 +25,11 @@ async def add_map_to_embed(
         highlights: Optional[list[tuple[int, int]]] = None,
         lowlights: Optional[list[tuple[int, int]]] = None,
         highlight_color: Optional[str] = None,
-        lowlight_color: Optional[str] = None
+        lowlight_color: Optional[str] = None,
+        map_obj = None
 ) -> Tuple[discord.Embed, discord.File]:
     '''
-    Renders map as an image and formats it into a Discord embed object, 
+    Renders map as an image and formats it into a Discord embed object,
     and also returns an image file.
     
     Arguments:
@@ -97,9 +98,15 @@ async def add_map_to_embed(
     try:
         # Fetch tiles for the map (map_edges will be None if no boundaries are needed)
         if map_edges:
-            tiles = (await api_calls.get_map(**map_edges))['tiles']
+            # tiles = (await api_calls.get_map(**map_edges))['tiles']
+            tiles = truncate_2d_list(
+                matrix=map_obj['tiles'],
+                top_left=(map_edges['x_min'], map_edges['y_min']),
+                bottom_right=(map_edges['x_max'], map_edges['y_max'])
+            )
         else:
-            tiles = (await api_calls.get_map())['tiles']
+            # tiles = (await api_calls.get_map())['tiles']
+            tiles = map_obj['tiles']
 
         # Render the map with the given tiles and any highlights or lowlights
         rendered_map_bytes = await api_calls.render_map(tiles, highlights, lowlights, highlight_color, lowlight_color)
@@ -122,14 +129,14 @@ async def add_map_to_embed(
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):
-    'just a "zoom" function for testing with'
     x1, y1 = top_left
     x2, y2 = bottom_right
 
-    # Check bounds to avoid IndexError
-    if x1 < 0 or y1 < 0 or x2 >= len(matrix[0]) or y2 >= len(matrix):
-        msg = 'Coordinates are out of bounds'
-        raise ValueError(msg)
+    # Clamp coordinates to fit within bounds
+    x1 = max(0, min(x1, len(matrix[0]) - 1))
+    y1 = max(0, min(y1, len(matrix) - 1))
+    x2 = max(0, min(x2, len(matrix[0]) - 1))
+    y2 = max(0, min(y2, len(matrix) - 1))
 
     # Extract the submatrix
     return [row[x1:x2 + 1] for row in matrix[y1:y2 + 1]]

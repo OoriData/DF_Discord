@@ -83,6 +83,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             embed=convoy_embed,
             highlights=[(convoy_x, convoy_y)],
             lowlights=route_tiles,
+            map_obj=df_state.map_obj
         )
 
     elif prospective_journey_plus_misc:  # If a journey is being considered
@@ -113,12 +114,14 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             embed=convoy_embed,
             highlights=[(convoy_x, convoy_y)],
             lowlights=route_tiles,
+            map_obj=df_state.map_obj
         )
 
     else:  # If the convoy is just chilling somewhere
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
             highlights=[(convoy_x, convoy_y)],
+            map_obj=df_state.map_obj
         )
 
     return convoy_embed, image_file
@@ -229,7 +232,8 @@ class ConvoyView(discord.ui.View):
         map_embed, image_file = await add_map_to_embed(
             embed=dest_embed,
             highlights=convoy_coords,
-            lowlights=recipient_coords
+            lowlights=recipient_coords,
+            map_obj=self.df_state.map_obj
         )
         
         map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
@@ -258,7 +262,8 @@ async def send_convoy_menu(df_state: DFState):
     embeds = [embed]
     embeds = add_tutorial_embed(embeds, df_state)
 
-    df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
+    # df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
+    df_map = df_state.map_obj
     view = DestinationView(df_state=df_state, df_map=df_map)
 
     og_message: discord.InteractionMessage = await df_state.interaction.original_response()
@@ -503,143 +508,148 @@ class ConfirmJourneyButton(discord.ui.Button):
         return await super().on_timeout()
 
 
-class CargoView(discord.ui.View):
-    ''' Overarching convoy button menu '''
-    def __init__(
-            self,
-            interaction: discord.Interaction,
-            convoy_dict: dict,
-    ):
-        super().__init__(timeout=600)
+# class CargoView(discord.ui.View):
+#     ''' Overarching convoy button menu '''
+#     def __init__(
+#             self,
+#             interaction: discord.Interaction,
+#             convoy_dict: dict,
+#     ):
+#         super().__init__(timeout=600)
 
-        self.interaction = interaction
-        self.convoy_dict = convoy_dict
-        self.position = 0
+#         self.interaction = interaction
+#         self.convoy_dict = convoy_dict
+#         self.position = 0
 
-    @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
-    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        cargo_menu = self.convoy_dict['all_cargo']
-        self.position = (self.position - 1) % len(cargo_menu)
-        await self.update_menu(interaction, cargo_menu=cargo_menu)
+#     @discord.ui.button(label='◀', style=discord.ButtonStyle.blurple, custom_id='back')
+#     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+#         cargo_menu = self.convoy_dict['all_cargo']
+#         self.position = (self.position - 1) % len(cargo_menu)
+#         await self.update_menu(interaction, cargo_menu=cargo_menu)
 
-    @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        cargo_menu = self.convoy_dict['all_cargo']
-        self.position = (self.position + 1) % len(cargo_menu)
-        await self.update_menu(interaction, cargo_menu=cargo_menu)
+#     @discord.ui.button(label='▶', style=discord.ButtonStyle.blurple, custom_id='next')
+#     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+#         cargo_menu = self.convoy_dict['all_cargo']
+#         self.position = (self.position + 1) % len(cargo_menu)
+#         await self.update_menu(interaction, cargo_menu=cargo_menu)
 
-    async def update_menu(self, interaction: discord.Interaction, cargo_menu: dict):
-        index = self.position
-        cargo_item = cargo_menu[index]
-        if cargo_item['recipient']:  # API call to get recipient's vendor info
-            recipient_info = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
-                
-            recipient = recipient_info
-            # print(ansi_color(recipient, 'purple'))
-            delivery_reward = cargo_item['delivery_reward']
+#     async def update_menu(self, interaction: discord.Interaction, cargo_menu: dict):
+#         index = self.position
+#         cargo_item = cargo_menu[index]
+#         if cargo_item['recipient']:  # API call to get recipient's vendor info
+#             recipient_obj = await api_calls.get_vendor(vendor_id=cargo_item['recipient'])
 
-            self.mapbutton = MapButton(convoy_info=self.convoy_dict, recipient_info=recipient, label = 'Map (Recipient)', style=discord.ButtonStyle.green, custom_id='map_button')
-            self.add_item(self.mapbutton)
+#             # print(ansi_color(recipient, 'purple'))
+#             delivery_reward = cargo_item['delivery_reward']
+
+#             self.mapbutton = MapButton(self.df_state, )
+#             self.add_item(self.mapbutton)
             
-            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+#             cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
 
-            embed = discord.Embed(
-                title = cargo_menu[index]['name'],
-                description=textwrap.dedent(f'''\
-                    *{cargo_item['base_desc']}*
+#             embed = discord.Embed(
+#                 title = cargo_menu[index]['name'],
+#                 description=textwrap.dedent(f'''\
+#                     *{cargo_item['base_desc']}*
 
-                    - Base (sell) Price: **${cargo_item['base_price']}**
-                    - Recipient: **{recipient['name']}**
-                    - Delivery Reward: **{delivery_reward}**
-                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
-                    - Cargo quantity: **{cargo_item['quantity']}**
-                ''')
-            )
+#                     - Base (sell) Price: **${cargo_item['base_price']}**
+#                     - Recipient: **{recipient_obj['name']}**
+#                     - Delivery Reward: **{delivery_reward}**
+#                     - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+#                     - Cargo quantity: **{cargo_item['quantity']}**
+#                 ''')
+#             )
 
-        else:  # No recipient, no worries
-            recipient = 'None'
-            delivery_reward = 'None'
-            try:
-                if self.mapbutton:
-                    self.remove_item(self.mapbutton)
-            except AttributeError as e:
-                msg = 'MapButton is not in CargoView; skipping...'
-                logger.debug(msg=msg)
-                pass
+#         else:  # No recipient, no worries
+#             recipient = 'None'
+#             delivery_reward = 'None'
+#             try:
+#                 if self.mapbutton:
+#                     self.remove_item(self.mapbutton)
+#             except AttributeError as e:
+#                 msg = 'MapButton is not in CargoView; skipping...'
+#                 logger.debug(msg=msg)
+#                 pass
 
-            cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
+#             cargo_vehicle_dict = await api_calls.get_vehicle(vehicle_id=cargo_item['vehicle_id'])
             
-            embed = discord.Embed(
-                title = cargo_menu[index]['name'],
-                description=textwrap.dedent(f'''\
-                    *{cargo_item['base_desc']}*
+#             embed = discord.Embed(
+#                 title = cargo_menu[index]['name'],
+#                 description=textwrap.dedent(f'''\
+#                     *{cargo_item['base_desc']}*
 
-                    - Base (sell) Price: **${cargo_item['base_price']}**
-                    - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
-                    - Cargo quantity: **{cargo_item['quantity']}**
-                ''')
-            )
+#                     - Base (sell) Price: **${cargo_item['base_price']}**
+#                     - Carrier Vehicle: **{cargo_vehicle_dict['name']}**
+#                     - Cargo quantity: **{cargo_item['quantity']}**
+#                 ''')
+#             )
 
-        convoy_balance = f'{self.convoy_dict['money']:,}'
-        embed.set_author(
-            name=f'{self.convoy_dict['name']} | ${convoy_balance}',
-            icon_url=interaction.user.avatar.url
-        )
+#         convoy_balance = f'{self.convoy_dict['money']:,}'
+#         embed.set_author(
+#             name=f'{self.convoy_dict['name']} | ${convoy_balance}',
+#             icon_url=interaction.user.avatar.url
+#         )
 
-        embed.set_footer(text=f'Page [{index + 1} / {len(cargo_menu)}]')
-        self.current_embed = embed
-        await interaction.response.edit_message(embed=embed, view=self, attachments=[])
+#         embed.set_footer(text=f'Page [{index + 1} / {len(cargo_menu)}]')
+#         self.current_embed = embed
+#         await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
-    async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
+#     async def on_timeout(self):
+#         timed_out_button = discord.ui.Button(
+#             label='Interaction timed out!',
+#             style=discord.ButtonStyle.gray,
+#             disabled=True
+#         )
 
-        self.clear_items()
-        self.add_item(timed_out_button)
+#         self.clear_items()
+#         self.add_item(timed_out_button)
 
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+#         await self.df_state.interaction.edit_original_response(view=self)
+#         return await super().on_timeout()
 
     
-class MapButton(discord.ui.Button):
-    def __init__(self, convoy_info: dict, recipient_info: dict, label: str, style: discord.ButtonStyle, custom_id: str):
-        super().__init__(label=label, custom_id=custom_id, style=style)
-        self.convoy_info = convoy_info
-        self.recipient_info = recipient_info
+# class MapButton(discord.ui.Button):
+#     def __init__(self, df_state: DFState, recipient_obj: dict, row: int=1):
+#         super().__init__(
+#             style=discord.ButtonStyle.blurple,
+#             label='Map to Recipient',
+#             custom_id='map_button',
+#             row=row
+#         )
+#         self.df_state = df_state
+#         self.recipient_obj = recipient_obj
     
-    async def callback(self, interaction: discord.Interaction):
+#     async def callback(self, interaction: discord.Interaction):
+#         await interaction.response.defer()
+        
+#         convoy_x = self.df_state.convoy_obj['x']
+#         convoy_y = self.df_state.convoy_obj['y']
 
-        convoy_x = self.convoy_info['x']
-        convoy_y = self.convoy_info['y']
+#         recipient_x = self.recipient_obj['x']
+#         recipient_y = self.recipient_obj['y']
 
-        recipient_x = self.recipient_info['x']
-        recipient_y = self.recipient_info['y']
+#         embed = discord.Embed(
+#             title=f'Map relative to {self.df_state.convoy_obj['name']}',
+#             description=textwrap.dedent('''
+#                 🟨 - Your convoy's location
+#                 🟦 - Recipient vendor's location
+#             ''')
+#         )
 
-        embed = discord.Embed(
-            title=f'Map relative to {self.convoy_info['name']}',
-            description=textwrap.dedent('''
-                🟨 - Your convoy's location
-                🟦 - Recipient vendor's location
-            ''')
-        )
+#         map_embed, image_file = await add_map_to_embed(
+#             embed=embed,
+#             highlighted=[(convoy_x, convoy_y)],
+#             lowlights=[(recipient_x, recipient_y)],
+#             map_obj=self.df_state.map_obj
+#         )
 
-        map_embed, image_file = await add_map_to_embed(
-            embed=embed,
-            highlights=[(convoy_x, convoy_y)],
-            lowlights=[(recipient_x, recipient_y)],
-        )
+#         map_embed.set_footer(text='Your interaction is still up above, just scroll up or dismiss this message to return to it.')
 
-        map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
-
-        await interaction.response.defer()
-        await interaction.followup.send(
-            embed=map_embed,
-            file=image_file,
-            ephemeral=True
-        )
+#         await interaction.followup.send(
+#             embed=map_embed,
+#             file=image_file,
+#             ephemeral=True
+#         )
 
 
 class ConvoySelect(discord.ui.Select):

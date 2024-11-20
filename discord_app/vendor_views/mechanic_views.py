@@ -539,7 +539,7 @@ class InstallConfirmView(discord.ui.View):
     async def confirm_install_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
 
-        convoy_after = await api_calls.add_part(
+        self.df_state.convoy_obj = await api_calls.add_part(
             vendor_id=self.df_state.vendor_obj['vendor_id'],
             convoy_id=self.df_state.convoy_obj['convoy_id'],
             vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
@@ -547,7 +547,7 @@ class InstallConfirmView(discord.ui.View):
         )
 
         self.df_state.vehicle_obj = next((
-            v for v in convoy_after['vehicles']
+            v for v in self.df_state.convoy_obj['vehicles']
             if v['vehicle_id'] == self.df_state.vehicle_obj['vehicle_id']
         ), None)
 

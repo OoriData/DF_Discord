@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2023-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-# dflib.datastruct
+# df_discord.datastruct
 '''
 Common data structure definitions, e.g. for packed data transport
 

@@ -27,7 +27,7 @@ from fastapi import FastAPI, Body, HTTPException, Request, status, Query
 # from contextlib import asynccontextmanager
 
 from map_render import render_map
-from dflib.map_struct import deserialize_map
+from df_discord.map_struct import deserialize_map
 
 
 # XXX: May not be needed: remove section after  few beats, if not

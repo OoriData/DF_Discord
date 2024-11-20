@@ -34,8 +34,6 @@ BETA_ROLE = int(os.environ['BETA_ROLE'])
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
-SETTLEMENTS_CACHE = None  # None until initialized 
-DF_USERS_CACHE = None     # None until initialized 
 
 class Desolate_Cog(commands.Cog):
     def __init__(self, bot):
@@ -46,23 +44,21 @@ class Desolate_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         'Called when the bot is ready to start taking commands'
-        global SETTLEMENTS_CACHE
-
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
-        SETTLEMENTS_CACHE = []
-
-        df_map = await api_calls.get_map()
-        for row in df_map['tiles']:
+        self.settlements_cache = []
+        self.df_map_obj = await api_calls.get_map()
+        for row in self.df_map_obj['tiles']:
             for sett in row:
-                SETTLEMENTS_CACHE.extend(sett['settlements'])
+                self.settlements_cache.extend(sett['settlements'])
 
         self.find_roles()
 
         logger.debug(ansi_color('Initializing users cache...', 'yellow'))
+        self.df_users_cache = None
         self.update_user_cache.start()
 
         df_guild = self.bot.get_guild(DF_GUILD_ID)
@@ -102,7 +98,7 @@ class Desolate_Cog(commands.Cog):
 
         try:
             map_embed = discord.Embed()
-            map_embed, image_file = await add_map_to_embed(map_embed)
+            map_embed, image_file = await add_map_to_embed(map_embed, map_obj=self.df_map_obj)
 
             map_embed.set_author(
                 name=interaction.user.name,
@@ -261,18 +257,17 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
-        global DF_USERS_CACHE
-        if not isinstance(DF_USERS_CACHE, dict):  # Initialize cache if not already a dictionary
-            DF_USERS_CACHE = {}
+        if not isinstance(self.df_users_cache, dict):  # Initialize cache if not already a dictionary
+            self.df_users_cache = {}
         else:
             await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
         current_member_ids = set(member.id for member in guild.members)  # Create a set of current members' IDs
 
-        for cached_member_id in list(DF_USERS_CACHE.keys()):  # Remove users from cache who are no longer in the guild
+        for cached_member_id in list(self.df_users_cache.keys()):  # Remove users from cache who are no longer in the guild
             if cached_member_id not in current_member_ids:
-                del DF_USERS_CACHE[cached_member_id]
+                del self.df_users_cache[cached_member_id]
 
         async def add_discord_roles(member):
             user_role_ids = [role.id for role in member.roles]
@@ -283,15 +278,15 @@ class Desolate_Cog(commands.Cog):
                     logger.error(ansi_color(f'Couldn\'t add Player/Alpha/Beta roles to user {member.display_name}: {e}', 'red'))
 
         for member in guild.members:  # Update cache with current members
-            if member.id in DF_USERS_CACHE:  # If the member is already in the cache, skip the API call
+            if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call
                 await add_discord_roles(member)  # Add Alpha/Beta roles
                 continue
             
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
-                DF_USERS_CACHE[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
+                self.df_users_cache[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
                 await add_discord_roles(member)  # Add Alpha/Beta roles
-                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) added to DF_USERS_CACHE', 'green'))
+                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) added to df_users_cache', 'green'))
             except RuntimeError as e:  # Just skip unregistered users
                 logger.debug(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
                 continue
@@ -301,13 +296,11 @@ class Desolate_Cog(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def notifier(self):
-        global DF_USERS_CACHE
-
-        if isinstance(DF_USERS_CACHE, dict):  # If the cache has been initialized
+        if isinstance(self.df_users_cache, dict):  # If the cache has been initialized
             notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
             guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
 
-            for discord_user_id, df_id in DF_USERS_CACHE.items():
+            for discord_user_id, df_id in self.df_users_cache.items():
                 discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
 
                 if discord_user:

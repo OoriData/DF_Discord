@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2023-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-# dflib.map_struct
+# df_discord.map_struct
 import struct
 import warnings
 from typing import Any
 from io import BytesIO
 
-from dflib.datastruct import (TERRAIN_FORMAT, CARGO_HEADER_FORMAT, VEHICLE_HEADER_FORMAT, VENDOR_HEADER_FORMAT,
+from df_discord.datastruct import (TERRAIN_FORMAT, CARGO_HEADER_FORMAT, VEHICLE_HEADER_FORMAT, VENDOR_HEADER_FORMAT,
                               SETTLEMENT_HEADER_FORMAT)
 
 #

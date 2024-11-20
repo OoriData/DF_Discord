@@ -71,7 +71,7 @@ class ConvoyCargoView(discord.ui.View):
         self.add_item(MoveCargoVehicleSelect(self.df_state))
 
         if recipient_vendor_obj:
-            self.add_item(MapButton(self.df_state.convoy_obj, recipient_vendor_obj))
+            self.add_item(MapButton(self.df_state, recipient_vendor_obj))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -195,27 +195,27 @@ class VendorCargoSelect(discord.ui.Select):
 
 
 class MapButton(discord.ui.Button):
-    def __init__(self, convoy_obj: dict, recipient_obj: dict, row: int=1):
+    def __init__(self, df_state: DFState, recipient_obj: dict, row: int=1):
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label='Map to Recipient',
             custom_id='map_button',
             row=row
         )
-        self.convoy_obj = convoy_obj
+        self.df_state = df_state
         self.recipient_obj = recipient_obj
     
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         
-        convoy_x = self.convoy_obj['x']
-        convoy_y = self.convoy_obj['y']
+        convoy_x = self.df_state.convoy_obj['x']
+        convoy_y = self.df_state.convoy_obj['y']
 
         recipient_x = self.recipient_obj['x']
         recipient_y = self.recipient_obj['y']
 
         embed = discord.Embed(
-            title=f'Map relative to {self.convoy_obj['name']}',
+            title=f'Map relative to {self.df_state.convoy_obj['name']}',
             description=textwrap.dedent('''
                 🟨 - Your convoy's location
                 🟦 - Recipient vendor's location
@@ -226,6 +226,7 @@ class MapButton(discord.ui.Button):
             embed=embed,
             highlighted=[(convoy_x, convoy_y)],
             lowlights=[(recipient_x, recipient_y)],
+            map_obj=self.df_state.map_obj
         )
 
         map_embed.set_footer(text='Your interaction is still up above, just scroll up or dismiss this message to return to it.')

@@ -18,6 +18,7 @@ class DFState:
     ''' A class to hold the state of the DF Discord menus. '''
     def __init__(
             self,
+            map_obj=None,
             user_obj=None,
             sett_obj=None,
             vendor_obj=None,
@@ -27,6 +28,7 @@ class DFState:
             interaction=None,
             back_stack=None
     ):
+        self.map_obj = map_obj
         self.user_obj = user_obj
         self.sett_obj = sett_obj
         self.vendor_obj = vendor_obj

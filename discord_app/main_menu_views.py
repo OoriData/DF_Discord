@@ -75,7 +75,9 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
         user_obj = None
 
     # Prepare the DFState object
+    df_map = await api_calls.get_map()
     df_state = DFState(
+        map_obj=df_map,
         user_obj=user_obj,
         interaction=interaction
     )

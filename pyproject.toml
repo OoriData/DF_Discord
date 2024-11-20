@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "dflib"
+name = "df_discord"
 dynamic = ["version"]
 description = "Desolate Frontiers open library"
 readme = "README.md"
@@ -45,11 +45,11 @@ include = ["*.toml", "*.py"]
 
 # Rewriting path in distribution
 [tool.hatch.build.sources]
-"pylib" = "df-discord"
+"pylib" = "df_discord"
 
 # Include non-python files in the distribution https://hatch.pypa.io/latest/config/build/#forced-inclusion
 # [tool.hatch.build.targets.wheel.force-include]
-# 'lang_server/static' = 'dflib/lang_server/static'
+# 'lang_server/static' = 'df_discord/lang_server/static'
 
 [tool.hatch.envs.default]
 dependencies = [
@@ -157,7 +157,7 @@ unfixable = [
 ]
 
 [tool.ruff.isort]
-known-first-party = ["df-discord"]
+known-first-party = ["df_discord"]
 
 [tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -167,7 +167,7 @@ ban-relative-imports = "all"
 "test/**/*" = ["PLR2004", "S101", "TID252"]
 
 [tool.coverage.run]
-source_pkgs = ["dflib", "test"]
+source_pkgs = ["df_discord", "test"]
 branch = true
 parallel = true
 omit = [
@@ -175,7 +175,7 @@ omit = [
 ]
 
 [tool.coverage.paths]
-df-discord = ["pylib", "*/pylib"]
+df_discord = ["pylib", "*/pylib"]
 test = ["test", "*/test"]
 
 [tool.coverage.report]
@@ -186,4 +186,4 @@ exclude_lines = [
 ]
 
 # [project.scripts]
-# dflib = "dflib.cli:main"
+# df_discord = "df_discord.cli:main"

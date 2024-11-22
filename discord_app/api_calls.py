@@ -77,8 +77,7 @@ async def get_map(
         )
 
     _check_code(response)
-    # return deserialize_map(response.content)
-    return response.json()
+    return deserialize_map(response.content)
 
 
 async def get_tile(x: int, y: int) -> dict:

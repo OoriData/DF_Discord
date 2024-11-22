@@ -150,7 +150,7 @@ class ConvoyCargoSelect(discord.ui.Select):
         
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=options[:25],
             custom_id='select_cargo',
             disabled=disabled,
             row=row
@@ -178,7 +178,7 @@ class VendorCargoSelect(discord.ui.Select):
         
         super().__init__(
             placeholder='Select cargo to inspect',
-            options=options,
+            options=options[:25],
             custom_id='select_cargo',
             row=row
         )

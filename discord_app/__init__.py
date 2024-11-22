@@ -112,7 +112,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
     FOOTER = '\n\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again'
 
     tutorial_embed = discord.Embed(color=discord.Color.from_rgb(0, 255, 0))
-    tutorial_embed.set_author(name='Desolate Frontiers Tutorial', icon_url='https://i.imgur.com/OSPCcye.png')
+    tutorial_embed.set_author(name='Desolate Frontiers Tutorial', icon_url='https://www.oori.dev/assets/branding/df_Logo_FullColor.png')
 
     match df_state.convoy_obj['user_metadata']['tutorial']:
         case 1:

@@ -5,7 +5,7 @@ from uuid import UUID
 
 import           httpx
 
-from df_discord.map_struct import serialize_map
+from df_discord.map_struct import serialize_map, deserialize_map
 
 DF_API_HOST = os.environ['DF_API_HOST']
 DF_MAP_RENDERER = os.environ['DF_MAP_RENDERER']
@@ -16,7 +16,8 @@ API_INTERNAL_SERVER_ERROR = 500
 
 def _check_code(response: httpx.Response):
     if response.status_code == API_INTERNAL_SERVER_ERROR:
-        raise RuntimeError('API Internal Server Error')
+        msg = 'API Internal Server Error'
+        raise RuntimeError(msg)
     elif response.status_code != API_SUCCESS_CODE:
         msg = response.json()['detail']
         raise RuntimeError(msg)
@@ -24,8 +25,8 @@ def _check_code(response: httpx.Response):
 
 async def render_map(
         tiles: list[list[dict]],
-        highlights: list[list] = None,
-        lowlights: list[list] = None,
+        highlights: list[list] | None = None,
+        lowlights: list[list] | None = None,
         highlight_color = None,
         lowlight_color = None
 ):
@@ -51,11 +52,15 @@ async def render_map(
     return await response.aread()
 
 
-async def get_map(x_min: int = None, x_max: int = None, y_min: int = None, y_max: int = None) -> dict:
+async def get_map(
+        x_min: int | None = None,
+        x_max: int | None = None,
+        y_min: int | None = None,
+        y_max: int | None = None
+) -> dict:
     params = {}
 
-    # Add parameters only if they are not None
-    if x_min is not None:
+    if x_min is not None:  # Add parameters only if they are not None
         params['x_min'] = x_min
     if x_max is not None:
         params['x_max'] = x_max
@@ -72,6 +77,7 @@ async def get_map(x_min: int = None, x_max: int = None, y_min: int = None, y_max
         )
 
     _check_code(response)
+    # return deserialize_map(response.content)
     return response.json()
 
 

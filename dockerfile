@@ -37,7 +37,5 @@ RUN python -m pip install --upgrade pip
 RUN --mount=type=cache,target=/home/df-discord/.cache/pip,sharing=locked python -m pip install --upgrade -r requirements.txt -c constraints.txt
 
 COPY . .
-RUN pip install --upgrade .
 
-WORKDIR /home/df-discord/code
 CMD python -m discord_app.df_discord

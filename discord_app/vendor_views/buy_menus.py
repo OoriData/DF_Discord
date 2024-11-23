@@ -430,10 +430,19 @@ class BuyVehicleSelect(discord.ui.Select):
         
         placeholder = 'Vehicle Inventory'
         disabled = False
-        options=[
-            discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
-            for vehicle in self.df_state.vendor_obj['vehicle_inventory']
-        ]
+        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        if tutorial_stage == 1:
+            options=[
+                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                for vehicle in self.df_state.vendor_obj['vehicle_inventory']
+                if vehicle['value'] < 5000
+            ]
+        else:
+            options=[
+                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                for vehicle in self.df_state.vendor_obj['vehicle_inventory']
+            ]
         if not options:
             placeholder = 'Vendor has no vehicle inventory'
             disabled = True

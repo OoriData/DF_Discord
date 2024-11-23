@@ -3,3 +3,4 @@ pillow
 fastapi
 fire
 hypercorn  # Uche has been moving on from uvicorn
+df_lib

@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_tutorial_stage
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -182,15 +182,20 @@ class ConvoyView(discord.ui.View):
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
                     case 1 | 2 | 3 | 4:  # Enable 'nav_sett_button' only for stages 1-4, disable all others
-                        item.disabled = item.custom_id != 'nav_sett_button'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button'
+                        )
                     case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
-                        item.disabled = item.custom_id != 'send_convoy_button'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'send_convoy_button'
+                        )
 
     @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
     async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -279,11 +284,14 @@ class DestinationView(discord.ui.View):
 
         self.add_item(DestinationSelect(self.df_state, df_map, page))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
-                item.disabled = item.custom_id != 'destination_select'
+                item.disabled = item.custom_id not in (
+                    # 'nav_back_button',
+                    'nav_convoy_button',
+                    'destination_select'
+                )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -425,11 +433,15 @@ class SendConvoyConfirmView(discord.ui.View):
             self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
         self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
-                item.disabled = not (item.custom_id == 'alt_route' or item.custom_id == 'confirm_journey_button')
+                item.disabled = item.custom_id not in (
+                    # 'nav_back_button',
+                    'nav_convoy_button',
+                    'alt_route',
+                    'confirm_journey_button'
+                )
 
 
 class NextJourneyButton(discord.ui.Button):

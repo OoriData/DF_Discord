@@ -16,6 +16,8 @@ services:
       WASTELANDER_ROLE: ${WASTELANDER_ROLE}
       ALPHA_ROLE: ${ALPHA_ROLE}
       BETA_ROLE: ${BETA_ROLE}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
   
   df_map:

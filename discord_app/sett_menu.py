@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.vendor_views.vendor_views import SERVICE_KEYS
@@ -69,15 +69,22 @@ class SettView(discord.ui.View):
         # self.add_item(WarehouseButton)
         self.add_item(VendorSelect(self.df_state, vendors, row=3))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4}:
             for item in self.children:
                 match tutorial_stage:
                     case 1 | 2 | 4:
-                        item.disabled = item.custom_id != 'select_vendor'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            'select_vendor'
+                        )
                     case 3:
-                        item.disabled = item.custom_id != 'top_up_button'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            'top_up_button'
+                        )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

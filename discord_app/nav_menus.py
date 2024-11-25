@@ -3,7 +3,7 @@
 from __future__           import annotations
 import                           discord
 
-from discord_app          import api_calls
+from discord_app          import api_calls, DF_LOGO_EMOJI, get_tutorial_stage
 import                           discord_app.main_menu_views
 import                           discord_app.convoy_views
 import discord_app.sett_menu

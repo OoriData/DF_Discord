@@ -9,7 +9,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vendor_views.vendor_views
@@ -96,11 +96,13 @@ class TopUpButton(discord.ui.Button):
             view = discord.ui.View(timeout=600)
             discord_app.nav_menus.add_nav_buttons(view, self.df_state)
 
-            user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-            tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+            tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
             if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
                 for item in view.children:
-                    item.disabled = item.custom_id != 'nav_sett_button'
+                    item.disabled = item.custom_id not in (
+                        # 'nav_back_button',
+                        'nav_sett_button'
+                    )
 
             await interaction.response.edit_message(embeds=embeds, view=view)
 
@@ -181,15 +183,22 @@ class BuyView(discord.ui.View):
 
         self.add_item(BuyCargoSelect(self.df_state))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 match tutorial_stage:
                     case 1:
-                        item.disabled = item.custom_id != 'select_vehicle'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            'select_vehicle'
+                        )
                     case 2 | 4:
-                        item.disabled = item.custom_id != 'select_cargo'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            'select_cargo'
+                        )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -430,10 +439,19 @@ class BuyVehicleSelect(discord.ui.Select):
         
         placeholder = 'Vehicle Inventory'
         disabled = False
-        options=[
-            discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
-            for vehicle in self.df_state.vendor_obj['vehicle_inventory']
-        ]
+
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        if tutorial_stage == 1:
+            options=[
+                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                for vehicle in self.df_state.vendor_obj['vehicle_inventory']
+                if vehicle['value'] < 5000
+            ]
+        else:
+            options=[
+                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                for vehicle in self.df_state.vendor_obj['vehicle_inventory']
+            ]
         if not options:
             placeholder = 'Vendor has no vehicle inventory'
             disabled = True
@@ -493,11 +511,14 @@ class VehicleBuyConfirmView(discord.ui.View):
 
         self.add_item(BuyVehicleButton(self.df_state))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
-                    item.disabled = item.custom_id != 'buy_vehicle_button'
+                item.disabled = item.custom_id not in (
+                    # 'nav_back_button',
+                    'nav_sett_button',
+                    'buy_vehicle_button'
+                )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -564,10 +585,23 @@ class BuyCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo Inventory'
         disabled = False
-        options=[
-            discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,.0f}', value=cargo['cargo_id'])
-            for cargo in self.df_state.vendor_obj['cargo_inventory']
-        ]
+
+        tutorial_stage = get_tutorial_stage(self.df_state)
+        if tutorial_stage == 2:
+            options=[
+                discord.SelectOption(
+                    label=f'{cargo['name']} | ${cargo['base_price']:,.0f}',
+                    value=cargo['cargo_id'],
+                    emoji=DF_LOGO_EMOJI if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'} else None
+                )
+                for cargo in self.df_state.vendor_obj['cargo_inventory']
+            ]
+        else:
+            options=[
+                discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,.0f}', value=cargo['cargo_id'])
+                for cargo in self.df_state.vendor_obj['cargo_inventory']
+            ]
+
         if not options:
             placeholder = 'Vendor has no cargo inventory'
             disabled = True
@@ -674,15 +708,30 @@ class CargoBuyQuantityView(discord.ui.View):
         if self.df_state.cargo_obj['recipient']:
             self.add_item(discord_app.cargo_views.MapButton(self.df_state.convoy_obj, self.df_state.cargo_obj['recipient_vendor'], row=2))
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
                     case 2:
-                        item.disabled = not (item.custom_id == '1_button' or item.custom_id == 'buy_cargo_button')
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            '-1_button',
+                            '1_button',
+                            'buy_cargo_button'
+                        )
                     case 4:
-                        item.disabled = not (item.custom_id == 'max_button' or item.custom_id == 'buy_cargo_button' or item.custom_id == 'map_button')
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button',
+                            '-10_button',
+                            '-1_button',
+                            '1_button',
+                            '10_button',
+                            'max_button',
+                            'buy_cargo_button',
+                            'map_button'
+                        )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -759,15 +808,20 @@ class PostBuyView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        user_metadata = self.df_state.convoy_obj.get('user_metadata')  # TUTORIAL BUTTON DISABLING
-        tutorial_stage = user_metadata.get('tutorial') if user_metadata else None
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
                     case 1 | 2 | 3 | 4:  # Enable 'nav_sett_button' only for stages 1-4, disable all others
-                        item.disabled = item.custom_id != 'nav_sett_button'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_sett_button'
+                        )
                     case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
-                        item.disabled = item.custom_id != 'nav_convoy_button'
+                        item.disabled = item.custom_id not in (
+                            # 'nav_back_button',
+                            'nav_convoy_button'
+                        )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

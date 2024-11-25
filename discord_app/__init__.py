@@ -8,6 +8,8 @@ import                             discord
 
 from discord_app.df_state   import DFState
 
+DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
+
 
 def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
     if df_state.convoy_obj:
@@ -52,7 +54,8 @@ def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str
 
     # Ensure the datetime object has a timezone set
     if formatted_time.tzinfo is None:
-        raise ValueError('The datetime object must be timezone-aware.')
+        msg = 'The datetime object must be timezone-aware.'
+        raise ValueError(msg)
 
     # Create the Discord timestamp format
     discord_format = f"<t:{int(formatted_time.timestamp())}:{format_letter}>"
@@ -79,7 +82,7 @@ This thing's still in Alpha, so things *will* break and that the game *is not* f
   - Also, **your interaction will time out sometimes!** This is a bit of a technical limitaiton on the discord side of things; we're working on figuring out a more clever solution for this ASAP; it annoys us even more than it annoys you, and it'll annoy you a whole lot!
     - in the meantime, if your interaction times out, you can just call **`/desolate-frontiers`** again!
 - Next, you'll need to buy a vehicle. 🚗
-  - Use the gray button with a city name to investigate the vendors in the city you spawned in, and head to the ~~dealership~~ stealership to get yourself some wheels.
+  - Use the gray button with a city name to investigate the vendors in the city you spawned in, and head to the dealership to get yourself some wheels.
   - The menus there are a little janky. We're cookin' on 'em!
 - After that, you're gonna need to buy some **Fuel** from the gas station, which you can also access from the `city name` button. ⛽️
   - **Your vehicle has a gas tank!** While you can buy more jerry cans if you wanna cary more fuel, you can just buy fuel straight from the blue `buy fuel` button to fill up your tank.
@@ -101,6 +104,11 @@ Happy trails! The game will be updated frequently, and we will be listening clos
 '''
 
 
+def get_tutorial_stage(df_state: DFState):
+    user_metadata = df_state.convoy_obj.get('user_metadata')
+    return user_metadata.get('tutorial') if user_metadata else None
+
+
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
     if (
         not df_state.convoy_obj.get('user_metadata')
@@ -118,12 +126,12 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
         case 1:
             tutorial_embed.description = '\n'.join([
                 "## Welcome to the **Desolate Frontiers**!",
-                "### You aren\'t going anywhere without a vehicle, so you\'ll need to go buy one. 🚗",
+                "### You aren't going anywhere without a vehicle, so you'll need to go buy one. 🚗",
                 f"1. Hit the gray `{df_state.sett_obj['name']}` button to check out the vendors",
-                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} stealership`",
+                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} dealership`",
                 "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
                 "- Select the vehicle you'd like to purchase with the `Vehicle Inventory` dropdown",
-                "- Inspect the vehicle you've chosen. If it suits you, you can hit the green `Buy Vehicle| $XX,XXX` button.",
+                "- In the block above, you can inspect the vehicle you've chosen. If it suits you, you can hit the green `Buy Vehicle| $X,XXX` button.",
                 f"  - If you want to inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
             ])
         case 2:
@@ -132,11 +140,11 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 f"1. Hit the gray `{df_state.sett_obj['name']}` button",
                 f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
                 "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
-                "- Use the `Cargo Inventory` dropdown to select `Water Jerry Cans`",
+                f"- Use the `Cargo Inventory` dropdown to select {DF_LOGO_EMOJI}` Water Jerry Cans`",
                 "- Hit the blurple `+1` button to add an additional jerry can to your cart",
                 "- Hit the green `Buy 2 Water Jerry Cans(s)` button to complete the purchase",
                 "  - *`Water Jerry Cans` are sold full of water*",
-                "- **Repeat this process, but with the `MRE Boxes`, which contain food**",
+                f"- **Repeat this process, but with the {DF_LOGO_EMOJI}` MRE Boxes`, which contain food**",
                 "  - You only need 1 MRE box to get on the road",
                 "  - *`MRE Boxes` are also sold with a full compliment of MREs*",
             ])

@@ -224,7 +224,7 @@ class MapButton(discord.ui.Button):
 
         map_embed, image_file = await add_map_to_embed(
             embed=embed,
-            highlighted=[(convoy_x, convoy_y)],
+            highlights=[(convoy_x, convoy_y)],
             lowlights=[(recipient_x, recipient_y)],
             map_obj=self.df_state.map_obj
         )

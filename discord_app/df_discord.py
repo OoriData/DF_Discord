@@ -104,6 +104,7 @@ class Desolate_Cog(commands.Cog):
                 name=interaction.user.name,
                 icon_url=interaction.user.avatar.url
             )
+            map_embed.set_footer('Open this map in a browser to zoom in')
 
             await interaction.followup.send(embed=map_embed, file=image_file)
 

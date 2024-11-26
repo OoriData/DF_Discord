@@ -109,6 +109,14 @@ def get_tutorial_stage(df_state: DFState):
     return user_metadata.get('tutorial') if user_metadata else None
 
 
+class TutorialEmbed(discord.Embed):
+    def __init__(self, author: bool=True):
+        super().__init__(color=discord.Color.from_rgb(138, 43, 43))
+
+        if author:
+            self.set_author(name='Desolate Frontiers Tutorial', icon_url='https://www.oori.dev/assets/branding/df_Logo_FullColor.png')
+
+
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
     if (
         not df_state.convoy_obj.get('user_metadata')
@@ -116,11 +124,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
     ):
         return embeds
 
-    ERROR_DESC = 'tutorial error! 😵‍💫 please ping the devs!'
-    FOOTER = '\n\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again'
-
-    tutorial_embed = discord.Embed(color=discord.Color.from_rgb(0, 255, 0))
-    tutorial_embed.set_author(name='Desolate Frontiers Tutorial', icon_url='https://www.oori.dev/assets/branding/df_Logo_FullColor.png')
+    tutorial_embed = TutorialEmbed()
 
     match df_state.convoy_obj['user_metadata']['tutorial']:
         case 1:
@@ -198,9 +202,12 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.",
             ])
         case _:
-            tutorial_embed.description = ERROR_DESC
+            tutorial_embed.description = 'tutorial error! 😵‍💫 please ping the devs!'
 
-    tutorial_embed.description += FOOTER
+    embeds.insert(0, tutorial_embed)
 
-    embeds.append(tutorial_embed)
+    tutorial_embed_footer = TutorialEmbed(author=False)
+    tutorial_embed_footer.description = '\n\n-# The tutorial guide is up above!\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again.'
+    embeds.append(tutorial_embed_footer)
+
     return embeds

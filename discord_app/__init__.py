@@ -163,9 +163,9 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
                 "- Select the cargo you'd like to purchase with the `Cargo Inventory` dropdown",
                 "  - The 💵 emojis represent how much profit margin the delivery will net you",
-                "  - Consider that alongside the distance you'll have to travel to make the delivery; a high margin delivery which requires you go cross-country will cost you in both time and resources.",
+                "  - Consider that margin alongside the distance you'll have to travel to make the delivery; a high margin delivery which requires you go cross-country will cost you in both time and resources.",
                 "- Hit the blurple `max (+X)` button to add the maximum number of this cargo to your cart",
-                "  - **if you just hit the green buy button now, you'll only buy one! You want to make big deliveries**",
+                "  - **if you just hit the green buy button now, you'll only buy one! You want to make big deliveries for big profits.**",
                 "- Hit the green `Buy X cargo(s)` button to complete the purchase",
             ])
         case 5:

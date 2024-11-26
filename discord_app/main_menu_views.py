@@ -22,7 +22,7 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
-async def main_menu(interaction: discord.Interaction, edit: bool=True):
+async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=None):
     'This menu should *always* perform a "full refresh" in order to allow it to function as a reset/refresh button'
     if not edit:
         await interaction.response.defer()
@@ -45,13 +45,13 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
                     convoy_descs.extend([
                         f'### {convoy['name']}\n'
                         f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%**',
-                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
+                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
                 else:
                     convoy_descs.extend([
                         f'### {convoy['name']}\n'
                         f'Arrived at: **{tile_obj['settlements'][0]['name']}**\n' if tile_obj['settlements'] else f'Arrived at: **({convoy['x']}, {convoy['y']})**\n',
-                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])  
+                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
 
             description = '\n'.join([
@@ -75,7 +75,8 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True):
         user_obj = None
 
     # Prepare the DFState object
-    df_map = await api_calls.get_map()
+    if not df_map:
+        df_map = await api_calls.get_map()
     df_state = DFState(
         map_obj=df_map,
         user_obj=user_obj,
@@ -121,7 +122,7 @@ class MainMenuView(discord.ui.View):
     @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple)
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.interaction = interaction
-        await interaction.response.send_modal(UsernameModal(interaction.user.display_name))
+        await interaction.response.send_modal(UsernameModal(interaction.user.display_name, self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple)
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -172,7 +173,9 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
 
 
 class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
-    def __init__(self, discord_nickname: str):
+    def __init__(self, discord_nickname: str, df_state: DFState):
+        self.df_state = df_state
+
         super().__init__()
 
         self.username_input = discord.ui.TextInput(
@@ -187,7 +190,7 @@ class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
 
     async def on_submit(self, interaction: discord.Interaction):
         await api_calls.new_user(self.username_input.value, interaction.user.id)
-        await main_menu(interaction=interaction, edit=True)
+        await main_menu(interaction=interaction, df_map=self.df_state.map_obj)
 
 
 class ConvoyNameModal(discord.ui.Modal, title='Name your new convoy'):

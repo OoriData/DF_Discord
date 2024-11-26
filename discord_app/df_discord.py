@@ -90,7 +90,7 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
     async def df_main_menu(self, interaction: discord.Interaction):
-        await main_menu(interaction=interaction, edit=False)
+        await main_menu(interaction=interaction, edit=False, df_map=self.df_map_obj)
         
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):
@@ -263,7 +263,7 @@ class Desolate_Cog(commands.Cog):
             await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
-        current_member_ids = set(member.id for member in guild.members)  # Create a set of current members' IDs
+        current_member_ids = {member.id for member in guild.members}  # Create a set of current members' IDs
 
         for cached_member_id in list(self.df_users_cache.keys()):  # Remove users from cache who are no longer in the guild
             if cached_member_id not in current_member_ids:
@@ -273,9 +273,9 @@ class Desolate_Cog(commands.Cog):
             user_role_ids = [role.id for role in member.roles]
             if WASTELANDER_ROLE not in user_role_ids:
                 try:
-                    await member.add_roles(*[self.wastelander_role, self.alpha_role, self.beta_role])
+                    await member.add_roles(*[self.wastelander_role, self.beta_role])
                 except HTTPException as e:
-                    logger.error(ansi_color(f'Couldn\'t add Player/Alpha/Beta roles to user {member.display_name}: {e}', 'red'))
+                    logger.error(ansi_color(f'Couldn\'t add Player/Beta roles to user {member.display_name}: {e}', 'red'))
 
         for member in guild.members:  # Update cache with current members
             if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call

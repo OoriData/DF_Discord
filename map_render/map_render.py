@@ -41,84 +41,84 @@ SETTLEMENT_COLORS = {
     'military_base': '#800000'
 }
 POLITICAL_COLORS = {
-    0: '#00000000',   # Null (transparent)
-    1: '#00000000',   # Desolate plains
-    2: '#00000000',   # Desolate forest
-    3: '#00000000',   # Desolate desert
-    4: '#00000000',   # Desolate mountains
-    5: '#00000000',   # Desolate 
-    6: '#00000000',   # Desolate Swamp
-    9: '#00000000',   # Device Detonation Zone
-    10: '#D5A6BD',    # Chicago
-    11: '#D5A6BD',    # Indianapolis
-    13: '#D5A6BD',    # Detroit
-    14: '#D5A6BD',    # Cleveland
-    15: '#D5A6BD',    # Buffalo
-    19: '#D5A6BD',    # The Heartland
-    20: '#B4A7D6',    # Kansas City
-    21: '#B4A7D6',    # St. Louis
-    22: '#B4A7D6',    # Des Moines
-    29: '#B4A7D6',    # The Breadbasket
-    30: '#B6D7A8',    # Minneapolis
-    31: '#B6D7A8',    # Fargo
-    32: '#B6D7A8',    # Milwaukee
-    39: '#B6D7A8',    # Northern Lights
-    40: '#FFE599',    # New York
-    41: '#FFE599',    # Boston
-    42: '#FFE599',    # Philadelphia
-    49: '#FFE599',    # New New England
-    50: '#F6B26B',    # Nashville
-    51: '#F6B26B',    # Memphis
-    52: '#F6B26B',    # Knoxville
-    59: '#F6B26B',    # Greater Tennessee
-    60: '#E06666',    # Charlotte
-    61: '#E06666',    # Norfolk
-    62: '#E06666',    # Richmond
-    63: '#E06666',    # Minot AFB
-    64: '#E06666',    # Vandenberg AFB
-    69: '#E06666',    # Republic of the South Atlantic
-    70: '#38761E',    # Jacksonville
-    71: '#38761E',    # Tallahassee
-    72: '#38761E',    # Orlando
-    73: '#38761E',    # Miami
-    74: '#38761E',    # New Orleans
-    79: '#38761E',    # Gulf Cities
-    80: '#B45F05',    # Austin
-    81: '#B45F05',    # San Antonio
-    82: '#B45F05',    # Dallas
-    83: '#B45F05',    # Houston
-    85: '#B45F05',    # Oklahoma City
-    89: '#B45F05',    # Republic of Texas
-    90: '#0A5394',    # Denver
-    91: '#0A5394',    # Cheyenne
-    92: '#0A5394',    # Colorado Springs
-    99: '#0A5394',    # Front Range Collective
-    100: '#A61C00',   # Los Angeles
-    101: '#A61C00',   # San Diego
-    102: '#A61C00',   # Phoenix
-    103: '#A61C00',   # Tucson
-    109: '#A61C00',   # States of Solara
-    110: '#674EA7',   # San Francisco
-    111: '#674EA7',   # Fresno
-    112: '#674EA7',   # Sacramento
-    119: '#674EA7',   # The Golden Bay
-    120: '#BF9000',   # Seattle
-    121: '#BF9000',   # Portland
-    122: '#BF9000',   # Spokane
-    129: '#BF9000',   # Cascadia
-    130: '#783F04',   # Be'eldííl Dah Sinil
-    131: '#783F04',   # Ysleta
-    139: '#783F04',   # Desert Twins
-    140: '#FFF3CC',   # Las Vegas
-    141: '#FFF3CC',   # Boise Mountain Commune
-    142: '#FFF3CC',   # Salt Lake City
-    143: '#FFF3CC',   # Little Rock
-    144: '#FFF3CC',   # Birmingham
-    145: '#FFF3CC',   # Atlanta
-    146: '#FFF3CC',   # Charleston
-    170: '#FF0000',   # Badlanders
-    171: '#FF0000',   # Badland Outposts
-    172: '#FF0000'    # Appalacian Wastelanders
+    0: '#00000000',  # Null (transparent)
+    1: '#00000000',  # Desolate 1
+    2: '#00000000',  # Desolate 2
+    3: '#00000000',  # Desolate 3
+    4: '#00000000',  # Desolate 4
+    5: '#00000000',  # Desolate 5
+    6: '#00000000',  # Desolate 6
+    9: '#00000000',  # Device Detonation Zone
+    10: '#D5A6BD',   # Chicago
+    11: '#D5A6BD',   # Indianapolis
+    13: '#D5A6BD',   # Detroit
+    14: '#D5A6BD',   # Cleveland
+    15: '#D5A6BD',   # Buffalo
+    19: '#D5A6BD',   # The Heartland
+    20: '#B4A7D6',   # Kansas City
+    21: '#B4A7D6',   # St. Louis
+    22: '#B4A7D6',   # Des Moines
+    29: '#B4A7D6',   # The Breadbasket
+    30: '#B6D7A8',   # Minneapolis
+    31: '#B6D7A8',   # Fargo
+    32: '#B6D7A8',   # Milwaukee
+    39: '#B6D7A8',   # Northern Lights
+    40: '#FFE599',   # New York
+    41: '#FFE599',   # Boston
+    42: '#FFE599',   # Philadelphia
+    49: '#FFE599',   # New New England
+    50: '#F6B26B',   # Nashville
+    51: '#F6B26B',   # Memphis
+    52: '#F6B26B',   # Knoxville
+    59: '#F6B26B',   # Greater Tennessee
+    60: '#E06666',   # Charlotte
+    61: '#E06666',   # Norfolk
+    62: '#E06666',   # Richmond
+    63: '#E06666',   # Minot AFB
+    64: '#E06666',   # Vandenberg AFB
+    69: '#E06666',   # Republic of the South Atlantic
+    70: '#38761E',   # Jacksonville
+    71: '#38761E',   # Tallahassee
+    72: '#38761E',   # Orlando
+    73: '#38761E',   # Miami
+    74: '#38761E',   # New Orleans
+    79: '#38761E',   # Gulf Cities
+    80: '#B45F05',   # Austin
+    81: '#B45F05',   # San Antonio
+    82: '#B45F05',   # Dallas
+    83: '#B45F05',   # Houston
+    85: '#B45F05',   # Oklahoma City
+    89: '#B45F05',   # Republic of Texas
+    90: '#0A5394',   # Denver
+    91: '#0A5394',   # Cheyenne
+    92: '#0A5394',   # Colorado Springs
+    99: '#0A5394',   # Front Range Collective
+    100: '#A61C00',  # Los Angeles
+    101: '#A61C00',  # San Diego
+    102: '#A61C00',  # Phoenix
+    103: '#A61C00',  # Tucson
+    109: '#A61C00',  # States of Solara
+    110: '#674EA7',  # San Francisco
+    111: '#674EA7',  # Fresno
+    112: '#674EA7',  # Sacramento
+    119: '#674EA7',  # The Golden Bay
+    120: '#BF9000',  # Seattle
+    121: '#BF9000',  # Portland
+    122: '#BF9000',  # Spokane
+    129: '#BF9000',  # Cascadia
+    130: '#783F04',  # Be'eldííl Dah Sinil
+    131: '#783F04',  # Ysleta
+    139: '#783F04',  # Desert Twins
+    140: '#FFF3CC',  # Las Vegas
+    141: '#FFF3CC',  # Boise Mountain Commune
+    142: '#FFF3CC',  # Salt Lake City
+    143: '#FFF3CC',  # Little Rock
+    144: '#FFF3CC',  # Birmingham
+    145: '#FFF3CC',  # Atlanta
+    146: '#FFF3CC',  # Charleston
+    170: '#FF0000',  # Badlanders
+    171: '#FF0000',  # Badland Outposts
+    172: '#FF0000'   # Appalacian Wastelanders
 }
 ERROR_COLOR = '#FF00FF'  # Error/default color
 
@@ -136,8 +136,8 @@ LOWLIGHT_INLINE_WIDTH = 5                    # Thickness of the lowlight inline
 
 def render_map(
         tiles: list[list[dict]],
-        highlights: list[tuple] = None,
-        lowlights: list[tuple] = None,
+        highlights: list[tuple] | None = None,
+        lowlights: list[tuple] | None = None,
         highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
         lowlight_color=DEFAULT_LOWLIGHT_INLINE_COLOR
 ) -> Image:

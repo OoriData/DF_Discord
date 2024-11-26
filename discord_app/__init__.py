@@ -74,7 +74,7 @@ DF_DISCORD_LOGO = '''\
 DF_HELP = '''\
 ## Welcome to the **Desolate Frontiers**!
 
-This thing's still in Alpha, so things *will* break and that the game *is not* finished! If you have an issue, please DM Choccy (or just holler in #general)!
+This thing's just out of Alpha, so things *will* break and the game *is not* finished! If you have an issue, please DM Choccy (or just holler in #general)!
 
 - You'll be managing a logistics company, running convoys of land vehicles across the remains of the US, carrying all manner of useful goods. 🚛
 - To get started, run **`/desolate-frontiers`** to get your account signed up for our system. You'll also get to name your first convoy there! 💻
@@ -126,71 +126,68 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
         case 1:
             tutorial_embed.description = '\n'.join([
                 "## Welcome to the **Desolate Frontiers**!",
-                "### You aren't going anywhere without a vehicle, so you'll need to go buy one. 🚗",
-                f"1. Hit the gray `{df_state.sett_obj['name']}` button to check out the vendors",
-                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} dealership`",
-                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
-                "- Select the vehicle you'd like to purchase with the `Vehicle Inventory` dropdown",
-                "- In the block above, you can inspect the vehicle you've chosen. If it suits you, you can hit the green `Buy Vehicle| $X,XXX` button.",
-                f"  - If you want to inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
+                "### You're going nowhere without a vehicle, so time to buy one. 🚗",
+                f"1. Gray `{df_state.sett_obj['name']}` button to check out the vendors",
+                f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} dealership`",
+                "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "- Select from the `Vehicle Inventory` dropdown",
+                "- The block will update, allowing you to inspect the chosen vehicle. If it suits you, hit the green `Buy Vehicle| $X,XXX` button.",
+                f"  - To inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
             ])
         case 2:
             tutorial_embed.description = '\n'.join([
-                "### Now that you have a vehicle, you'll need water and food for your convoy's crew to sustain themselves on their travels. 🍕 💧",
-                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
-                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
-                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "### Now that you have a vehicle, you need water & food for your convoy's crew to sustain themselves on their travels. 🍕 💧",
+                f"1. Gray `{df_state.sett_obj['name']}` button",
+                f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} Market`",
+                "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Use the `Cargo Inventory` dropdown to select {DF_LOGO_EMOJI}` Water Jerry Cans`",
-                "- Hit the blurple `+1` button to add an additional jerry can to your cart",
-                "- Hit the green `Buy 2 Water Jerry Cans(s)` button to complete the purchase",
-                "  - *`Water Jerry Cans` are sold full of water*",
-                f"- **Repeat this process, but with the {DF_LOGO_EMOJI}` MRE Boxes`, which contain food**",
-                "  - You only need 1 MRE box to get on the road",
-                "  - *`MRE Boxes` are also sold with a full compliment of MREs*",
+                "- Blurple `+1` button to add an additional jerry can to your cart",
+                "- Green `Buy 2 Water Jerry Cans(s)` button. Note: the cans are sold already full",
+                f"- **Repeat this process, to buy just one of {DF_LOGO_EMOJI}` MRE Boxes`, which contain food, and come full**",
             ])
         case 3:
             tutorial_embed.description = '\n'.join([
-                "### Now that you have rations, you're gonna need to buy some fuel as well. The cheap-ass dealership sold you a vehicle with an empty tank. ⛽️",
-                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
-                "- Hit the `Top up fuel | $XXX` button to fill your empty tank",
-                "  - This button is a convenience so that you don't have to bother individually buying all the resources you deplete on your travels",
+                "### Now that you have rations, you'll need fuel. The cheap-ass dealership sold you a vehicle with an empty tank. ⛽️",
+                f"1. Gray `{df_state.sett_obj['name']}` button",
+                "- `Top up fuel | $XXX` button to fill your empty tank",
+                "  - Seek out this button in future as a convenient shortcut to separately buying the various resources depleted on the road",
             ])
         case 4:
             tutorial_embed.description = '\n'.join([
                 "### With the basics down, it's time for your first delivery. 📦",
                 f"1. One last time, hit the gray `{df_state.sett_obj['name']}` button",
-                f"- Use the `Select vendor to visit` dropdown menu to select the `{df_state.sett_obj['name']} Market`",
-                "- Hit the blurple `Buy (Resources, Vehicles, Cargo)` button",
-                "- Select the cargo you'd like to purchase with the `Cargo Inventory` dropdown",
-                "  - The 💵 emojis represent how much profit margin the delivery will net you",
-                "  - Consider that margin alongside the distance you'll have to travel to make the delivery; a high margin delivery which requires you go cross-country will cost you in both time and resources.",
-                "- Hit the blurple `max (+X)` button to add the maximum number of this cargo to your cart",
-                "  - **if you just hit the green buy button now, you'll only buy one! You want to make big deliveries for big profits.**",
-                "- Hit the green `Buy X cargo(s)` button to complete the purchase",
+                f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} Market`",
+                "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
+                "- Select your chosen cargo to transport from the `Cargo Inventory` dropdown",
+                "  - Refer below. 💵 emojis indicate the profit margin for that delivery",
+                "  - Also consider the distance for the delivery; a high margin delivery might not be worth the time & resource expense of a cross-country trip.",
+                "- Blurple `max (+X)` button adds to your cart the maximum amount of this cargo that you can afford and carry",
+                "  - **if you just hit the green buy button now, you'll only buy one. Seek big deliveries for big profits!**",
+                "- Green `Buy X cargo(s)` button to complete the purchase",
             ])
         case 5:
             tutorial_embed.description = '\n'.join([
-                "### Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️",
-                "1. Hit the gray `convoy` button",
-                "- Hit the green `Embark on new Journey` button",
-                "- Use the `Where to?` dropdown menu to select the destination of your goods",
+                "### Now that you have a vehicle, provisions, and a delivery to fulfill, let's get you on the road! 🛣️",
+                "1. Gray `convoy` button",
+                "- Green `Embark on new Journey` button",
+                "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
                 "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
-                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps.**",
-                "  - Start this step back from the top, and select a destination in between your current location and the recipient's location instead.",
+                "  - **If it's disabled, saying `Not enough resource`, you'll have to make this journey in several segments.**",
+                "  - Invoke **`/desolate-frontiers`** again and select a destination between your current location and the recipient's.",
             ])
         case 6:
             tutorial_embed.description = '\n'.join([
                 "### Finishing this ~~fight~~ delivery... 🚛",
-                f"1. Hit the gray `{df_state.sett_obj['name']}` button",
-                "- Hit the `Top up fuel | $XXX` button to refill your resources",
-                "- Hit the gray `convoy` button",
-                "- Hit the green `Embark on new Journey` button",
-                "- Use the `Where to?` dropdown menu to select the destination of your goods",
+                f"1. Gray `{df_state.sett_obj['name']}` button",
+                "- `Top up fuel | $XXX` button to refill your resources",
+                "- Gray `convoy` button",
+                "- Green `Embark on new Journey` button",
+                "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
                 "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
-                "  - **If the green button is disabled, saying `Not enough resource`, you'll have to make this journey in several steps.**",
-                "  - Start this step back from the top, and select a destination in between your current location and the recipient's location instead.",
+                "  - **If it's disabled, saying `Not enough resource`, you'll have to make this journey in several segments.**",
+                "  - Invoke **`/desolate-frontiers`** again and select a destination between your current location and the recipient's.",
             ])
         case 7:
             tutorial_embed.description = '\n'.join([

@@ -150,7 +150,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "### Now that you have rations, you'll need fuel. The cheap-ass dealership sold you a vehicle with an empty tank. ⛽️",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
                 "- `Top up fuel | $XXX` button to fill your empty tank",
-                "  - Seek out this button in future as a convenient shortcut to separately buying the various resources depleted on the road",
+                "  - Seek out this button in future as a convenient shortcut to separately buy resources depleted on the road",
             ])
         case 4:
             tutorial_embed.description = '\n'.join([

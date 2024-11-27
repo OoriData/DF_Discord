@@ -195,7 +195,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Buy {self.sale_quantity:,.2f}L of {self.resource_type} | ${sale_price:,.0f}',
+            label=f'Sell {self.sale_quantity:,.2f}L of {self.resource_type} | ${sale_price:,.0f}',
             row=row
         )
 
@@ -364,7 +364,7 @@ class VehicleSellConfirmView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(BuyVehicleButton(self.df_state))
+        self.add_item(SellVehicleButton(self.df_state))
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -380,7 +380,7 @@ class VehicleSellConfirmView(discord.ui.View):
         return await super().on_timeout()
 
 
-class BuyVehicleButton(discord.ui.Button):
+class SellVehicleButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 

@@ -172,11 +172,11 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
         await convoy_views.convoy_menu(self.df_state)
 
 
-class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
+class UsernameModal(discord.ui.Modal):
     def __init__(self, discord_nickname: str, df_state: DFState):
         self.df_state = df_state
 
-        super().__init__()
+        super().__init__(title='Sign up for Desolate Frontiers')
 
         self.username_input = discord.ui.TextInput(
             label='Desolate Frontiers username',
@@ -193,10 +193,11 @@ class UsernameModal(discord.ui.Modal, title='Sign up for Desolate Frontiers'):
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj)
 
 
-class ConvoyNameModal(discord.ui.Modal, title='Name your new convoy'):
+class ConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        super().__init__()
+        
+        super().__init__(title='Name your new convoy')
 
         self.convoy_name_input = discord.ui.TextInput(
             label='New convoy name',

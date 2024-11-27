@@ -347,6 +347,21 @@ async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dic
     return response.json()
 
 
+async def send_message(sender_id: UUID, recipient_id: UUID, message: str) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/dialogue/send',
+            params={  # Use JSON body for POST requests
+                'sender_id': sender_id,
+                'recipient_id': recipient_id,
+                'message': message
+            }
+        )
+    
+    _check_code(response)
+    return response.json()
+
+
 async def get_dialogue_by_char_ids(char_a_id: UUID, char_b_id: UUID) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(

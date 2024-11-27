@@ -202,7 +202,7 @@ class ConvoyView(discord.ui.View):
         self.df_state.interaction = interaction
         await send_convoy_menu(self.df_state)
 
-    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', row=1, disabled=True)
+    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', row=1)
     async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
         await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])

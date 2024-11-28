@@ -127,19 +127,23 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
     return convoy_embed, image_file
 
 
-def vehicles_embed_str(vehicles: list[dict], detailed: Optional[bool] = False) -> str:
+def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> str:
     vehicles_list = []
-    vehicles_str = '### Vehicles:\n'
+    vehicles_str = '### Vehicles\n'
     if vehicles:
         for vehicle in vehicles:
-            vehicle_str = f'- **{vehicle['name']}**\n'
-            if detailed:
-                vehicle_str += f'  - AP: **{vehicle['ap']}** / {vehicle['max_ap']}\n'
-                vehicle_str += f'  - Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100\n'
-                vehicle_str += f'  - Top Speed: **{vehicle['top_speed']}** / 100\n'
-                vehicle_str += f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100\n'
+            vehicle_str = f'**{vehicle['name']}**\n'
+            if verbose:
+                vehicle_str += '\n'.join([
+                    f'- AP: **{vehicle['ap']}** / {vehicle['max_ap']}',
+                    f'- Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
+                    f'- Top Speed: **{vehicle['top_speed']}** / 100',
+                    f'- Offroad Capability: **{vehicle['offroad_capability']}** / 100',
+                    ''
+                ])
             
-            vehicle_str += f'  - Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
+            vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters'
+            vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
             vehicles_list.append(vehicle_str)
 
         vehicles_str += '\n'.join(vehicles_list)

@@ -58,6 +58,7 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
             description = '\n'.join([
                 '# Desolate Frontiers',
                 'Welcome to the Desolate Frontiers!',
+                '',
                 'Select a convoy:',
                 '\n'.join(convoy_descs)
             ])
@@ -65,12 +66,14 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
             description = '\n'.join([
                 '# Desolate Frontiers',
                 'Welcome to the Desolate Frontiers!',
+                '',
                 'You do not have any convoys. Use the button below to create one.'
             ])
     else:  # If the user is not registered the Desolate Frontiers
         description = '\n'.join([
             '# Desolate Frontiers',
             'Welcome to the Desolate Frontiers!',
+            '',
             'You are not a registered Desolate Frontiers user. Use the button below to register.'
         ])
         user_obj = None

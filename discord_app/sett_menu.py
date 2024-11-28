@@ -10,12 +10,9 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
-
-from discord_app.vendor_views  import SERVICE_KEYS
 import                                discord_app.vendor_views.vendor_views
 import                                discord_app.vendor_views.buy_menus
 import                                discord_app.nav_menus
-
 from discord_app.df_state      import DFState
 
 async def sett_menu(df_state: DFState, edit: bool=True):
@@ -31,19 +28,38 @@ async def sett_menu(df_state: DFState, edit: bool=True):
     vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
         displayable_services = []
-        for key in list(SERVICE_KEYS.keys()):
+
+        deliverable_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['recipient']]
+        if deliverable_cargo:
+            displayable_services.append(f'- {len(deliverable_cargo)} deliverable cargo')
+
+        RESOURCES = ['fuel', 'water', 'food']
+        for key in RESOURCES:
             if vendor[key]:
-                displayable_services.append(f'  - {SERVICE_KEYS[key][0]}')
+                displayable_services.append(f'- {key.capitalize()}')
+
+            resource_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo[key]]
+            if resource_cargo:
+                displayable_services.append(f'  - {len(resource_cargo)} {key.capitalize()} container(s)')
+
+        if vendor['vehicle_inventory']:
+            displayable_services.append(f'- {len(vendor['vehicle_inventory'])} vehicles')
+
+        if vendor['repair_price']:
+            displayable_services.append('- Mechanic services')
+
+        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['part']]
+        if part_cargo:
+            displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 
         vendor_displayables.append('\n'.join([
-            f'- **{vendor['name']}**',
+            f'### {vendor['name']}',
             '\n'.join(displayable_services)
         ]))
     
     embed.description = '\n'.join([
-        f'## {df_state.sett_obj['name']}',
-        '\n'.join(vendor_displayables),
-        'Select a vendor:'
+        f'# {df_state.sett_obj['name']} vendors',
+        '\n'.join(vendor_displayables)
     ])
 
     embeds = [embed]

@@ -5,15 +5,6 @@ import                  math
 
 from discord_app import api_calls
 
-SERVICE_KEYS = {
-    'fuel': ('Fuel', '{number} liter(s)'),
-    'water': ('Water', '{number} liter(s)'),
-    'food': ('Food', '{number} serving(s)'),
-    'cargo_inventory': ('Cargo', '{number} item(s)'),
-    'vehicle_inventory': ('Vehicles', '{number} vehicle(s)'),
-    'repair_price': ('Mechanic Services', 'Available')
-}
-
 
 async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
     resources_list = []

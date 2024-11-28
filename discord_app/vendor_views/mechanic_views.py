@@ -124,7 +124,7 @@ class VehicleSelect(discord.ui.Select):
             f'*{self.df_state.vehicle_obj['base_desc']}*',
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = MechView(self.df_state)
 
@@ -167,7 +167,7 @@ class MechView(discord.ui.View):
             displayable_vehicle_parts,
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = MechVehicleView(self.df_state)
 
@@ -225,7 +225,7 @@ class InstallPartBackButton(discord.ui.Button):
             f'*{self.df_state.vehicle_obj['base_desc']}*',
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = MechView(self.df_state)
 
@@ -285,7 +285,7 @@ class MechVehicleView(discord.ui.View):
             f'{displayable_vehicle_parts}',
             '### Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = CargoSelectView(self.df_state, part_cargos_to_display)
 
@@ -399,7 +399,7 @@ class CargoSelectBackButton(discord.ui.Button):
             displayable_vehicle_parts,
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = MechVehicleView(self.df_state)
 
@@ -454,7 +454,7 @@ class CargoSelect(discord.ui.Select):
             f'{discord_app.cargo_views.format_part(selected_part)}\n'
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj, selected_part)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj, selected_part)
 
         view = InstallConfirmView(self.df_state)
 
@@ -512,7 +512,7 @@ class PartConfirmBackButton(discord.ui.Button):
             f'{displayable_vehicle_parts}',
             '### Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = CargoSelectView(self.df_state, part_cargos_to_display)
 
@@ -559,7 +559,7 @@ class InstallConfirmView(discord.ui.View):
             f'*{self.df_state.vehicle_obj['base_desc']}*',
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = PostInstallView(self.df_state)
 

@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_views
 import                                discord_app.vendor_views.buy_menus
@@ -53,7 +53,7 @@ async def sett_menu(df_state: DFState, edit: bool=True):
             displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 
         vendor_displayables.append('\n'.join([
-            f'### {vendor['name']}',
+            f'## {vendor['name']}',
             '\n'.join(displayable_services)
         ]))
     
@@ -85,7 +85,7 @@ class SettView(discord.ui.View):
         # self.add_item(WarehouseButton)
         self.add_item(VendorSelect(self.df_state, vendors, row=3))
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4}:
             for item in self.children:
                 match tutorial_stage:
@@ -146,7 +146,7 @@ class VendorSelect(discord.ui.Select):
         self.df_state = df_state
         self.vendors = vendors
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
         if tutorial_stage == 1:
             options=[
                 discord.SelectOption(

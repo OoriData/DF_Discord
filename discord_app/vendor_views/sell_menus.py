@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author
+from discord_app               import api_calls, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_views
@@ -28,7 +28,7 @@ async def sell_menu(df_state: DFState):
     if df_state.vendor_obj['water']:
         resources_list.append(f'- Water: {df_state.convoy_obj['water']} Liters\n  - *${df_state.vendor_obj['water_price']} per Liter*')
     if df_state.vendor_obj['food']:
-        resources_list.append(f'- Food: {df_state.convoy_obj['food']} Servings\n  - *${df_state.vendor_obj['food_price']} per Serving*')
+        resources_list.append(f'- Food: {df_state.convoy_obj['food']} meals\n  - *${df_state.vendor_obj['food_price']} per Serving*')
     displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
 
     vehicle_list = []
@@ -142,9 +142,9 @@ class ResourceSellQuantityEmbed(discord.Embed):
         
         self.description = '\n'.join([
             f'## {df_state.vendor_obj['name']}',
-            f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/Serving',
-            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]} Liters/Servings',
-            f'### Sale: {self.sale_quantity:,.2f} Liters/Servings | ${sale_price:,.0f}'
+            f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/meals',
+            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]} Liters/meals',
+            f'### Sale: {self.sale_quantity:,.2f} Liters/meals | ${sale_price:,.0f}'
         ])
 
 
@@ -219,7 +219,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'## {self.df_state.vendor_obj['name']}',
-            f'Sold {self.sale_quantity:,.2f} Liters/Servings of {self.resource_type} for ${sale_price:,.0f}'
+            f'Sold {self.sale_quantity:,.2f} Liters/meals of {self.resource_type} for ${sale_price:,.0f}'
         ])
 
         view = PostSellView(self.df_state)
@@ -249,8 +249,7 @@ class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into li
 
         if button_quantity == 'max':  # Handle "max" button logic
             self.button_quantity = inventory_quantity - self.sale_quantity
-            if self.button_quantity <= 0:
-                self.button_quantity = 0  # Ensure the quantity is 0
+            self.button_quantity = max(0, self.button_quantity)  # Ensure the quantity is 0
             label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
         else:
             self.button_quantity = int(button_quantity)
@@ -350,7 +349,7 @@ class SellVehicleSelect(discord.ui.Select):
             displayable_vehicle_parts,
             '### Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = VehicleSellConfirmView(self.df_state)
 
@@ -480,9 +479,17 @@ class CargoSellQuantityEmbed(discord.Embed):
         ])
 
         self.description = '\n'.join(desc)
-        self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
-        self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
-        self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
+
+        if get_user_metadata(df_state, 'mobile'):
+            self.description += '\n' + '\n'.join([
+                f'- Inventory: {self.df_state.cargo_obj['quantity']}',
+                f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
+                f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
+            ])
+        else:
+            self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
+            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
+            self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
 
 
 class SellBackButton(discord.ui.Button):

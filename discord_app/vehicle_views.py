@@ -9,8 +9,7 @@ import                                textwrap
 import                                discord
 
 import discord_app.cargo_views
-from discord_app               import discord_timestamp
-from discord_app               import api_calls, discord_timestamp, df_embed_author
+from discord_app               import api_calls, discord_timestamp, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -44,7 +43,7 @@ async def vehicle_menu(df_state: DFState):
         displayable_vehicle_parts,
         '### Stats'
     ])
-    vehicle_embed = df_embed_vehicle_stats(vehicle_embed, df_state.vehicle_obj)
+    vehicle_embed = df_embed_vehicle_stats(df_state, vehicle_embed, df_state.vehicle_obj)
 
     vehicle_view = VehicleView(df_state=df_state)
 
@@ -109,7 +108,7 @@ class VehicleSelect(discord.ui.Select):
         await vehicle_menu(self.df_state)
 
 
-def df_embed_vehicle_stats(embed: discord.Embed, vehicle: dict, new_part: dict=None):
+def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict=None):
     fields = {
         '💵 Value': ('value', '${:,}', '', 'part_value', ' (${:+})'),
         '🔧 Wear': ('wear', '{}', ' / 100', None, ''),
@@ -140,6 +139,9 @@ def df_embed_vehicle_stats(embed: discord.Embed, vehicle: dict, new_part: dict=N
         value_str += suffix
         
         # Add the formatted field to the embed
-        embed.add_field(name=name, value=value_str)
+        if get_user_metadata(df_state, 'mobile'):
+            embed.description += f'\n- {name}: {value_str}'
+        else:
+            embed.add_field(name=name, value=value_str)
 
     return embed

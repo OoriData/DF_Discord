@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -48,13 +48,24 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
     convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
-    convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.0f} liters')
-    convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
-    convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
+    if get_user_metadata(df_state, 'mobile'):
+        convoy_embed.description += '\n' + '\n'.join([
+            '### Convoy Stats',
+            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
+            f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
+            f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
+            f'Fuel Efficiency 🌿: **{df_state.convoy_obj['fuel_efficiency']:.0f}** / 100',
+            f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
+            f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
+        ])
+    else:
+        convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.0f} liters')
+        convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
+        convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
 
-    convoy_embed.add_field(name='Fuel Efficiency', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
-    convoy_embed.add_field(name='Top Speed', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
-    convoy_embed.add_field(name='Offroad Capability', value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100')
+        convoy_embed.add_field(name='Fuel Efficiency 🌿', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
+        convoy_embed.add_field(name='Top Speed 🚀', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
+        convoy_embed.add_field(name='Offroad Capability 🏔️', value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100')
 
     convoy_x = df_state.convoy_obj['x']
     convoy_y = df_state.convoy_obj['y']
@@ -69,15 +80,23 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             pos += 1
 
         destination = await api_calls.get_tile(journey['dest_x'], journey['dest_y'])
-        convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({journey['dest_x']}, {journey['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
 
         eta = df_state.convoy_obj['journey']['eta']
-        convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
-
         progress_percent = ((journey['progress']) / len(journey['route_x'])) * 100
         progress_in_km = journey['progress'] * 50  # progress is measured in tiles; tiles are 50km to a side
         progress_in_miles = journey['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
-        convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
+
+        if get_user_metadata(df_state, 'mobile'):
+            convoy_embed.description += '\n' + '\n'.join([
+                '### Journey',
+                f'Destination 📍: **{destination['settlements'][0]['name']}**',
+                f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',
+                f'Progress 🚗: **{progress_percent:.0f}%** ({progress_in_miles:.0f} miles)'
+            ])
+        else:
+            convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({journey['dest_x']}, {journey['dest_y']})')  # XXX: replace coords with `{territory_name}`
+            convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
+            convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
@@ -96,19 +115,29 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
         destination = await api_calls.get_tile(prospective_journey_plus_misc['journey']['dest_x'], prospective_journey_plus_misc['journey']['dest_y'])
 
-        convoy_embed.add_field(name='Fuel expense', value=f'**{prospective_journey_plus_misc['fuel_expense']:.2f}**')
-        convoy_embed.add_field(name='Water expense', value=f'**{prospective_journey_plus_misc['water_expense']:.2f}**')
-        convoy_embed.add_field(name='Food expense', value=f'**{prospective_journey_plus_misc['food_expense']:.2f}**')
-
-        convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({prospective_journey_plus_misc['journey']['dest_x']}, {prospective_journey_plus_misc['journey']['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
-        
         delta_t = discord_timestamp(datetime.now(timezone.utc) + timedelta(minutes=prospective_journey_plus_misc['delta_t']), 'R')
         eta_discord_time = discord_timestamp(datetime.now(timezone.utc) + timedelta(minutes=prospective_journey_plus_misc['delta_t']), 't')
-        convoy_embed.add_field(name='ETA ⏰', value=f'**{delta_t}**\n{eta_discord_time}')
-
         distance_km = 50 * len(prospective_journey_plus_misc['journey']['route_x'])
         distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
-        convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km:,} km**\n{distance_miles} miles')
+
+        if get_user_metadata(df_state, 'mobile'):
+            convoy_embed.description += '\n' + '\n'.join([
+                '### Journey',
+                f'- Fuel expense: **{prospective_journey_plus_misc['fuel_expense']:.2f}**L',
+                f'- Water expense: **{prospective_journey_plus_misc['water_expense']:.2f}**L',
+                f'- Food expense: **{prospective_journey_plus_misc['food_expense']:.2f}** meals',
+                f'- Destination 📍: **{destination['settlements'][0]['name']}**',
+                f'- ETA ⏰: **{delta_t}** ({eta_discord_time})',
+                f'- Distance 🗺️: {distance_miles} miles'
+            ])
+        else:
+            convoy_embed.add_field(name='Journey fuel expense', value=f'**{prospective_journey_plus_misc['fuel_expense']:.2f}** liters')
+            convoy_embed.add_field(name='Journey water expense', value=f'**{prospective_journey_plus_misc['water_expense']:.2f}** liters')
+            convoy_embed.add_field(name='Journey food expense', value=f'**{prospective_journey_plus_misc['food_expense']:.2f}** meals')
+
+            convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({prospective_journey_plus_misc['journey']['dest_x']}, {prospective_journey_plus_misc['journey']['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
+            convoy_embed.add_field(name='ETA ⏰', value=f'**{delta_t}**\n{eta_discord_time}')
+            convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km:,} km**\n{distance_miles} miles')
 
         convoy_embed, image_file = await add_map_to_embed(
             embed=convoy_embed,
@@ -186,7 +215,7 @@ class ConvoyView(discord.ui.View):
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
@@ -288,7 +317,7 @@ class DestinationView(discord.ui.View):
 
         self.add_item(DestinationSelect(self.df_state, df_map, page))
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
@@ -441,7 +470,7 @@ class SendConvoyConfirmView(discord.ui.View):
             self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
         self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 if item.custom_id not in {'alt_route', 'confirm_journey_button'}:

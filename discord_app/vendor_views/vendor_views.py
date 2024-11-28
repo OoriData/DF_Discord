@@ -8,7 +8,7 @@ import                                              discord
 
 from utiloori.ansi_color                     import ansi_color
 
-from discord_app                             import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage
+from discord_app                             import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata
 from discord_app.map_rendering               import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
 from discord_app.vendor_views                import vendor_inv_md
@@ -53,7 +53,7 @@ class VendorView(discord.ui.View):
         self.add_item(MechanicButton(df_state))
         self.add_item(SellButton(df_state))
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (

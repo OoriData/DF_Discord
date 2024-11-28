@@ -10,7 +10,7 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
     resources_list = []
     for resource in ['fuel', 'water', 'food']:
         if vendor_obj[resource]:
-            unit = 'servings' if resource == 'food' else 'Liters'
+            unit = 'meals' if resource == 'food' else 'Liters'
             resources_list.append(f'- {resource.capitalize()}: {vendor_obj[resource]} {unit}\n  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*')
     displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
 
@@ -37,7 +37,7 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
         if verbose:
             for resource in ['fuel', 'water', 'food']:
                 if cargo[resource]:
-                    unit = ' servings' if resource == 'food' else 'L'
+                    unit = ' meals' if resource == 'food' else 'L'
                     cargo_str += f'\n  - {resource.capitalize()}: {cargo[resource]:,.0f}{unit}'
 
             if cargo['recipient']:

@@ -10,6 +10,7 @@ In order to run that, you need an `op_discord_prod.env` should look something li
 LOG_LEVEL = "INFO"
 
 DF_API_HOST = "http://70.90.116.204:8001"  # Official DF API
+DF_API_KEY = "op://Oori DevOps/Oori - Desolate Frontiers - Discord Bot/Bearer Token"
 
 DISCORD_TOKEN = "op://Oori DevOps/Oori - Desolate Frontiers - Discord Bot/credential"  # Official DF bot/app
 

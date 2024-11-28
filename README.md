@@ -19,6 +19,7 @@ To run that discord bot in a test environment, your `op_discord.env` should look
 LOG_LEVEL = "INFO"
 
 DF_API_HOST = "http://localhost:1337"
+DF_API_KEY = "DUMMY"
 
 DF_MAP_RENDERER = "http://localhost:9100"
 

@@ -8,10 +8,13 @@ import           httpx
 from df_lib.map_struct import serialize_map, deserialize_map
 
 DF_API_HOST = os.environ['DF_API_HOST']
+DF_API_KEY = os.environ['DF_API_KEY']
 DF_MAP_RENDERER = os.environ['DF_MAP_RENDERER']
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 API_INTERNAL_SERVER_ERROR = 500
+
+DF_API_HEADERS = {'Authorization': f'Bearer {DF_API_KEY}'}
 
 
 def _check_code(response: httpx.Response):
@@ -72,6 +75,7 @@ async def get_map(
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/map/get',
+            headers=DF_API_HEADERS,
             params=params,
             timeout=10
         )
@@ -84,6 +88,7 @@ async def get_tile(x: int, y: int) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/map/tile/get',
+            headers=DF_API_HEADERS,
             params={
                 'x': x,
                 'y': y
@@ -98,6 +103,7 @@ async def new_user(username: str, discord_id: int) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             url=f'{DF_API_HOST}/user/new',
+            headers=DF_API_HEADERS,
             params={
                 'username': username,
                 'discord_id': discord_id
@@ -112,6 +118,7 @@ async def get_user_by_discord(discord_id: int) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/user/get_by_discord_id',
+            headers=DF_API_HEADERS,
             params={'discord_id': discord_id}
         )
 
@@ -123,6 +130,7 @@ async def update_user_metadata(user_id: UUID, new_metadata: dict) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/user/update_metadata',
+            headers=DF_API_HEADERS,
             params={'user_id': user_id},
             json=new_metadata
         )
@@ -135,6 +143,7 @@ async def new_convoy(user_id: UUID, new_convoy_name: str) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             url=f'{DF_API_HOST}/convoy/new',
+            headers=DF_API_HEADERS,
             params={
                 'user_id': user_id,
                 'convoy_name': new_convoy_name
@@ -149,6 +158,7 @@ async def get_convoy(convoy_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/convoy/get',
+            headers=DF_API_HEADERS,
             params={'convoy_id': convoy_id,}
         )
 
@@ -160,6 +170,7 @@ async def move_cargo(convoy_id: UUID, cargo_id: UUID, dest_vehicle_id: UUID) -> 
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/convoy/cargo/move',
+            headers=DF_API_HEADERS,
             params={
                 'convoy_id': convoy_id,
                 'cargo_id': cargo_id,
@@ -175,6 +186,7 @@ async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             url=f'{DF_API_HOST}/convoy/find_route',
+            headers=DF_API_HEADERS,
             params={
                 'convoy_id': convoy_id,
                 'dest_x': dest_x,
@@ -191,6 +203,7 @@ async def send_convoy(convoy_id: UUID, journey_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/convoy/send',
+            headers=DF_API_HEADERS,
             params={
                 'convoy_id': convoy_id,
                 'journey_id': journey_id
@@ -205,6 +218,7 @@ async def get_vendor(vendor_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/vendor/get',
+            headers=DF_API_HEADERS,
             params={'vendor_id': vendor_id}
         )
 
@@ -216,6 +230,7 @@ async def buy_vehicle(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> dic
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/vehicle/buy',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -231,6 +246,7 @@ async def sell_vehicle(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> di
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/vehicle/sell',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -246,6 +262,7 @@ async def buy_cargo(vendor_id: UUID, convoy_id: UUID, cargo_id: UUID, quantity: 
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/cargo/buy',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -262,6 +279,7 @@ async def sell_cargo(vendor_id: UUID, convoy_id: UUID, cargo_id: UUID, quantity:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/cargo/sell',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -278,6 +296,7 @@ async def buy_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qua
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/resource/buy',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -294,6 +313,7 @@ async def sell_resource(vendor_id: UUID, convoy_id: UUID, resource_type: str, qu
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/resource/sell',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -310,6 +330,7 @@ async def add_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_carg
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/vendor/vehicle/part/add',
+            headers=DF_API_HEADERS,
             params={
                 'vendor_id': vendor_id,
                 'convoy_id': convoy_id,
@@ -326,6 +347,7 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/vehicle/get',
+            headers=DF_API_HEADERS,
             params={'vehicle_id': vehicle_id}
         )
 
@@ -337,6 +359,7 @@ async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dic
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/vehicle/part_compatibility',
+            headers=DF_API_HEADERS,
             params={
                 'vehicle_id': vehicle_id,
                 'part_cargo_id': part_cargo_id
@@ -351,6 +374,7 @@ async def send_message(sender_id: UUID, recipient_id: UUID, message: str) -> dic
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             url=f'{DF_API_HOST}/dialogue/send',
+            headers=DF_API_HEADERS,
             params={  # Use JSON body for POST requests
                 'sender_id': sender_id,
                 'recipient_id': recipient_id,
@@ -366,6 +390,7 @@ async def get_dialogue_by_char_ids(char_a_id: UUID, char_b_id: UUID) -> list[dic
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/dialogue/get_by_char_ids',
+            headers=DF_API_HEADERS,
             params={
                 'char_a_id': char_a_id,
                 'char_b_id': char_b_id,
@@ -380,6 +405,7 @@ async def get_unseen_dialogue_for_user(user_id: UUID) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/dialogue/get_user_unseen_messages',
+            headers=DF_API_HEADERS,
             params={'user_id': user_id}
         )
 
@@ -391,6 +417,7 @@ async def mark_dialogue_as_seen(user_id: UUID) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
             url=f'{DF_API_HOST}/dialogue/mark_user_dialogues_as_seen',
+            headers=DF_API_HEADERS,
             params={'user_id': user_id}
         )
 

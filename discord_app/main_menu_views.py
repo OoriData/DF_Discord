@@ -42,9 +42,10 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
                 if convoy['journey']:
                     destination = await api_calls.get_tile(convoy['journey']['dest_x'], convoy['journey']['dest_y'])
                     progress_percent = ((convoy['journey']['progress']) / len(convoy['journey']['route_x'])) * 100
+                    eta = convoy['journey']['eta']
                     convoy_descs.extend([
                         f'### {convoy['name']}\n'
-                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%**',
+                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
                         'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
                 else:

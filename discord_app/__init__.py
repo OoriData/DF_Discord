@@ -134,7 +134,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 f"1. Gray `{df_state.sett_obj['name']}` button to check out the vendors",
                 f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} dealership`",
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
-                "- Select from the `Vehicle Inventory` dropdown",
+                f"- Select from the `Vehicle Inventory` dropdown. Vehicles you can afford are marked with {DF_LOGO_EMOJI}",
                 "- The block will update, allowing you to inspect the chosen vehicle. If it suits you, hit the green `Buy Vehicle| $X,XXX` button.",
                 f"  - To inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
             ])
@@ -162,7 +162,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 f"1. One last time, hit the gray `{df_state.sett_obj['name']}` button",
                 f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} Market`",
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
-                "- Select your chosen cargo to transport from the `Cargo Inventory` dropdown",
+                f"- Select your chosen cargo to transport from the `Cargo Inventory` dropdown. Cargo you can fit in your car are marked with {DF_LOGO_EMOJI}",
                 "  - Refer below. 💵 emojis indicate the profit margin for that delivery",
                 "  - Also consider the distance for the delivery; a high margin delivery might not be worth the time & resource expense of a cross-country trip.",
                 "- Blurple `max (+X)` button adds to your cart the maximum amount of this cargo that you can afford and carry",

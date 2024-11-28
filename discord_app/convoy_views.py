@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_tutorial_stage
+from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 
@@ -367,7 +367,11 @@ class DestinationSelect(discord.ui.Select):
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
-            options.append(discord.SelectOption(label=label[:100], value=f'{x},{y}'))  # Only the first 100 chars of the label string
+            options.append(discord.SelectOption(
+                label=label[:100],  # Only the first 100 chars of the label string
+                value=f'{x},{y}',
+                emoji=DF_LOGO_EMOJI if cargo_names else None  # Add the tutorial emoji if cargo destination, else don't
+            ))
         
         if current_page < max_pages:  # Add 'next page' option if not on the last page
             options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
@@ -436,12 +440,11 @@ class SendConvoyConfirmView(discord.ui.View):
         tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
-                item.disabled = item.custom_id not in (
-                    # 'nav_back_button',
-                    'nav_convoy_button',
-                    'alt_route',
-                    'confirm_journey_button'
-                )
+                if item.custom_id not in {'alt_route', 'confirm_journey_button'}:
+                    item.disabled = item.custom_id not in (
+                        # 'nav_back_button',
+                        'nav_convoy_button'
+                    )
 
 
 class NextJourneyButton(discord.ui.Button):

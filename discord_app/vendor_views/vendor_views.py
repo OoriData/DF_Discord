@@ -1,67 +1,34 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-from __future__                import annotations
-import                                os
-import                                textwrap
+from __future__                              import annotations
+import                                              os
+import                                              textwrap
 
-import                                discord
+import                                              discord
 
-from utiloori.ansi_color       import ansi_color
+from utiloori.ansi_color                     import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage
-from discord_app.map_rendering import add_map_to_embed
+from discord_app                             import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage
+from discord_app.map_rendering               import add_map_to_embed
 from discord_app.vendor_views.mechanic_views import MechVehicleDropdownView
-import discord_app.vendor_views.mechanic_views
-import discord_app.vendor_views.buy_menus
-import discord_app.vendor_views.sell_menus
-import discord_app.nav_menus
+from discord_app.vendor_views                import vendor_inv_md
+import                                              discord_app.vendor_views.mechanic_views
+import                                              discord_app.vendor_views.buy_menus
+import                                              discord_app.vendor_views.sell_menus
+import                                              discord_app.nav_menus
 
-from discord_app.df_state      import DFState
+from discord_app.df_state                    import DFState
 
 API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.getenv('DF_API_HOST')
-
-SERVICE_KEYS = {
-    'fuel': ('Fuel', '{number} liter(s)'),
-    'water': ('Water', '{number} liter(s)'),
-    'food': ('Food', '{number} serving(s)'),
-    'cargo_inventory': ('Cargo', '{number} item(s)'),
-    'vehicle_inventory': ('Vehicles', '{number} vehicle(s)'),
-    'repair_price': ('Mechanic Services', 'Available')
-}
-
-
-def vendor_services(vendor_obj: dict):
-    services = []
-    for key in list(SERVICE_KEYS.keys()):
-        if vendor_obj[key]:
-            if isinstance(vendor_obj[key], list):
-                number = len(vendor_obj[key])
-            else:
-                number = vendor_obj[key]
-            services.append((
-                SERVICE_KEYS[key][0],
-                SERVICE_KEYS[key][1].format(number=number)
-            ))
-
-    return services
 
 
 async def vendor_menu(df_state: DFState, edit: bool=True):
     vendor_embed = discord.Embed()
     vendor_embed = df_embed_author(vendor_embed, df_state)
 
-    vendor_embed.description = '\n'.join([
-        f'## {df_state.vendor_obj['name']}',
-        'Available Services:'
-    ])
-    
-    for service, availability in vendor_services(df_state.vendor_obj):
-        vendor_embed.add_field(
-            name=service,
-            value=availability,
-        )
+    vendor_embed.description = await vendor_inv_md(df_state.vendor_obj)
     
     embeds = [vendor_embed]
     embeds = add_tutorial_embed(embeds, df_state)

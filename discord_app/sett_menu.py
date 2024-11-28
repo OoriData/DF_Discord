@@ -8,13 +8,13 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 
-from discord_app.vendor_views.vendor_views import SERVICE_KEYS
-import discord_app.vendor_views.vendor_views
-import discord_app.vendor_views.buy_menus
-import discord_app.nav_menus
+from discord_app.vendor_views  import SERVICE_KEYS
+import                                discord_app.vendor_views.vendor_views
+import                                discord_app.vendor_views.buy_menus
+import                                discord_app.nav_menus
 
 from discord_app.df_state      import DFState
 
@@ -28,7 +28,7 @@ async def sett_menu(df_state: DFState, edit: bool=True):
         return
     df_state.sett_obj = tile_obj['settlements'][0]
     
-    vendor_displayables = []
+    vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
         displayable_services = []
         for key in list(SERVICE_KEYS.keys()):
@@ -130,10 +130,30 @@ class VendorSelect(discord.ui.Select):
         self.df_state = df_state
         self.vendors = vendors
 
-        options=[
-            discord.SelectOption(label=vendor['name'], value=vendor['vendor_id'])
-            for vendor in self.vendors
-        ]
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL
+        if tutorial_stage == 1:
+            options=[
+                discord.SelectOption(
+                    label=vendor['name'],
+                    value=vendor['vendor_id'],
+                    emoji=DF_LOGO_EMOJI if 'Dealership' in vendor['name'] else None  # Add the tutorial emoji if dealership, else don't
+                )
+                for vendor in self.vendors
+            ]
+        elif tutorial_stage in [2, 4]:
+            options=[
+                discord.SelectOption(
+                    label=vendor['name'],
+                    value=vendor['vendor_id'],
+                    emoji=DF_LOGO_EMOJI if 'Market' in vendor['name'] else None  # Add the tutorial emoji if dealership, else don't
+                )
+                for vendor in self.vendors
+            ]
+        else:  # Not in tutorial
+            options=[
+                discord.SelectOption(label=vendor['name'],value=vendor['vendor_id'])
+                for vendor in self.vendors
+            ]
         
         super().__init__(
             placeholder='Select vendor to visit',

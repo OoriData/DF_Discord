@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
-import                                textwrap
-import                                math
 
 import                                discord
 
@@ -11,10 +9,11 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_tutorial_stage, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
-import discord_app.nav_menus
-import discord_app.vendor_views.vendor_views
-import discord_app.vehicle_views
-import discord_app.cargo_views
+from discord_app.vendor_views  import vendor_inv_md
+import                                discord_app.nav_menus
+import                                discord_app.vendor_views.vendor_views
+import                                discord_app.vehicle_views
+import                                discord_app.cargo_views
 
 from discord_app.df_state      import DFState
 
@@ -112,51 +111,8 @@ class TopUpButton(discord.ui.Button):
 
 
 async def buy_menu(df_state: DFState):
-    resources_list = []
-    if df_state.vendor_obj['fuel']:
-        resources_list.append(f'- Fuel: {df_state.vendor_obj['fuel']} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
-    if df_state.vendor_obj['water']:
-        resources_list.append(f'- Water: {df_state.vendor_obj['water']} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
-    if df_state.vendor_obj['food']:
-        resources_list.append(f'- Food: {df_state.vendor_obj['food']} Servings\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
-    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
-
-    vehicle_list = []
-    for vehicle in df_state.vendor_obj['vehicle_inventory']:
-        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
-        vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
-
-    cargo_list = []
-    for cargo in df_state.vendor_obj['cargo_inventory']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['base_price']:,} each*'
-
-        if cargo['recipient']:
-            cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
-            cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-            margin = round(cargo['delivery_reward'] / cargo['base_price'])
-            cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
-            tile_distance = math.sqrt((cargo['recipient_vendor']['x'] - df_state.vendor_obj['x']) ** 2 + (cargo['recipient_vendor']['y'] - df_state.vendor_obj['y']) ** 2)
-            distance_km = 50 * tile_distance
-            distance_miles = 30 * tile_distance
-            cargo_str += f'\n  - Distance: {distance_km:,.0f} km ({distance_miles:,.0f} miles)'
-
-        cargo_list.append(cargo_str)
-    displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
-
     menu_embed = discord.Embed()
-    menu_embed.description='\n'.join([
-        f'## {df_state.vendor_obj['name']}',
-        '### Available for Purchase:',
-        '**Resources:**',
-        f'{displayable_resources}',
-        '',
-        '**Vehicles:**',
-        f'{displayable_vehicles}',
-        '',
-        '**Cargo:**',
-        f'{displayable_cargo}'
-    ])
+    menu_embed.description = await vendor_inv_md(df_state.vendor_obj, verbose=True)
 
     menu_embed = df_embed_author(menu_embed, df_state)
 
@@ -296,8 +252,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             df_state: DFState,
             cart_quantity: int,
             button_quantity: int | str,
-            resource_type: str = None,
-            cargo_for_sale: dict = None,
+            resource_type: str | None = None,
+            cargo_for_sale: dict | None = None,
             row: int = 1
     ):
         self.df_state = df_state
@@ -316,8 +272,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
         if button_quantity == 'max':  # Handle "max" button logic
             self.button_quantity = min(max_convoy_capacity, inventory_quantity) - self.cart_quantity
-            if self.button_quantity <= 0:
-                self.button_quantity = 0  # Ensure the quantity is 0
+            self.button_quantity = max(0, self.button_quantity)  # Ensure the quantity is 0 or greater
             label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
         else:
             self.button_quantity = int(button_quantity)
@@ -390,7 +345,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
             self,
             df_state: DFState,
             cart_quantity: int,
-            resource_type: str=None,
+            resource_type: str | None = None,
             row: int=1
     ):
         self.df_state = df_state
@@ -440,12 +395,18 @@ class BuyVehicleSelect(discord.ui.Select):
         placeholder = 'Vehicle Inventory'
         disabled = False
 
-        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL
         if tutorial_stage == 1:
             options=[
-                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                discord.SelectOption(
+                    label=f'{vehicle['name']} | ${vehicle['value']:,.0f}',
+                    value=vehicle['vehicle_id'],
+                    emoji=DF_LOGO_EMOJI if (  # Add the tutorial emoji if
+                        vehicle['value'] < 5000  # The vehicle's value is less than 5000
+                        and vehicle['base_cargo_capacity'] > 500  # The vehicle's value is greater than 500
+                    ) else None  # Else, don't add the emoji
+                )
                 for vehicle in self.df_state.vendor_obj['vehicle_inventory']
-                if vehicle['value'] < 5000
             ]
         else:
             options=[
@@ -586,9 +547,9 @@ class BuyCargoSelect(discord.ui.Select):
         placeholder = 'Cargo Inventory'
         disabled = False
 
-        tutorial_stage = get_tutorial_stage(self.df_state)
+        tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL
         if tutorial_stage == 2:
-            options=[
+            options = [
                 discord.SelectOption(
                     label=f'{cargo['name']} | ${cargo['base_price']:,.0f}',
                     value=cargo['cargo_id'],
@@ -596,8 +557,22 @@ class BuyCargoSelect(discord.ui.Select):
                 )
                 for cargo in self.df_state.vendor_obj['cargo_inventory']
             ]
-        else:
-            options=[
+        elif tutorial_stage == 4:
+            options = [
+                discord.SelectOption(
+                    label=f'{cargo['name']} | ${cargo['base_price']:,.0f}',
+                    value=cargo['cargo_id'],
+                    emoji=DF_LOGO_EMOJI if (  # Add the tutorial emoji if
+                        cargo['volume'] < self.df_state.convoy_obj['total_free_space']  # At least one cargo can fit volumetrically
+                        and cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity']  # At least one cargo can fit without overloading
+                        and cargo['base_price'] < self.df_state.convoy_obj['money']  # At least one cargo can be afforded
+                        and cargo['capacity'] is None  # Cargo is not a resource container
+                    ) else None  # Else, don't add the emoji
+                )
+                for cargo in self.df_state.vendor_obj['cargo_inventory']
+            ]
+        else:  # Not in tutorial
+            options = [
                 discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,.0f}', value=cargo['cargo_id'])
                 for cargo in self.df_state.vendor_obj['cargo_inventory']
             ]
@@ -605,7 +580,7 @@ class BuyCargoSelect(discord.ui.Select):
         if not options:
             placeholder = 'Vendor has no cargo inventory'
             disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
+            options = [discord.SelectOption(label='None', value='None')]
         
         super().__init__(
             placeholder=placeholder,
@@ -643,14 +618,24 @@ class CargoBuyQuantityEmbed(discord.Embed):
         
         cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
         cart_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
-        cart_weight = self.cart_quantity * self.df_state.cargo_obj['weight']
+        
+        resource_weights = {'fuel': 0.79, 'water': 1, 'food': 0.75}
+        resource_weight = next(  # Check if cargo has any resources in it
+            (weight for key, weight in resource_weights.items() if self.df_state.cargo_obj.get(key)),
+            None  # Default to None, in case that cargo contains no resource
+        )
+        cart_weight = self.cart_quantity * self.df_state.cargo_obj['weight']  # Calc (empty) weight
+        if resource_weight:  # Calc resource weight
+            cart_weight += self.cart_quantity * self.df_state.cargo_obj['capacity'] * resource_weight
 
         desc = [
             f'## {self.df_state.vendor_obj['name']}',
             f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['base_price']:,.0f} per item',
             f'*{self.df_state.cargo_obj['base_desc']}*',
-            f'- Cart volume: {cart_volume:,}L / {self.df_state.convoy_obj['total_free_space']:,}L free space in convoy',
-            f'- Cart weight: {cart_weight:,}kg / {self.df_state.convoy_obj['total_remaining_capacity']}kg capacity in convoy',
+            f'- Cart volume: **{cart_volume:,.1f}L**',
+            f'  - {self.df_state.convoy_obj['total_free_space']:,.0f}L free space in convoy',
+            f'- Cart weight: **{cart_weight:,.1f}kg**',
+            f'  - {self.df_state.convoy_obj['total_remaining_capacity']:,.0f}kg weight capacity in convoy',
         ]
         if self.df_state.cargo_obj['recipient']:
             delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
@@ -711,27 +696,21 @@ class CargoBuyQuantityView(discord.ui.View):
         tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
-                match tutorial_stage:  # Use match-case to handle different tutorial stages
-                    case 2:
-                        item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
-                            'nav_sett_button',
-                            '-1_button',
-                            '1_button',
-                            'buy_cargo_button'
-                        )
-                    case 4:
-                        item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
-                            'nav_sett_button',
-                            '-10_button',
-                            '-1_button',
-                            '1_button',
-                            '10_button',
-                            'max_button',
-                            'buy_cargo_button',
-                            'map_button'
-                        )
+                if item.custom_id not in {'-10_button', '-1_button', '1_button', '10_button', 'max_button'}:
+                    match tutorial_stage:  # Use match-case to handle different tutorial stages
+                        case 2:
+                            item.disabled = item.custom_id not in (
+                                # 'nav_back_button',
+                                'nav_sett_button',
+                                'buy_cargo_button'
+                            )
+                        case 4:
+                            item.disabled = item.custom_id not in (
+                                # 'nav_back_button',
+                                'nav_sett_button',
+                                'buy_cargo_button',
+                                'map_button'
+                            )
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

@@ -23,8 +23,8 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
                 f'  - Top Speed: **{vehicle['top_speed']}** / 100',
                 f'  - Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
                 f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100',
-                f'  - Volume Capacity: **{vehicle['total_cargo_volume']}**L',
-                f'  - Weight Capacity: **{vehicle['total_cargo_weight']}**kg'
+                f'  - Volume Capacity: **{vehicle['cargo_capacity']}**L',
+                f'  - Weight Capacity: **{vehicle['weight_capacity']}**kg'
             ])
 
         vehicle_list.append(vehicle_str)

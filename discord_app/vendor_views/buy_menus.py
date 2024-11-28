@@ -691,7 +691,7 @@ class CargoBuyQuantityView(discord.ui.View):
 
         self.add_item(CargoConfirmBuyButton(self.df_state, self.cart_quantity, row=2))
         if self.df_state.cargo_obj['recipient']:
-            self.add_item(discord_app.cargo_views.MapButton(self.df_state.convoy_obj, self.df_state.cargo_obj['recipient_vendor'], row=2))
+            self.add_item(discord_app.cargo_views.MapButton(self.df_state, self.df_state.cargo_obj['recipient_vendor'], row=2))
 
         tutorial_stage = get_tutorial_stage(self.df_state)  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)

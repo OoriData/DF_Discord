@@ -207,7 +207,7 @@ class MapButton(discord.ui.Button):
     
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         convoy_x = self.df_state.convoy_obj['x']
         convoy_y = self.df_state.convoy_obj['y']
 

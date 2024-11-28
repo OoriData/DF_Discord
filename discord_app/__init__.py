@@ -3,12 +3,34 @@
 'Discord Frontend'
 from __future__             import annotations
 from datetime               import datetime
+import                             io
+
+import                             httpx
 
 import                             discord
 
 from discord_app.df_state   import DFState
 
+
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
+
+DF_LOGO_URL = 'https://www.oori.dev/assets/branding/df_Logo_FullColor.png'
+
+DF_TEXT_LOGO_URL = 'https://www.oori.dev/assets/branding/df_TextLogo_FullColor.png'
+
+OORI_WHITE = (219, 226, 233)
+
+OORI_YELLOW = (243, 213, 78)
+
+OORI_RED = (138, 43, 43)
+
+
+async def get_image_as_discord_file(url: str) -> discord.File:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        response.raise_for_status()  # Ensure we got a successful response
+        image_bytes = io.BytesIO(response.content)  # Wrap the content in a BytesIO object
+    return discord.File(fp=image_bytes, filename='image.png')
 
 
 def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
@@ -111,10 +133,10 @@ def get_tutorial_stage(df_state: DFState):
 
 class TutorialEmbed(discord.Embed):
     def __init__(self, author: bool=True):
-        super().__init__(color=discord.Color.from_rgb(138, 43, 43))
+        super().__init__(color=discord.Color.from_rgb(*OORI_RED))
 
         if author:
-            self.set_author(name='Desolate Frontiers Tutorial', icon_url='https://www.oori.dev/assets/branding/df_Logo_FullColor.png')
+            self.set_author(name='Desolate Frontiers Tutorial', icon_url=DF_LOGO_URL)
 
 
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:

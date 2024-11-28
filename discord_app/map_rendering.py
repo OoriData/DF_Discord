@@ -3,11 +3,8 @@
 'Map image rendering functionality'
 import                  os
 from io          import BytesIO
-from typing      import Optional
-# import                  logging
 
 import                  discord
-# import                  httpx
 
 from discord_app import api_calls
 
@@ -16,18 +13,14 @@ API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.environ.get('DF_API_HOST')
 
 
-from typing import Optional, Tuple
-import discord
-from io import BytesIO
-
 async def add_map_to_embed(
-        embed: Optional[discord.Embed] = None,
-        highlights: Optional[list[tuple[int, int]]] = None,
-        lowlights: Optional[list[tuple[int, int]]] = None,
-        highlight_color: Optional[str] = None,
-        lowlight_color: Optional[str] = None,
+        embed: discord.Embed | None = None,
+        highlights: list[tuple[int, int]] | None = None,
+        lowlights: list[tuple[int, int]] | None = None,
+        highlight_color: str | None = None,
+        lowlight_color: str | None = None,
         map_obj = None
-) -> Tuple[discord.Embed, discord.File]:
+) -> tuple[discord.Embed, discord.File]:
     '''
     Renders map as an image and formats it into a Discord embed object,
     and also returns an image file.

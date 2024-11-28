@@ -9,8 +9,8 @@ import                                asyncio
 
 import                                discord
 
-from discord_app               import discord_timestamp
-from discord_app               import api_calls, convoy_views, discord_timestamp, df_embed_author
+
+from discord_app               import api_calls, convoy_views, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.df_state      import DFState
@@ -44,38 +44,22 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
                     progress_percent = ((convoy['journey']['progress']) / len(convoy['journey']['route_x'])) * 100
                     eta = convoy['journey']['eta']
                     convoy_descs.extend([
-                        f'### {convoy['name']}\n'
+                        f'## {convoy['name']}\n'
                         f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
-                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
+                        '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
                 else:
                     convoy_descs.extend([
-                        f'### {convoy['name']}\n'
-                        f'Arrived at: **{tile_obj['settlements'][0]['name']}**\n' if tile_obj['settlements'] else f'Arrived at: **({convoy['x']}, {convoy['y']})**\n',
-                        'Vehicles:\n' + '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
+                        f'## {convoy['name']}\n'
+                        f'Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
+                        '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
 
-            description = '\n'.join([
-                '# Desolate Frontiers',
-                'Welcome to the Desolate Frontiers!',
-                '',
-                'Select a convoy:',
-                '\n'.join(convoy_descs)
-            ])
+            description = '\n' + '\n'.join(convoy_descs)
         else:  # If the user doesn't have convoys
-            description = '\n'.join([
-                '# Desolate Frontiers',
-                'Welcome to the Desolate Frontiers!',
-                '',
-                'You do not have any convoys. Use the button below to create one.'
-            ])
+            description = '\nYou do not have any convoys. Use the button below to create one.'
     else:  # If the user is not registered the Desolate Frontiers
-        description = '\n'.join([
-            '# Desolate Frontiers',
-            'Welcome to the Desolate Frontiers!',
-            '',
-            'You are not a registered Desolate Frontiers user. Use the button below to register.'
-        ])
+        description = '\nWelcome to the Desolate Frontiers!\nYou are not a registered Desolate Frontiers user. Use the button below to register.'
         user_obj = None
 
     # Prepare the DFState object
@@ -87,7 +71,11 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
         interaction=interaction
     )
 
-    # Send the main menu message
+    df_logo = await get_image_as_discord_file(DF_TEXT_LOGO_URL)
+    title_embed = discord.Embed()
+    title_embed.color = discord.Color.from_rgb(*OORI_RED)
+    title_embed.set_image(url='attachment://image.png')
+
     main_menu_embed = discord.Embed()
     main_menu_embed = df_embed_author(main_menu_embed, df_state)
     main_menu_embed.description = description
@@ -95,9 +83,9 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
     main_menu_view = MainMenuView(df_state)
 
     if edit:
-        await interaction.response.edit_message(embed=main_menu_embed, view=main_menu_view, attachments=[])
+        await interaction.response.edit_message(embeds=[title_embed, main_menu_embed], view=main_menu_view, attachments=[df_logo])
     else:
-        await interaction.followup.send(embed=main_menu_embed, view=main_menu_view)
+        await interaction.followup.send(embeds=[title_embed, main_menu_embed], view=main_menu_view, files=[df_logo])
 
 
 class MainMenuView(discord.ui.View):

@@ -99,7 +99,7 @@ DF_DISCORD_LOGO = '''\
 
 def get_user_metadata(df_state: DFState, metadata_key: str):
     user_metadata = df_state.convoy_obj.get('user_metadata')
-    return user_metadata.get(metadata_key) if user_metadata else None
+    return user_metadata.get(metadata_key)
 
 
 class TutorialEmbed(discord.Embed):
@@ -125,7 +125,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "## Welcome to the **Desolate Frontiers**!",
                 "### You're going nowhere without a vehicle, so time to buy one. 🚗",
                 f"1. Gray `{df_state.sett_obj['name']}` button to check out the vendors",
-                f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} dealership`",
+                f"- Use the `Select vendor to visit` dropdown menu to select {DF_LOGO_EMOJI}` {df_state.sett_obj['name']} dealership`",
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Select from the `Vehicle Inventory` dropdown. Vehicles you can afford are marked with {DF_LOGO_EMOJI}",
                 "- The block will update, allowing you to inspect the chosen vehicle. If it suits you, hit the green `Buy Vehicle| $X,XXX` button.",
@@ -135,7 +135,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
             tutorial_embed.description = '\n'.join([
                 "### Now that you have a vehicle, you need water & food for your convoy's crew to sustain themselves on their travels. 🥪 💧",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
-                f"- Use the `Select vendor to visit` dropdown menu to select `{df_state.sett_obj['name']} Market`",
+                f"- Use the `Select vendor to visit` dropdown menu to select {DF_LOGO_EMOJI}` {df_state.sett_obj['name']} Market`",
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Use the `Cargo Inventory` dropdown to select {DF_LOGO_EMOJI}` Water Jerry Cans`",
                 "- Blurple `+1` button to add an additional jerry can to your cart",

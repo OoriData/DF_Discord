@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 
-from discord_app               import api_calls, convoy_views, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED
+from discord_app               import api_calls, convoy_views, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.df_state      import DFState
@@ -121,13 +121,10 @@ class MainMenuView(discord.ui.View):
         self.df_state.interaction = interaction
         await interaction.response.send_modal(ConvoyNameModal(self.df_state))
 
-    @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', disabled=True)
+    @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️')
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.interaction = interaction
-
-        # self.df_state.user_obj['metadata'] = {'WOWIE': 'miku pipe bomb....'}
-        # await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
-        # await self.df_state.interaction.response.edit_message(content=self.df_state.user_obj['metadata'])
+        await options_menu(self.df_state)
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
@@ -179,7 +176,10 @@ class UsernameModal(discord.ui.Modal):
         self.add_item(self.username_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await api_calls.new_user(self.username_input.value, interaction.user.id)
+        user_id = await api_calls.new_user(self.username_input.value, interaction.user.id)
+        self.df_state.user_obj = await api_calls.get_user(user_id)
+        self.df_state.user_obj['metadata']['mobile'] = True
+        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj)
 
 
@@ -207,3 +207,73 @@ class ConvoyNameModal(discord.ui.Modal):
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_views.convoy_menu(self.df_state)
+
+
+async def options_menu(df_state: DFState, edit: bool=True):
+    df_state.user_obj = await api_calls.get_user(df_state.user_obj['user_id'])
+
+    options_embed = discord.Embed()
+    options_embed = df_embed_author(options_embed, df_state)
+
+    options_embed.description = '# Options'
+
+    options_embed.description += f'\n 📱🖥️ App Mode: **{get_user_metadata(df_state, 'mobile')}**\n*Reformats certain menus to be easier to read on mobile devices.*'
+
+    view = OptionsView(df_state)
+
+    await df_state.interaction.response.edit_message(embeds=[options_embed], view=view, attachments=[])
+
+
+class OptionsView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        self.add_item(AppModeButton(df_state))
+
+    @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
+    async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.df_state.interaction = interaction
+        await main_menu(interaction=interaction, edit=False, df_map=self.df_state.map_obj)
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+    
+
+class AppModeButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row=1):
+        self.df_state = df_state
+
+        if get_user_metadata(self.df_state, 'mobile'):
+            label = 'Switch to Desktop Mode'
+            emoji = '🖥️'
+        else:
+            label = 'Switch to App Mode'
+            emoji = '📱'
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=label,
+            custom_id='mobile_button',
+            emoji=emoji,
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
+        self.df_state.convoy_obj['user_metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
+        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+        
+        await options_menu(self.df_state)

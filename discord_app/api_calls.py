@@ -21,7 +21,7 @@ def _check_code(response: httpx.Response):
     elif response.status_code != API_SUCCESS_CODE:
         msg = response.json()['detail']
         raise RuntimeError(msg)
-    
+
 
 async def render_map(
         tiles: list[list[dict]],
@@ -102,6 +102,17 @@ async def new_user(username: str, discord_id: int) -> dict:
                 'username': username,
                 'discord_id': discord_id
             }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_user(user_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/user/get',
+            params={'user_id': user_id}
         )
 
     _check_code(response)

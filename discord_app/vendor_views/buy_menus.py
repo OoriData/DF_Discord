@@ -264,7 +264,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         if self.cargo_for_sale:  # Determine max quantities
             max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['volume']
             max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['weight']
-            max_convoy_capacity = int(min(max_by_volume, max_by_weight))
+            max_by_price = self.df_state.convoy_obj['money'] / self.df_state.cargo_obj['base_price']
+            max_convoy_capacity = int(min(max_by_volume, max_by_weight, max_by_price))
             inventory_quantity = self.df_state.cargo_obj['quantity']
         else:
             max_convoy_capacity = self.df_state.convoy_obj[f'max_{self.resource_type}'] - self.df_state.convoy_obj[self.resource_type]

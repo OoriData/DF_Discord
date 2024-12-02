@@ -364,11 +364,7 @@ class CargoSelectView(discord.ui.View):
         return await super().on_timeout()
 
 class CargoSelectBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
+    def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
         super().__init__(
@@ -424,7 +420,6 @@ class CargoSelect(discord.ui.Select):
             custom_id='select_part',
         )
 
-
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
 
@@ -462,11 +457,7 @@ class CargoSelect(discord.ui.Select):
 
 
 class PartConfirmBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
+    def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
         super().__init__(
@@ -475,7 +466,6 @@ class PartConfirmBackButton(discord.ui.Button):
             custom_id='nav_back_button',
             row=row
         )
-
 
     async def handle_part_lists(self, interaction: discord.Interaction, cargo_source, is_vendor):  # XXX: redifened function
         self.df_state.interaction = interaction
@@ -563,7 +553,7 @@ class InstallConfirmView(discord.ui.View):
 
         view = PostInstallView(self.df_state)
 
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.response.edit_message(embed=embed, view=view)
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

@@ -256,7 +256,7 @@ def format_part(part_cargo: dict):
 
     part_bits = [
         f'- {part['category'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['category'].replace('_', ' ').capitalize()}',
-        f'  - **{name}**',
+        f'  - **{name}**' if part.get('name') else None,
 
         f'  - {part['capacity']} L ({fuel_gal} gal)' if part.get('capacity') else None,
 

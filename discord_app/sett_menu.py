@@ -12,8 +12,11 @@ from discord_app               import api_calls, df_embed_author, add_tutorial_e
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_views
 import                                discord_app.vendor_views.buy_menus
+import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
+import                                discord_app.warehouse_menus
 from discord_app.df_state      import DFState
+
 
 async def sett_menu(df_state: DFState, edit: bool=True):
     embed = discord.Embed()
@@ -24,6 +27,18 @@ async def sett_menu(df_state: DFState, edit: bool=True):
         await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
         return
     df_state.sett_obj = tile_obj['settlements'][0]
+
+    df_state.warehouse_obj = next((
+        w for w in df_state.user_obj['warehouses']
+        if w['sett_id'] == df_state.sett_obj['sett_id']
+    ), None)
+    if df_state.warehouse_obj:
+        embed.description = '\n'.join([
+            f'# {df_state.sett_obj['name']} Warehouse',
+            await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
+        ])
+    else:
+        embed.description = ''
     
     vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
@@ -57,7 +72,7 @@ async def sett_menu(df_state: DFState, edit: bool=True):
             '\n'.join(displayable_services)
         ]))
     
-    embed.description = '\n'.join([
+    embed.description += '\n'+ '\n'.join([
         f'# {df_state.sett_obj['name']} vendors',
         '\n'.join(vendor_displayables)
     ])
@@ -82,8 +97,8 @@ class SettView(discord.ui.View):
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, vendors))
-        # self.add_item(WarehouseButton)
-        self.add_item(VendorSelect(self.df_state, vendors, row=3))
+        self.add_item(WarehouseButton(self.df_state))
+        self.add_item(VendorSelect(self.df_state, vendors, row=2))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4}:
@@ -116,27 +131,29 @@ class SettView(discord.ui.View):
         return await super().on_timeout()
 
 
-class NavSettButton(discord.ui.Button):
+class WarehouseButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-        if self.df_state.convoy_obj['journey']:  # Cache the tile the convoy is in or smth, and actually check if they are in a tile with settmelent
-            label = 'Settlement'
-            disabled = True
-        else:
-            label = df_state.sett_obj['name']
-            disabled = False
-
+        label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label=label,
-            disabled=disabled,
-            custom_id='nav_sett_button',
-            row=0
+            custom_id='warehouse_button',
+            emoji='📦',
+            row=1
         )
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
+        local_warehouse = next((
+            w for w in self.df_state.user_obj['warehouses']
+            if w['sett_id'] == self.df_state.sett_obj['sett_id']
+        ), None)
+        if local_warehouse:
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(local_warehouse['warehouse_id'])
+
         await discord_app.warehouse_menus.warehouse_menu(self.df_state)
 
     

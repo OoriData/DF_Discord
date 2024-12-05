@@ -111,6 +111,8 @@ class TutorialEmbed(discord.Embed):
 
 
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
+    if not df_state.convoy_obj:
+        return embeds
     if (
         not df_state.convoy_obj.get('user_metadata')
         or not df_state.convoy_obj.get('user_metadata', {}).get('tutorial')

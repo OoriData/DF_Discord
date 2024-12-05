@@ -407,3 +407,142 @@ async def mark_dialogue_as_seen(user_id: UUID) -> list[dict]:
 
     _check_code(response)
     return response.json()
+
+
+async def new_warehouse(sett_id: UUID, user_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/warehouse/new',
+            params={
+                'sett_id': sett_id,
+                'user_id': user_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_warehouse(warehouse_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/warehouse/get',
+            params={'warehouse_id': warehouse_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def expand_warehouse(
+        warehouse_id: UUID,
+        user_id: UUID,
+        cargo_capacity_upgrade: int | None = None,
+        vehicle_capacity_upgrade: int | None = None
+) -> list[dict]:
+    params = {
+        'warehouse_id': warehouse_id,
+        'user_id': user_id,
+        'cargo_capacity_upgrade': cargo_capacity_upgrade,
+        'vehicle_capacity_upgrade': vehicle_capacity_upgrade
+    }
+
+    # Filter out `None` values
+    filtered_params = {key: value for key, value in params.items() if value is not None}
+
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/expand',
+            params=filtered_params
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def retrieve_cargo_from_warehouse(
+        warehouse_id: UUID,
+        convoy_id: UUID,
+        cargo_id: UUID,
+        quantity: int
+) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/cargo/retrieve',
+            params={
+                'warehouse_id': warehouse_id,
+                'convoy_id': convoy_id,
+                'cargo_id': cargo_id,
+                'quantity': quantity
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def store_cargo_in_warehouse(
+        warehouse_id: UUID,
+        convoy_id: UUID,
+        cargo_id: UUID,
+        quantity: int
+) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/cargo/store',
+            params={
+                'warehouse_id': warehouse_id,
+                'convoy_id': convoy_id,
+                'cargo_id': cargo_id,
+                'quantity': quantity
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def retrieve_vehicle_in_warehouse(warehouse_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/vehicle/retrieve',
+            params={
+                'warehouse_id': warehouse_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+
+async def store_vehicle_in_warehouse(warehouse_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/vehicle/store',
+            params={
+                'warehouse_id': warehouse_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def spawn_convoy_from_warehouse(warehouse_id: UUID, vehicle_id: UUID, new_convoy_name: str) -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/warehouse/convoy/spawn',
+            params={
+                'warehouse_id': warehouse_id,
+                'vehicle_id': vehicle_id,
+                'new_convoy_name': new_convoy_name
+            }
+        )
+
+    _check_code(response)
+    return response.json()

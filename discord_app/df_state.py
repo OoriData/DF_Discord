@@ -22,6 +22,7 @@ class DFState:
             user_obj=None,
             sett_obj=None,
             vendor_obj=None,
+            warehouse_obj=None,
             convoy_obj=None,
             vehicle_obj=None,
             cargo_obj=None,
@@ -32,6 +33,7 @@ class DFState:
         self.user_obj = user_obj
         self.sett_obj = sett_obj
         self.vendor_obj = vendor_obj
+        self.warehouse_obj = warehouse_obj
         self.convoy_obj = convoy_obj
         self.vehicle_obj = vehicle_obj
         self.cargo_obj = cargo_obj

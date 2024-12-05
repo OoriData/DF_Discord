@@ -5,17 +5,9 @@ import                  math
 
 from discord_app import api_calls
 
-
-async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
-    resources_list = []
-    for resource in ['fuel', 'water', 'food']:
-        if vendor_obj[resource]:
-            unit = 'meals' if resource == 'food' else 'Liters'
-            resources_list.append(f'- {resource.capitalize()}: {vendor_obj[resource]} {unit}\n  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*')
-    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
-
+def vehicles_md(vehicles, verbose: bool = False):
     vehicle_list = []
-    for vehicle in vendor_obj['vehicle_inventory']:
+    for vehicle in vehicles:
         vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
 
         if verbose:
@@ -28,7 +20,18 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
             ])
 
         vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
+    return '\n'.join(vehicle_list) if vehicle_list else '- None'
+
+
+async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
+    resources_list = []
+    for resource in ['fuel', 'water', 'food']:
+        if vendor_obj[resource]:
+            unit = 'meals' if resource == 'food' else 'Liters'
+            resources_list.append(f'- {resource.capitalize()}: {vendor_obj[resource]} {unit}\n  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*')
+    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
+
+    displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
 
     cargo_list = []
     for cargo in vendor_obj['cargo_inventory']:
@@ -58,7 +61,7 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
 
     return '\n'.join([
         f'## {vendor_obj['name']}',
-        '### Available for Purchase:',
+        '### Available for Purchase',
         '**Resources:**',
         f'{displayable_resources}',
         '',

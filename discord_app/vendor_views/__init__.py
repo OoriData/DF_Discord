@@ -23,7 +23,7 @@ def vehicles_md(vehicles, verbose: bool = False):
     return '\n'.join(vehicle_list) if vehicle_list else '- None'
 
 
-async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
+async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
     resources_list = []
     for resource in ['fuel', 'water', 'food']:
         if vendor_obj[resource]:
@@ -43,9 +43,8 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
                     unit = ' meals' if resource == 'food' else 'L'
                     cargo_str += f'\n  - {resource.capitalize()}: {cargo[resource]:,.0f}{unit}'
 
-            if cargo['recipient']:
-                cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
-                cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
+            if cargo.get('recipient_vendor'):
+                cargo_str += f'\n  - Deliver to *{cargo['recipient_location']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
                 margin = round(cargo['delivery_reward'] / cargo['base_price'])
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
                 tile_distance = math.sqrt(
@@ -55,6 +54,7 @@ async def vendor_inv_md(vendor_obj, verbose: bool = False) -> str:
                 distance_km = 50 * tile_distance
                 distance_miles = 30 * tile_distance
                 cargo_str += f'\n  - Distance: {distance_km:,.0f} km ({distance_miles:,.0f} miles)'
+                cargo_str += f'\n  - Volume/Weight: {cargo['volume']:,}L / {cargo['weight']:,}kg *each*'
 
         cargo_list.append(cargo_str)
     displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'

@@ -80,7 +80,13 @@ class BuyButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-        if self.df_state.vendor_obj['cargo_inventory']:
+        if (
+            self.df_state.vendor_obj['fuel']
+            or self.df_state.vendor_obj['water']
+            or self.df_state.vendor_obj['food']
+            or self.df_state.vendor_obj['cargo_inventory']
+            or self.df_state.vendor_obj['vehicle_inventory']
+        ):
             disabled = False
         else:
             disabled = True
@@ -90,7 +96,7 @@ class BuyButton(discord.ui.Button):
             label='Buy (Resources, Vehicles, Cargo)',
             disabled=disabled,
             custom_id='buy_button',
-            row=1,
+            row=1
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -112,7 +118,7 @@ class MechanicButton(discord.ui.Button):
             label='Mechanic (Repairs, part/upgrade management)',
             disabled=disabled,
             custom_id='mech_button',
-            row=2,
+            row=2
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -124,17 +130,12 @@ class SellButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-        # if self.df_state.vendor_obj['repair_price']:
-        #     disabled = False
-        # else:
-        #     disabled = True
-
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label='Sell (Resources, Vehicles, Cargo)',
-            # disabled=disabled,
+            # disabled=disabled,  # You should always be able to sell to vendors
             custom_id='sell_button',
-            row=3,
+            row=3
         )
 
     async def callback(self, interaction: discord.Interaction):

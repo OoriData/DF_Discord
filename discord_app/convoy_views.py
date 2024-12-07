@@ -194,14 +194,9 @@ class ConvoyView(discord.ui.View):
 
         add_nav_buttons(self, df_state)
 
+        self.add_item(JourneyButton(df_state=self.df_state))
         self.add_item(vehicle_views.VehicleSelect(df_state=self.df_state, row=2))
         self.add_item(cargo_views.ConvoyCargoSelect(df_state=self.df_state, row=3))
-        
-        if not self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
-            self.send_convoy_button.disabled = True
-
-        if self.df_state.convoy_obj['journey']:  # If the convoy is already on a journey
-            self.send_convoy_button.disabled = True
 
         recipients = []
         # Get all cargo recipient locations and put em in a tuple with the name of the cargo
@@ -227,20 +222,10 @@ class ConvoyView(discord.ui.View):
                     case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
                         item.disabled = item.custom_id not in (
                             # 'nav_back_button',
-                            'send_convoy_button'
+                            'journey_button'
                         )
 
-    @discord.ui.button(label='Embark on new Journey', style=discord.ButtonStyle.green, custom_id='send_convoy_button', row=1)
-    async def send_convoy_button(self, interaction: discord.Interaction, button: discord.Button):
-        self.df_state.interaction = interaction
-        await send_convoy_menu(self.df_state)
-
-    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', row=1, disabled=True)
-    async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
-        self.df_state.interaction = interaction
-        await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
-
-    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', row=4)
+    @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', emoji='🗺️', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
         self.df_state.interaction = interaction
         await interaction.response.defer()
@@ -278,6 +263,11 @@ class ConvoyView(discord.ui.View):
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
+    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4, disabled=True)
+    async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.df_state.interaction = interaction
+        await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
+
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(
             label='Interaction timed out!',
@@ -290,6 +280,42 @@ class ConvoyView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
+
+
+class JourneyButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int=1):
+        self.df_state = df_state
+
+        disabled = False
+        if not self.df_state.convoy_obj['journey']:  # If the convoy is not in transit
+            style = discord.ButtonStyle.green
+            label = 'Embark on new Journey'
+        else:  # If the convoy is already on a journey
+            style = discord.ButtonStyle.red
+            label = 'Cancel current Journey'
+            
+        if not self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
+            disabled = True
+
+        super().__init__(
+            style=style,
+            label=label,
+            disabled=disabled,
+            custom_id='journey_button',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        if not self.df_state.convoy_obj['journey']:  # If the convoy is not in transit
+            await send_convoy_menu(self.df_state)
+        else:  # If the convoy is already on a journey
+            self.df_state.convoy_obj = await api_calls.cancel_journey(
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                journey_id=self.df_state.convoy_obj['journey']['journey_id']
+            )
+            await convoy_menu(self.df_state)
 
 
 async def send_convoy_menu(df_state: DFState):

@@ -185,7 +185,7 @@ async def move_cargo(convoy_id: UUID, cargo_id: UUID, dest_vehicle_id: UUID) -> 
 async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
-            url=f'{DF_API_HOST}/convoy/find_route',
+            url=f'{DF_API_HOST}/convoy/journey/find_route',
             params={
                 'convoy_id': convoy_id,
                 'dest_x': dest_x,
@@ -201,7 +201,21 @@ async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
 async def send_convoy(convoy_id: UUID, journey_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
-            url=f'{DF_API_HOST}/convoy/send',
+            url=f'{DF_API_HOST}/convoy/journey/send',
+            params={
+                'convoy_id': convoy_id,
+                'journey_id': journey_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def cancel_journey(convoy_id: UUID, journey_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/convoy/journey/cancel',
             params={
                 'convoy_id': convoy_id,
                 'journey_id': journey_id

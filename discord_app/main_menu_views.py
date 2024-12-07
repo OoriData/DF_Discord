@@ -103,12 +103,12 @@ class MainMenuView(discord.ui.View):
             if len(df_state.user_obj['convoys']) == 1:  # If the user has 1 convoy
                 self.add_item(self.user_options_button)
                 self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
-                self.add_item(MainMenuSingleConvoyButton(df_state=df_state))
+                self.add_item(MainMenuSingleConvoyButton(df_state=df_state, row=2))
 
             elif self.df_state.user_obj['convoys']:  # If the user has serveral convoys
                 self.add_item(self.user_options_button)
                 self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
-                self.add_item(convoy_views.ConvoySelect(df_state=self.df_state))
+                self.add_item(convoy_views.ConvoySelect(df_state=self.df_state, row=2))
 
             elif any(w['vehicle_storage'] for w in self.df_state.user_obj['warehouses']):  # If the user has no convoys, but has vehicles in warehouses
                 self.add_item(self.user_options_button)

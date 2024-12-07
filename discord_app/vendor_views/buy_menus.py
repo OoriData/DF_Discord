@@ -112,6 +112,17 @@ class TopUpButton(discord.ui.Button):
 
 async def buy_menu(df_state: DFState):
     menu_embed = discord.Embed()
+
+    for cargo in df_state.vendor_obj['cargo_inventory']:
+        if cargo['recipient']:
+            cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+            cargo['recipient_location'] = next((
+                s['name']
+                for row in df_state.map_obj['tiles']
+                for t in row
+                for s in t['settlements']
+                if s['sett_id'] == cargo['recipient_vendor']['sett_id']
+            ), None)
     menu_embed.description = await vendor_inv_md(df_state.vendor_obj, verbose=True)
 
     menu_embed = df_embed_author(menu_embed, df_state)
@@ -548,35 +559,32 @@ class BuyCargoSelect(discord.ui.Select):
         placeholder = 'Cargo Inventory'
         disabled = False
 
-        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
-        if tutorial_stage == 2:
-            options = [
-                discord.SelectOption(
-                    label=f'{cargo['name']} | ${cargo['base_price']:,.0f}',
-                    value=cargo['cargo_id'],
-                    emoji=DF_LOGO_EMOJI if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'} else None
-                )
-                for cargo in self.df_state.vendor_obj['cargo_inventory']
-            ]
-        elif tutorial_stage == 4:
-            options = [
-                discord.SelectOption(
-                    label=f'{cargo['name']} | ${cargo['base_price']:,.0f}',
-                    value=cargo['cargo_id'],
-                    emoji=DF_LOGO_EMOJI if (  # Add the tutorial emoji if
-                        cargo['volume'] < self.df_state.convoy_obj['total_free_space']  # At least one cargo can fit volumetrically
-                        and cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity']  # At least one cargo can fit without overloading
-                        and cargo['base_price'] < self.df_state.convoy_obj['money']  # At least one cargo can be afforded
-                        and cargo['capacity'] is None  # Cargo is not a resource container
-                    ) else None  # Else, don't add the emoji
-                )
-                for cargo in self.df_state.vendor_obj['cargo_inventory']
-            ]
-        else:  # Not in tutorial
-            options = [
-                discord.SelectOption(label=f'{cargo['name']} | ${cargo['base_price']:,.0f}', value=cargo['cargo_id'])
-                for cargo in self.df_state.vendor_obj['cargo_inventory']
-            ]
+        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')
+
+        options = []
+        for cargo in self.df_state.vendor_obj['cargo_inventory']:
+            label = f"{cargo['name']} | ${cargo['base_price']:,.0f}"
+            if cargo.get('recipient_vendor'):
+                label += f" | {cargo['recipient_location']}"
+
+            emoji = None  # Determine emoji based on tutorial stage
+            if tutorial_stage == 2:
+                if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'}:
+                    emoji = DF_LOGO_EMOJI
+            elif tutorial_stage == 4:
+                if (
+                    cargo['volume'] < self.df_state.convoy_obj['total_free_space'] and
+                    cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
+                    cargo['base_price'] < self.df_state.convoy_obj['money'] and
+                    cargo['capacity'] is None
+                ):
+                    emoji = DF_LOGO_EMOJI
+
+            options.append(discord.SelectOption(
+                label=label,
+                value=cargo['cargo_id'],
+                emoji=emoji
+            ))
 
         if not options:
             placeholder = 'Vendor has no cargo inventory'
@@ -633,6 +641,7 @@ class CargoBuyQuantityEmbed(discord.Embed):
             f'## {self.df_state.vendor_obj['name']}',
             f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['base_price']:,.0f} per item',
             f'*{self.df_state.cargo_obj['base_desc']}*',
+            '',
             f'- Cart volume: **{cart_volume:,.1f}L**',
             f'  - {self.df_state.convoy_obj['total_free_space']:,.0f}L free space in convoy',
             f'- Cart weight: **{cart_weight:,.1f}kg**',
@@ -652,12 +661,12 @@ class CargoBuyQuantityEmbed(discord.Embed):
 
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
-                f'- Inventory: {self.df_state.cargo_obj['quantity']}',
+                f'- Vendor Inventory: {self.df_state.cargo_obj['quantity']}',
                 f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
                 f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
             ])
         else:
-            self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
+            self.add_field(name='Vendor Inventory', value=self.df_state.cargo_obj['quantity'])
             self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
             self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
 

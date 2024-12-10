@@ -23,6 +23,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def buy_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=buy_menu)  # Add this menu to the back stack
+
     menu_embed = discord.Embed()
 
     for cargo in df_state.vendor_obj['cargo_inventory']:
@@ -219,6 +221,8 @@ class BuyCargoSelect(discord.ui.Select):
 
 
 async def buy_resource_menu(df_state: DFState, resource_type: str):
+    df_state.append_menu_to_back_stack(func=buy_resource_menu, args={'resource_type': resource_type})  # Add this menu to the back stack
+
     embed = ResourceBuyQuantityEmbed(df_state, resource_type)
     view = ResourceBuyQuantityView(df_state, resource_type)
 
@@ -321,6 +325,8 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
 
 async def buy_cargo_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=buy_cargo_menu)  # Add this menu to the back stack
+
     embed = CargoBuyQuantityEmbed(df_state)
 
     embeds = [embed]
@@ -389,7 +395,6 @@ class CargoBuyQuantityView(discord.ui.View):
         self.cart_quantity = cart_quantity
         super().__init__(timeout=600)
 
-        self.add_item(BuyBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(QuantityBuyButton(self.df_state, self.cart_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))
@@ -486,25 +491,6 @@ class CargoConfirmBuyButton(discord.ui.Button):
         view = PostBuyView(self.df_state)
 
         await interaction.response.edit_message(embeds=embeds, view=view)
-
-class BuyBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=row
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-        await buy_menu(self.df_state)
 
 
 class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into like 4 different buttons, instead of just nesting a million if/elses
@@ -603,6 +589,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
 
 async def buy_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=buy_vehicle_menu)  # Add this menu to the back stack
+
     part_list = []
     for category, part in df_state.vehicle_obj['parts'].items():
         if not part:  # If the part slot is empty

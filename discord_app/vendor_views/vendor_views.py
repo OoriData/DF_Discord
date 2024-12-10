@@ -25,6 +25,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def vendor_menu(df_state: DFState, edit: bool=True):
+    df_state.append_menu_to_back_stack(func=vendor_menu)  # Add this menu to the back stack
+
     vendor_embed = discord.Embed()
     vendor_embed = df_embed_author(vendor_embed, df_state)
 

@@ -9,8 +9,9 @@ import                                asyncio
 
 import                                discord
 
-
+import                                discord_app
 from discord_app               import api_calls, convoy_views, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata
+import discord_app.convoy_views
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.df_state      import DFState
@@ -22,10 +23,9 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
-async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=None):
+async def main_menu(interaction: discord.Interaction, df_map=None, edit: bool=True):
     'This menu should *always* perform a "full refresh" in order to allow it to function as a reset/refresh button'
-    if not edit:
-        await interaction.response.defer()
+    await interaction.response.defer()
 
     try:
         user_obj = await api_calls.get_user_by_discord(interaction.user.id)
@@ -66,10 +66,11 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
         description = '\nWelcome to the Desolate Frontiers!\nYou are not a registered Desolate Frontiers user. Use the button below to register.'
         user_obj = None
 
-    # Prepare the DFState object
-    if not df_map:
+    if not df_map:  # Get the map, if none was provided
         df_map = await api_calls.get_map()
-    df_state = DFState(
+
+    df_state = DFState(  # Prepare the DFState object
+        user_discord_id=interaction.user.id,
         map_obj=df_map,
         user_obj=user_obj,
         interaction=interaction
@@ -84,10 +85,13 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
     main_menu_embed = df_embed_author(main_menu_embed, df_state)
     main_menu_embed.description = description
 
+    embeds = [title_embed, main_menu_embed]
+
     main_menu_view = MainMenuView(df_state)
 
     if edit:
-        await interaction.response.edit_message(embeds=[title_embed, main_menu_embed], view=main_menu_view, attachments=[df_logo])
+        og_message = await df_state.interaction.original_response()
+        await interaction.followup.edit_message(og_message.id, embeds=embeds, view=main_menu_view, attachments=[df_logo])
     else:
         await interaction.followup.send(embeds=[title_embed, main_menu_embed], view=main_menu_view, files=[df_logo])
 
@@ -281,7 +285,7 @@ class ConvoySelect(discord.ui.Select):
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
-        await convoy_menu(self.df_state)
+        await discord_app.convoy_views.convoy_menu(self.df_state)
 
 
 async def options_menu(df_state: DFState, edit: bool=True):

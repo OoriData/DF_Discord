@@ -19,6 +19,8 @@ from discord_app.df_state      import DFState
 
 
 async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | None = None, edit: bool=True):
+    df_state.append_menu_to_back_stack(func=sett_menu)  # Add this menu to the back stack
+
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
     embed = discord.Embed()

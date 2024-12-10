@@ -18,6 +18,8 @@ from discord_app.df_state      import DFState
 
 
 async def warehouse_menu(df_state: DFState, edit: bool=True):
+    df_state.append_menu_to_back_stack(func=warehouse_menu)  # Add this menu to the back stack
+
     if df_state.warehouse_obj:
         await warehoused(df_state, edit)
     else:
@@ -250,6 +252,8 @@ class SpawnButton(discord.ui.Button):
 
 
 async def store_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=store_vehicle_menu)  # Add this menu to the back stack
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
@@ -331,6 +335,8 @@ class StoreVehicleSelect(discord.ui.Select):
 
 
 async def retrieve_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=retrieve_vehicle_menu)  # Add this menu to the back stack
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
@@ -406,6 +412,8 @@ class RetrieveVehicleSelect(discord.ui.Select):
 
 
 async def spawn_convoy_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=spawn_convoy_menu)  # Add this menu to the back stack
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 

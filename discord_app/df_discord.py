@@ -90,7 +90,7 @@ class Desolate_Cog(commands.Cog):
 
     @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
     async def df_main_menu(self, interaction: discord.Interaction):
-        await main_menu(interaction=interaction, edit=False, df_map=self.df_map_obj)
+        await main_menu(interaction=interaction, df_map=self.df_map_obj, edit=False)
         
     @app_commands.command(name='df-map', description='Show the full game map')
     async def df_map(self, interaction: discord.Interaction):

@@ -30,8 +30,10 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 
 
 async def convoy_menu(df_state: DFState, edit: bool=True):
+    df_state.append_menu_to_back_stack(func=convoy_menu)  # Add this menu to the back stack
+
     await df_state.interaction.response.defer()
-    # TODO: call an embed with the ConvoySelect if the df_state doesn't have a convoy_obj
+    # TODO: call an embed with the ConvoySelect if the df_state (somehow) doesn't have a convoy_obj
 
     embed, image_file = await make_convoy_embed(df_state)
 
@@ -384,6 +386,8 @@ class ConvoyCargoSelect(discord.ui.Select):
 
 
 async def send_convoy_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=send_convoy_menu)  # Add this menu to the back stack
+
     await df_state.interaction.response.defer()
 
     embed, image_file = await make_convoy_embed(df_state)
@@ -516,6 +520,11 @@ class DestinationSelect(discord.ui.Select):
 
 
 async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
+    df_state.append_menu_to_back_stack(func=route_menu, args={
+        'route_choices': route_choices,
+        'route_index': route_index
+    })  # Add this menu to the back stack
+
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
     prospective_journey_plus_misc = route_choices[route_index]
@@ -551,7 +560,6 @@ class SendConvoyConfirmView(discord.ui.View):
 
         super().__init__(timeout=600)
 
-        self.add_item(DestinationBackButton(self.df_state))
         add_nav_buttons(self, self.df_state)
 
         if len(route_choices) > 1:
@@ -649,18 +657,3 @@ class ConfirmJourneyButton(discord.ui.Button):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
-class DestinationBackButton(discord.ui.Button):
-    def __init__(self, df_state: DFState):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=0
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-        await send_convoy_menu(self.df_state)

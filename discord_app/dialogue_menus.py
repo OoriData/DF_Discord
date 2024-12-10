@@ -9,7 +9,13 @@ from discord_app.nav_menus import add_nav_buttons
 from discord_app.df_state  import DFState
 
 
-async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, edit: bool=True, page: int = -1):
+async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, page: int = -1, edit: bool=True):
+    df_state.append_menu_to_back_stack(func=dialogue_menu, args={
+        'char_a_id': char_a_id,
+        'char_b_id': char_b_id,
+        'page': page
+    })  # Add this menu to the back stack
+
     dialogue_obj = await api_calls.get_dialogue_by_char_ids(char_a_id, char_b_id)
     # TODO: find out who's what, and fetch more relevant details instead
 

@@ -18,6 +18,7 @@ class DFState:
     ''' A class to hold the state of the DF Discord menus. '''
     def __init__(
             self,
+            user_discord_id=None,
             map_obj=None,
             user_obj=None,
             sett_obj=None,
@@ -29,6 +30,7 @@ class DFState:
             interaction=None,
             back_stack=None
     ):
+        self.user_discord_id = user_discord_id
         self.map_obj = map_obj
         self.user_obj = user_obj
         self.sett_obj = sett_obj
@@ -42,23 +44,22 @@ class DFState:
 
         self.back_stack = back_stack or []
 
-    async def append_back_stack(self, interaction: discord.Interaction):
-        menu = await interaction.original_response()
+    def append_menu_to_back_stack(self, func, args: dict | None=None):
+        if args is None:
+            args = {}
 
         self.back_stack.append(DFMenu(
-            embeds=menu.embeds,
-            view=discord.ui.View.from_message(menu),
-            attachments=menu.attachments
+            func=func,
+            args=args
         ))
+
+    async def previous_menu(self):
+        current_menu: DFMenu = self.back_stack.pop()  # To be thrown out
+        previous_menu: DFMenu = self.back_stack.pop()
+        await previous_menu.func(df_state=self, **previous_menu.args)
 
 
 class DFMenu:
-    def __init__(
-            self,
-            embeds: list[discord.Embed],
-            view: discord.ui.View,
-            attachments: list[discord.Attachment]
-    ):
-        self.embeds = embeds
-        self.view = view
-        self.attachments = attachments
+    def __init__(self, func, args):
+        self.func = func
+        self.args = args

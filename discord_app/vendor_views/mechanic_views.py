@@ -22,6 +22,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def mechanic_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=mechanic_menu)  # Add this menu to the back stack
+
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
         vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
@@ -94,27 +96,10 @@ class VehicleSelect(discord.ui.Select):
 
         await mech_vehicle_menu(self.df_state)
 
-class VehicleSelectBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=row
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-        await mechanic_menu(self.df_state)
-
 
 async def mech_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=mech_vehicle_menu)  # Add this menu to the back stack
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
@@ -134,7 +119,6 @@ class MechView(discord.ui.View):
         self.df_state = df_state
         super().__init__(timeout=600)
 
-        self.add_item(VehicleSelectBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
     @discord.ui.button(label='Repair', style=discord.ButtonStyle.green, custom_id='repair', row=1, disabled=True)
@@ -175,6 +159,8 @@ class MechView(discord.ui.View):
 
 
 async def upgrade_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
+
     part_list = []
     for category, part in df_state.vehicle_obj['parts'].items():
         if not part:  # If the part slot is empty
@@ -204,7 +190,6 @@ class UpgradeVehicleView(discord.ui.View):
         self.df_state = df_state
         super().__init__(timeout=600)
 
-        self.add_item(UpgradeVehicleBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
         # Disable the Convoy button if there's no cargo with a 'part' value
@@ -238,40 +223,10 @@ class UpgradeVehicleView(discord.ui.View):
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
 
-class UpgradeVehicleBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=row
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-
-        embed = discord.Embed()
-        embed = df_embed_author(embed, self.df_state)
-        embed.description = '\n'.join([
-            f'# {self.df_state.vendor_obj['name']}',
-            f'## {self.df_state.vehicle_obj['name']}',
-            f'*{self.df_state.vehicle_obj['base_desc']}*',
-            '## Stats'
-        ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
-
-        view = MechView(self.df_state)
-
-        await interaction.response.edit_message(embed=embed, view=view)
-
 
 async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
+    df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor})  # Add this menu to the back stack
+
     cargo_source = df_state.vendor_obj['cargo_inventory'] if is_vendor else df_state.convoy_obj['all_cargo']
 
     part_cargos_to_display = []
@@ -316,7 +271,6 @@ class PartSelectView(discord.ui.View):
         self.df_state = df_state
         super().__init__(timeout=600)
 
-        self.add_item(PartSelectBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
         self.add_item(PartSelect(self.df_state, part_cargos_to_display))
@@ -362,23 +316,10 @@ class PartSelect(discord.ui.Select):
 
         await part_install_confirm_menu(self.df_state)
 
-class PartSelectBackButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row: int=1):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=row
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-        await upgrade_vehicle_menu(self.df_state)
-
 
 async def part_install_confirm_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=part_install_confirm_menu)  # Add this menu to the back stack
+
     current_part = None
     for category, part in df_state.vehicle_obj['parts'].items():
         if category == df_state.cargo_obj['part']['category']:

@@ -23,6 +23,8 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 async def cargo_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=cargo_menu)  # Add this menu to the back stack
+
     carrier_vehicle = next((
         v for v in df_state.convoy_obj['vehicles']
         if v['vehicle_id'] == df_state.cargo_obj['vehicle_id']

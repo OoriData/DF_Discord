@@ -22,6 +22,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def sell_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=sell_menu)  # Add this menu to the back stack
+
     resources_list = []
     if df_state.vendor_obj['fuel']:
         resources_list.append(f'- Fuel: {df_state.convoy_obj['fuel']} Liters\n  - *${df_state.vendor_obj['fuel_price']} per Liter*')
@@ -194,6 +196,8 @@ class SellCargoSelect(discord.ui.Select):
 
 
 async def sell_resource_menu(df_state: DFState, resource_type: str):
+    df_state.append_menu_to_back_stack(func=sell_resource_menu, args={'resource_type': resource_type})  # Add this menu to the back stack
+
     embed = ResourceSellQuantityEmbed(df_state, resource_type)
     view = ResourceSellQuantityView(df_state, resource_type)
 
@@ -296,6 +300,8 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
 
 async def sell_cargo_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=sell_cargo_menu)  # Add this menu to the back stack
+
     embed = CargoSellQuantityEmbed(df_state)
     view = CargoSellQuantityView(df_state)
 
@@ -345,7 +351,6 @@ class CargoSellQuantityView(discord.ui.View):
         self.sale_quantity = sale_quantity
         super().__init__(timeout=600)
 
-        self.add_item(SellBackButton(self.df_state, row=0))
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, -10, cargo_for_sale=self.df_state.cargo_obj))
@@ -420,27 +425,10 @@ class CargoConfirmSellButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed, view=view)
 
-class SellBackButton(discord.ui.Button):
-    def __init__(
-            self,
-            df_state: DFState,
-            row: int=1
-    ):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.gray,
-            label='⬅ Back',
-            custom_id='nav_back_button',
-            row=row
-        )
-
-    async def callback(self, interaction):
-        self.df_state.interaction = interaction
-        await sell_menu(self.df_state)
-
 
 async def sell_vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=sell_vehicle_menu)  # Add this menu to the back stack
+
     part_list = []
     for category, part in df_state.vehicle_obj['parts'].items():
         if not part:  # If the part slot is empty

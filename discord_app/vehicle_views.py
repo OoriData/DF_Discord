@@ -23,6 +23,8 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 async def vehicle_menu(df_state: DFState):
+    df_state.append_menu_to_back_stack(func=vehicle_menu)  # Add this menu to the back stack
+
     part_list = []
     for category, part in df_state.vehicle_obj['parts'].items():
         if not part:  # If the part slot is empty

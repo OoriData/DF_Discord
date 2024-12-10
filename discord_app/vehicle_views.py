@@ -8,10 +8,11 @@ import                                textwrap
 
 import                                discord
 
+import discord_app.nav_menus
 import discord_app.cargo_views
 from discord_app               import api_calls, discord_timestamp, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
-from discord_app.nav_menus     import add_nav_buttons
+import discord_app.nav_menus# from discord_app.nav_menus     import add_nav_buttons
 
 from discord_app.df_state      import DFState
 
@@ -57,7 +58,7 @@ class VehicleView(discord.ui.View):
         self.df_state = df_state
         super().__init__(timeout=600)
 
-        add_nav_buttons(self, self.df_state)
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
         # self.add_item(VehicleSelect(self.df_state))
 

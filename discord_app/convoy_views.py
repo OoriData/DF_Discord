@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, vehicle_views, cargo_views, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI, OORI_WHITE
+from discord_app               import api_calls, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI, OORI_WHITE
 import discord_app.cargo_views
 import discord_app.vehicle_views
 import discord_app.vendor_views.buy_menus
@@ -525,6 +525,8 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
         'route_index': route_index
     })  # Add this menu to the back stack
 
+    await df_state.interaction.response.defer()
+
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
     prospective_journey_plus_misc = route_choices[route_index]
@@ -542,7 +544,8 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
         route_index=route_index
     )
 
-    await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[image_file])
+    og_message = await df_state.interaction.original_response()
+    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
 
 class SendConvoyConfirmView(discord.ui.View):
     '''Confirm button before sending convoy somewhere'''

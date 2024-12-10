@@ -737,41 +737,44 @@ class TopUpButton(discord.ui.Button):
         self.menu = menu
         self.menu_args = menu_args if menu_args is not None else {}
 
+        # Initialize with disabled state and empty values
         self.resource_vendors = {}
         self.top_up_price = 0
+        label = 'Cannot top up: No vendors'
+        disabled = True
 
-        resource_types = ['fuel', 'water', 'food']
-        available_resources = []
+        if self.df_state.sett_obj is not None and 'vendors' in self.df_state.sett_obj:  # Only proceed with resource calculations if settlement exists and has vendors
+            resource_types = ['fuel', 'water', 'food']
+            available_resources = []
 
-        for resource_type in resource_types:
-            # Calculate convoy's need for each resource
-            convoy_need = self.df_state.convoy_obj[f'max_{resource_type}'] - self.df_state.convoy_obj[resource_type]
-            if convoy_need > 0:
-                vendor = min(  # Find the vendor with the lowest price for this resource
-                    (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
-                    key=lambda v: v[f'{resource_type}_price'],
-                    default=None
-                )
-                if vendor:
-                    # Calculate top-up cost and track vendor info for each resource
-                    self.top_up_price += convoy_need * vendor[f'{resource_type}_price']
-                    self.resource_vendors[resource_type] = {
-                        'vendor_id': vendor['vendor_id'],
-                        'price': vendor[f'{resource_type}_price'],
-                        'convoy_need': convoy_need
-                    }
-                    available_resources.append(resource_type)
+            for resource_type in resource_types:
+                # Calculate convoy's need for each resource
+                convoy_need = self.df_state.convoy_obj[f'max_{resource_type}'] - self.df_state.convoy_obj[resource_type]
+                if convoy_need > 0:
+                    vendor = min(
+                        (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
+                        key=lambda v: v[f'{resource_type}_price'],
+                        default=None
+                    )
+                    if vendor:
+                        # Calculate top-up cost and track vendor info for each resource
+                        self.top_up_price += convoy_need * vendor[f'{resource_type}_price']
+                        self.resource_vendors[resource_type] = {
+                            'vendor_id': vendor['vendor_id'],
+                            'price': vendor[f'{resource_type}_price'],
+                            'convoy_need': convoy_need
+                        }
+                        available_resources.append(resource_type)
 
-        available_resources_str = ', '.join(available_resources)  # Display available resources in the button label
-        
-        if self.top_up_price == 0:  # If nothing to top up
-            label = 'Convoy is already topped up'
-            disabled = True
-        else:
-            label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
-            disabled = self.top_up_price > self.df_state.convoy_obj['money']  # Disable button if convoy doesn't have enough money
+            if available_resources:  # Update label and disabled state based on available resources
+                available_resources_str = ', '.join(available_resources)
+                if self.top_up_price == 0:
+                    label = 'Convoy is already topped up'
+                else:
+                    label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
+                    disabled = self.top_up_price > self.df_state.convoy_obj['money']
 
-        super().__init__(  # Initialize the button with calculated values
+        super().__init__(
             style=discord.ButtonStyle.blurple,
             label=label,
             disabled=disabled,

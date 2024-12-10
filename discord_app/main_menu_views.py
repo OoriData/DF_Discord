@@ -91,7 +91,6 @@ async def main_menu(interaction: discord.Interaction, edit: bool=True, df_map=No
     else:
         await interaction.followup.send(embeds=[title_embed, main_menu_embed], view=main_menu_view, files=[df_logo])
 
-
 class MainMenuView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -108,13 +107,13 @@ class MainMenuView(discord.ui.View):
             elif self.df_state.user_obj['convoys']:  # If the user has serveral convoys
                 self.add_item(self.user_options_button)
                 self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
-                self.add_item(convoy_views.ConvoySelect(df_state=self.df_state, row=2))
+                self.add_item(ConvoySelect(df_state=self.df_state, row=2))
 
             elif any(w['vehicle_storage'] for w in self.df_state.user_obj['warehouses']):  # If the user has no convoys, but has vehicles in warehouses
                 self.add_item(self.user_options_button)
                 self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
 
-            else:  # If the user has no convoys
+            else:  # If the user has no convoys and no warehoused vehicles (presumably fresh user)
                 self.add_item(self.create_convoy_button)
         
         else:  # If no user
@@ -148,29 +147,6 @@ class MainMenuView(discord.ui.View):
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
 
-
-class MainMenuSingleConvoyButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row=2):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.blurple,
-            label=df_state.user_obj['convoys'][0]['name'],
-            custom_id='single_convoy_button',
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
-
-        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
-        self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
-        
-        await convoy_views.convoy_menu(self.df_state)
-
-
 class UsernameModal(discord.ui.Modal):
     def __init__(self, discord_nickname: str, df_state: DFState):
         self.df_state = df_state
@@ -193,7 +169,6 @@ class UsernameModal(discord.ui.Modal):
         self.df_state.user_obj['metadata']['mobile'] = True
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj)
-
 
 class ConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
@@ -220,7 +195,6 @@ class ConvoyNameModal(discord.ui.Modal):
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_views.convoy_menu(self.df_state)
-
 
 class WarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):
@@ -259,6 +233,55 @@ class WarehouseSelect(discord.ui.Select):
 
         await warehouse_menus.warehouse_menu(self.df_state)
 
+class MainMenuSingleConvoyButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row=2):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=df_state.user_obj['convoys'][0]['name'],
+            custom_id='single_convoy_button',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
+
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
+        
+        await convoy_views.convoy_menu(self.df_state)
+
+class ConvoySelect(discord.ui.Select):
+    def __init__(self, df_state: DFState, row=1):
+        self.df_state = df_state
+
+        options = [
+            discord.SelectOption(label=convoy['name'], value=convoy['convoy_id'])
+            for convoy in df_state.user_obj['convoys']
+        ]
+        
+        super().__init__(
+            placeholder='Which convoy?',
+            options=options,
+            custom_id='select_convoy',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.convoy_obj = next((
+            c for c in self.df_state.user_obj['convoys']
+            if c['convoy_id'] == self.values[0]
+        ), None)
+
+        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.sett_obj = tile_obj['settlements'][0]
+
+        await convoy_menu(self.df_state)
 
 
 async def options_menu(df_state: DFState, edit: bool=True):
@@ -275,7 +298,6 @@ async def options_menu(df_state: DFState, edit: bool=True):
     view = OptionsView(df_state)
 
     await df_state.interaction.response.edit_message(embeds=[options_embed], view=view, attachments=[])
-
 
 class OptionsView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -302,7 +324,6 @@ class OptionsView(discord.ui.View):
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
     
-
 class AppModeButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row=1):
         self.df_state = df_state

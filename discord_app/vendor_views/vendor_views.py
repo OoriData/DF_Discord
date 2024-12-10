@@ -40,7 +40,6 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
     else:
         await df_state.interaction.followup.send(embeds=embeds, view=vendor_view)
 
-
 class VendorView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState):
@@ -75,7 +74,6 @@ class VendorView(discord.ui.View):
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
 
-
 class BuyButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -103,7 +101,6 @@ class BuyButton(discord.ui.Button):
         self.df_state.interaction = interaction
         await discord_app.vendor_views.buy_menus.buy_menu(self.df_state)
 
-
 class MechanicButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -124,7 +121,6 @@ class MechanicButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
         await discord_app.vendor_views.mechanic_views.mechanic_menu(self.df_state)
-
 
 class SellButton(discord.ui.Button):
     def __init__(self, df_state: DFState):

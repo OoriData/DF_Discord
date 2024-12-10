@@ -49,7 +49,6 @@ async def vehicle_menu(df_state: DFState):
 
     await df_state.interaction.response.edit_message(embed=vehicle_embed, view=vehicle_view, attachments=[])
 
-
 class VehicleView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState):
@@ -72,40 +71,6 @@ class VehicleView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
-
-class VehicleSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, row: int=1):
-        self.df_state = df_state
-
-        placeholder = 'Select vehicle to inspect'
-        disabled = False
-        options=[
-            discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
-            for vehicle in self.df_state.convoy_obj['vehicles']
-        ]
-        if not options:
-            placeholder = 'No vehicles in convoy'
-            disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
-        
-        super().__init__(
-            placeholder=placeholder,
-            options=options,
-            custom_id='select_vehicle',
-            disabled=disabled,
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.vehicle_obj = next((
-            v for v in self.df_state.convoy_obj['vehicles']
-            if v['vehicle_id'] == self.values[0]
-        ), None)
-
-        await vehicle_menu(self.df_state)
 
 
 def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict=None):

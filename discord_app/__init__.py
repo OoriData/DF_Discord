@@ -11,7 +11,6 @@ import                             discord
 
 from discord_app.df_state   import DFState
 
-
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 
 DF_LOGO_URL = 'https://www.oori.dev/assets/branding/df_Logo_FullColor.png'
@@ -23,9 +22,6 @@ OORI_WHITE = (219, 226, 233)
 OORI_YELLOW = (243, 213, 78)
 
 OORI_RED = (138, 43, 43)
-
-
-
 
 
 async def get_image_as_discord_file(url: str) -> discord.File:
@@ -100,14 +96,6 @@ DF_DISCORD_LOGO = '''\
 def get_user_metadata(df_state: DFState, metadata_key: str):
     user_metadata = df_state.convoy_obj.get('user_metadata')
     return user_metadata.get(metadata_key)
-
-
-class TutorialEmbed(discord.Embed):
-    def __init__(self, author: bool=True):
-        super().__init__(color=discord.Color.from_rgb(*OORI_RED))
-
-        if author:
-            self.set_author(name='Desolate Frontiers Tutorial', icon_url=DF_LOGO_URL)
 
 
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
@@ -203,6 +191,13 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
     embeds.append(tutorial_embed_footer)
 
     return embeds
+
+class TutorialEmbed(discord.Embed):
+    def __init__(self, author: bool=True):
+        super().__init__(color=discord.Color.from_rgb(*OORI_RED))
+
+        if author:
+            self.set_author(name='Desolate Frontiers Tutorial', icon_url=DF_LOGO_URL)
 
 
 DF_HELP = '''\

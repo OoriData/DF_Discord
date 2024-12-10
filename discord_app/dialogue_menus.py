@@ -44,7 +44,6 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, edi
     else:
         await df_state.interaction.followup.send(embed=embed, view=view, files=[])
 
-
 class DialogueView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(
@@ -106,7 +105,6 @@ class DialogueView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
 
 class SendMessageModal(discord.ui.Modal):
     def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID):

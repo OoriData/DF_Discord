@@ -82,10 +82,7 @@ class NavSettButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-        if self.df_state.convoy_obj['journey']:  # Cache the tile the convoy is in or smth, and actually check if they are in a tile with settmelent
-            label = 'Settlement'
-            disabled = True
-        elif df_state.sett_obj:
+        if df_state.sett_obj:
             label = df_state.sett_obj['name']
             disabled = False
         else:

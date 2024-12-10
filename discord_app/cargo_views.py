@@ -57,7 +57,6 @@ async def cargo_menu(df_state: DFState):
 
     await df_state.interaction.response.edit_message(embed=cargo_embed, view=cargo_view, attachments=[])
 
-
 class ConvoyCargoView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState, recipient_vendor_obj: dict = None):
@@ -65,8 +64,6 @@ class ConvoyCargoView(discord.ui.View):
         super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
-
-        # self.add_item(ConvoyCargoSelect(self.df_state))
 
         self.add_item(MoveCargoVehicleSelect(self.df_state))
 
@@ -85,7 +82,6 @@ class ConvoyCargoView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
 
 class MoveCargoVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):
@@ -131,69 +127,6 @@ class MoveCargoVehicleSelect(discord.ui.Select):
 
         await discord_app.convoy_views.convoy_menu(self.df_state)
 
-
-class ConvoyCargoSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, row: int=1):
-        self.df_state = df_state
-
-        placeholder = 'Select cargo to inspect'
-        disabled = False
-        options = []
-        for vehicle in self.df_state.convoy_obj['vehicles']:
-            for cargo in vehicle['cargo']:
-                if not cargo['intrinsic']:
-                    options.append(discord.SelectOption(label=f'{cargo['name']} ({vehicle['name']})', value=cargo['cargo_id']))
-        if not options:
-            placeholder = 'No cargo in convoy'
-            disabled = True
-            options = [discord.SelectOption(label='None', value='None')]
-        
-        super().__init__(
-            placeholder=placeholder,
-            options=options[:25],
-            custom_id='select_cargo',
-            disabled=disabled,
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.cargo_obj = next((
-            c for c in self.df_state.convoy_obj['all_cargo']
-            if c['cargo_id'] == self.values[0]
-        ), None)
-
-        await cargo_menu(df_state=self.df_state)
-
-
-class VendorCargoSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, row: int=1):
-        self.df_state = df_state
-
-        options=[
-            discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
-            for cargo in self.df_state.vendor_obj['cargo_inventory']
-        ]
-        
-        super().__init__(
-            placeholder='Select cargo to inspect',
-            options=options[:25],
-            custom_id='select_cargo',
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        self.df_state.cargo_obj = next((
-            c for c in self.df_state.vendor_obj['cargo_inventory']
-            if c['cargo_id'] == self.values[0]
-        ), None)
-
-        await cargo_menu(df_state=self.df_state)
-
-
 class MapButton(discord.ui.Button):
     def __init__(self, df_state: DFState, recipient_obj: dict, row: int=1):
         super().__init__(
@@ -236,6 +169,7 @@ class MapButton(discord.ui.Button):
             file=image_file,
             ephemeral=True
         )
+
 
 def format_part(part_cargo: dict):
     if part_cargo.get('cargo_id'):

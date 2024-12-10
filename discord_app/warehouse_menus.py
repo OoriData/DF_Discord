@@ -1,15 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
-import                                os
-import                                textwrap
-import                                math
 
 import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_views
 import                                discord_app.vendor_views.buy_menus
@@ -19,6 +16,39 @@ import                                discord_app.convoy_views
 from discord_app.vendor_views  import vehicles_md
 from discord_app.df_state      import DFState
 
+
+async def warehouse_menu(df_state: DFState, edit: bool=True):
+    if df_state.warehouse_obj:
+        await warehoused(df_state, edit)
+    else:
+        await warehouseless(df_state, edit)
+
+async def warehoused(df_state: DFState, edit: bool):
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
+
+    embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
+    embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
+
+    if df_state.user_obj['metadata']['mobile']:
+        embed.description += '\n' + '\n'.join([
+            '',
+            f'Cargo Storage 📦: **{len(df_state.warehouse_obj['cargo_storage'])}**/{df_state.warehouse_obj['cargo_storage_capacity']}L',
+            f'Vehicle Storage 🅿️: **{len(df_state.warehouse_obj['vehicle_storage'])}**/{df_state.warehouse_obj['vehicle_storage_capacity']}'
+        ])
+    else:
+        embed.add_field(name='Cargo Storage 📦', value=f'**{len(df_state.warehouse_obj['cargo_storage'])}**\n/{df_state.warehouse_obj['cargo_storage_capacity']} liters')
+        embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']}')
+
+    embeds = [embed]
+    embeds = add_tutorial_embed(embeds, df_state)
+
+    view = WarehouseView(df_state)
+
+    if edit:
+        await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+    else:
+        await df_state.interaction.followup.send(embeds=embeds, view=view)
 
 async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
     vehicle_list = []
@@ -64,88 +94,6 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
         f'{displayable_vehicles}'
     ])
 
-
-async def warehouse_menu(df_state: DFState, edit: bool=True):
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-
-    if df_state.warehouse_obj:
-        embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
-        embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
-
-        if df_state.user_obj['metadata']['mobile']:
-            embed.description += '\n' + '\n'.join([
-                '',
-                f'Cargo Storage 📦: **{len(df_state.warehouse_obj['cargo_storage'])}**/{df_state.warehouse_obj['cargo_storage_capacity']}L',
-                f'Vehicle Storage 🅿️: **{len(df_state.warehouse_obj['vehicle_storage'])}**/{df_state.warehouse_obj['vehicle_storage_capacity']}'
-            ])
-        else:
-            embed.add_field(name='Cargo Storage 📦', value=f'**{len(df_state.warehouse_obj['cargo_storage'])}**\n/{df_state.warehouse_obj['cargo_storage_capacity']} liters')
-            embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']}')
-
-        # view = SettView(df_state, df_state.sett_obj['vendors'])
-        view = WarehouseView(df_state)
-    else:
-        embed.description = f'*You do not have a warehouse in {df_state.sett_obj['name']}. Buy one with the button below.*'
-        view = NoWarehouseView(df_state)
-
-    embeds = [embed]
-    embeds = add_tutorial_embed(embeds, df_state)
-
-    if edit:
-        await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
-    else:
-        await df_state.interaction.followup.send(embed=embed, view=view)
-
-
-class NoWarehouseView(discord.ui.View):
-    def __init__(self, df_state: DFState):
-        self.df_state = df_state
-        super().__init__(timeout=600)
-
-        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
-
-        self.add_item(BuyWarehouseButton(self.df_state))
-
-    async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
-
-
-class BuyWarehouseButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row: int=1):
-        self.df_state = df_state
-
-        super().__init__(
-            style=discord.ButtonStyle.blurple,
-            label=f'Buy warehouse in {self.df_state.sett_obj['name']} | ${self.df_state.sett_obj['warehouse_price']:,}',
-            disabled=False if self.df_state.convoy_obj['money'] > self.df_state.sett_obj['warehouse_price'] else True,
-            custom_id='buy_warehouse_button',
-            row=row
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
-        new_warehouse = await api_calls.get_warehouse(warehouse_id)
-        self.df_state.user_obj['warehouses'].append(new_warehouse)
-        self.df_state.warehouse_obj = new_warehouse
-
-        self.df_state.convoy_obj = await api_calls.get_convoy(self.df_state.convoy_obj['convoy_id'])  # Get convoy again to update money display. very wasteful and silly.
-        
-        await warehouse_menu(self.df_state)
-
-
 class WarehouseView(discord.ui.View):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -161,7 +109,7 @@ class WarehouseView(discord.ui.View):
             self.add_item(StoreVehiclesButton(self.df_state))
             self.add_item(RetrieveVehicleButton(self.df_state))
         
-        else:
+        else:  # Presumably we got here from the main menu, so use that button as a "back button"
             self.add_item(discord_app.nav_menus.NavMainMenuButton(df_state))
 
         self.add_item(SpawnButton(self.df_state))
@@ -179,7 +127,6 @@ class WarehouseView(discord.ui.View):
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
 
-
 class ExpandCargoButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
@@ -194,10 +141,7 @@ class ExpandCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        # open expansion menu
-        # await warehouse_menu(self.df_state)
-
+        # await expand_cargo_menu(self.df_state)
 
 class ExpandVehiclesButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=1):
@@ -213,10 +157,7 @@ class ExpandVehiclesButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        # open expansion menu
-        # await warehouse_menu(self.df_state)
-
+        # await expand_vehicles_menu(self.df_state)
 
 class StoreCargoButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=2):
@@ -233,10 +174,7 @@ class StoreCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        # open expansion menu
-        # await warehouse_menu(self.df_state)
-
+        # await store_cargo_menu(self.df_state)
 
 class RetrieveCargoButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=2):
@@ -253,10 +191,7 @@ class RetrieveCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        # open expansion menu
-        # await warehouse_menu(self.df_state)
-
+        # await retrieve_cargo_menu(self.df_state)
 
 class StoreVehiclesButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=3):
@@ -279,18 +214,52 @@ class StoreVehiclesButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+        await store_vehicle_menu(self.df_state)
 
-        embed = discord.Embed()
-        embed = df_embed_author(embed, self.df_state)
+class RetrieveVehicleButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int=3):
+        self.df_state = df_state
 
-        embed.description = vehicles_md(self.df_state.convoy_obj['vehicles'], verbose=True)
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Retrieve vehicle',
+            disabled=False if self.df_state.warehouse_obj['vehicle_storage'] else True,
+            custom_id='retrieve_vehicles_button',
+            row=row
+        )
 
-        embeds = [embed]
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        await retrieve_vehicle_menu(self.df_state)
 
-        view = StoreVehicleView(self.df_state)
+class SpawnButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int=4):
+        self.df_state = df_state
 
-        await self.df_state.interaction.response.edit_message(embeds=embeds, view=view)
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label='Initialize new convoy',
+            disabled=False if self.df_state.warehouse_obj['vehicle_storage'] else True,
+            custom_id='spawn_button',
+            row=row
+        )
 
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        await spawn_convoy_menu(self.df_state)
+
+
+async def store_vehicle_menu(df_state: DFState):
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
+
+    embed.description = vehicles_md(df_state.convoy_obj['vehicles'], verbose=True)
+
+    embeds = [embed]
+
+    view = StoreVehicleView(df_state)
+
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class StoreVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -313,7 +282,6 @@ class StoreVehicleView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
 
 class StoreVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
@@ -362,32 +330,17 @@ class StoreVehicleSelect(discord.ui.Select):
             )
 
 
-class RetrieveVehicleButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row: int=3):
-        self.df_state = df_state
+async def retrieve_vehicle_menu(df_state: DFState):
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
 
-        super().__init__(
-            style=discord.ButtonStyle.blurple,
-            label='Retrieve vehicle',
-            disabled=False if self.df_state.warehouse_obj['vehicle_storage'] else True,
-            custom_id='retrieve_vehicles_button',
-            row=row
-        )
+    embed.description = vehicles_md(df_state.warehouse_obj['vehicle_storage'], verbose=True)
 
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
+    embeds = [embed]
 
-        embed = discord.Embed()
-        embed = df_embed_author(embed, self.df_state)
+    view = RetrieveVehicleView(df_state)
 
-        embed.description = vehicles_md(self.df_state.warehouse_obj['vehicle_storage'], verbose=True)
-
-        embeds = [embed]
-
-        view = RetrieveVehicleView(self.df_state)
-
-        await self.df_state.interaction.response.edit_message(embeds=embeds, view=view)
-
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class RetrieveVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -410,7 +363,6 @@ class RetrieveVehicleView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
 
 class RetrieveVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
@@ -453,32 +405,17 @@ class RetrieveVehicleSelect(discord.ui.Select):
         await warehouse_menu(self.df_state)
 
 
-class SpawnButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row: int=4):
-        self.df_state = df_state
+async def spawn_convoy_menu(df_state: DFState):
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
 
-        super().__init__(
-            style=discord.ButtonStyle.green,
-            label='Initialize new convoy',
-            disabled=False if self.df_state.warehouse_obj['vehicle_storage'] else True,
-            custom_id='spawn_button',
-            row=row
-        )
+    embed.description = vehicles_md(df_state.warehouse_obj['vehicle_storage'], verbose=True)
 
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
+    embeds = [embed]
 
-        embed = discord.Embed()
-        embed = df_embed_author(embed, self.df_state)
+    view = SpawnConvoyView(df_state)
 
-        embed.description = vehicles_md(self.df_state.warehouse_obj['vehicle_storage'], verbose=True)
-
-        embeds = [embed]
-
-        view = SpawnConvoyView(self.df_state)
-
-        await self.df_state.interaction.response.edit_message(embeds=embeds, view=view)
-
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class SpawnConvoyView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -502,7 +439,6 @@ class SpawnConvoyView(discord.ui.View):
 
         await self.df_state.interaction.edit_original_response(view=self)
         return await super().on_timeout()
-
 
 class SpawnVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
@@ -532,7 +468,6 @@ class SpawnVehicleSelect(discord.ui.Select):
 
         await interaction.response.send_modal(SpawnConvoyNameModal(self.df_state, self.values[0]))
 
-
 class SpawnConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState, vehicle_id):
         self.df_state = df_state
@@ -560,3 +495,66 @@ class SpawnConvoyNameModal(discord.ui.Modal):
         )
 
         await discord_app.convoy_views.convoy_menu(self.df_state)
+
+
+async def warehouseless(df_state: DFState, edit: bool):
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
+
+    embed.description = f'*You do not have a warehouse in {df_state.sett_obj['name']}. Buy one with the button below.*'
+
+    embeds = [embed]
+    embeds = add_tutorial_embed(embeds, df_state)
+
+    view = NoWarehouseView(df_state)
+
+    if edit:
+        await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+    else:
+        await df_state.interaction.followup.send(embeds=embeds, view=view)
+
+class NoWarehouseView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+        self.add_item(BuyWarehouseButton(self.df_state))
+
+    async def on_timeout(self):
+        timed_out_button = discord.ui.Button(
+            label='Interaction timed out!',
+            style=discord.ButtonStyle.gray,
+            disabled=True
+        )
+
+        self.clear_items()
+        self.add_item(timed_out_button)
+
+        await self.df_state.interaction.edit_original_response(view=self)
+        return await super().on_timeout()
+
+class BuyWarehouseButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int=1):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=f'Buy warehouse in {self.df_state.sett_obj['name']} | ${self.df_state.sett_obj['warehouse_price']:,}',
+            disabled=False if self.df_state.convoy_obj['money'] > self.df_state.sett_obj['warehouse_price'] else True,
+            custom_id='buy_warehouse_button',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
+        new_warehouse = await api_calls.get_warehouse(warehouse_id)
+        self.df_state.user_obj['warehouses'].append(new_warehouse)
+        self.df_state.warehouse_obj = new_warehouse
+
+        self.df_state.convoy_obj = await api_calls.get_convoy(self.df_state.convoy_obj['convoy_id'])  # Get convoy again to update money display. very wasteful and silly.
+        
+        await warehouse_menu(self.df_state)

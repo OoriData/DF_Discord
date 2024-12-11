@@ -515,17 +515,16 @@ class DestinationSelect(discord.ui.Select):
         else:  # If the choice is a destination
             dest_x, dest_y = map(int, self.values[0].split(','))  # Extract destination coordinates
 
+            await self.df_state.interaction.response.defer()
             route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
             await route_menu(self.df_state, route_choices)
 
 
 async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
-    df_state.append_menu_to_back_stack(func=route_menu, args={
-        'route_choices': route_choices,
-        'route_index': route_index
-    })  # Add this menu to the back stack
-
-    await df_state.interaction.response.defer()
+    # df_state.append_menu_to_back_stack(func=route_menu, args={  # XXX commented out until i can figure out how to if/else defering if nessisary
+    #     'route_choices': route_choices,
+    #     'route_index': route_index
+    # })  # Add this menu to the back stack
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 

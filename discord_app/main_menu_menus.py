@@ -10,8 +10,8 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_views, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata
-import discord_app.convoy_views
+from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata
+import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
 from discord_app.df_state      import DFState
@@ -198,7 +198,7 @@ class ConvoyNameModal(discord.ui.Modal):
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
-        await convoy_views.convoy_menu(self.df_state)
+        await convoy_menus.convoy_menu(self.df_state)
 
 class WarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):
@@ -256,7 +256,7 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
         
-        await convoy_views.convoy_menu(self.df_state)
+        await convoy_menus.convoy_menu(self.df_state)
 
 class ConvoySelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row=1):
@@ -285,7 +285,7 @@ class ConvoySelect(discord.ui.Select):
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
-        await discord_app.convoy_views.convoy_menu(self.df_state)
+        await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 
 async def options_menu(df_state: DFState, edit: bool=True):

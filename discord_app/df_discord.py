@@ -15,11 +15,11 @@ from discord.ext                import commands, tasks
 
 from utiloori.ansi_color        import ansi_color
 
-from discord_app                import DF_DISCORD_LOGO as API_BANNER
-from discord_app                import api_calls, convoy_views, DF_HELP, df_embed_author
+from discord_app                import DF_DISCORD_LOGO as API_BANNER, convoy_menus
+from discord_app                import api_calls, DF_HELP, df_embed_author
 from discord_app.map_rendering  import add_map_to_embed
-from discord_app.vendor_views   import vendor_views
-from discord_app.main_menu_views import main_menu
+from discord_app.vendor_views   import vendor_menus
+from discord_app.main_menu_menus import main_menu
 from discord_app.df_state       import DFState
 
 DF_API_HOST = os.environ['DF_API_HOST']

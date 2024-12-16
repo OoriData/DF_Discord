@@ -9,7 +9,7 @@ import                                textwrap
 import                                discord
 
 import discord_app.nav_menus
-import discord_app.cargo_views
+import discord_app.cargo_menus
 from discord_app               import api_calls, discord_timestamp, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus# from discord_app.nav_menus     import add_nav_buttons
@@ -32,7 +32,7 @@ async def vehicle_menu(df_state: DFState):
             part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
             continue
 
-        part_list.append(discord_app.cargo_views.format_part(part))
+        part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     vehicle_embed = discord.Embed()

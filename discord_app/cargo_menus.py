@@ -11,7 +11,7 @@ import                                discord
 from discord_app               import api_calls, discord_timestamp, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
-import discord_app.convoy_views
+import discord_app.convoy_menus
 
 from discord_app.df_state      import DFState
 
@@ -127,7 +127,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             dest_vehicle['vehicle_id']
         )
 
-        await discord_app.convoy_views.convoy_menu(self.df_state)
+        await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 class MapButton(discord.ui.Button):
     def __init__(self, df_state: DFState, recipient_obj: dict, row: int=1):

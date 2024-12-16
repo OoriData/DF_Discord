@@ -8,11 +8,11 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, df_embed_author, add_tutorial_embed
 from discord_app.map_rendering import add_map_to_embed
-import                                discord_app.vendor_views.vendor_views
+import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
 import                                discord_app.nav_menus
-import                                discord_app.main_menu_views
-import                                discord_app.convoy_views
+import                                discord_app.main_menu_menus
+import                                discord_app.convoy_menus
 from discord_app.vendor_views  import vehicles_md
 from discord_app.df_state      import DFState
 
@@ -328,7 +328,7 @@ class StoreVehicleSelect(discord.ui.Select):
         if self.df_state.convoy_obj:
             await warehouse_menu(self.df_state)
         else:
-            await discord_app.main_menu_views.main_menu(
+            await discord_app.main_menu_menus.main_menu(
                 interaction=self.df_state.interaction,
                 df_map=self.df_state.map_obj
             )
@@ -502,7 +502,7 @@ class SpawnConvoyNameModal(discord.ui.Modal):
             new_convoy_name=self.convoy_name_input.value
         )
 
-        await discord_app.convoy_views.convoy_menu(self.df_state)
+        await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 
 async def warehouseless(df_state: DFState, edit: bool):

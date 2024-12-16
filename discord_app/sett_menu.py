@@ -10,7 +10,7 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
-import                                discord_app.vendor_views.vendor_views
+import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
 import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
@@ -203,4 +203,4 @@ class VendorSelect(discord.ui.Select):
             if v['vendor_id'] == self.values[0]
         ), None)
 
-        await discord_app.vendor_views.vendor_views.vendor_menu(self.df_state)
+        await discord_app.vendor_views.vendor_menus.vendor_menu(self.df_state)

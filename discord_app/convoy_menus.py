@@ -12,8 +12,8 @@ import                                logging
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI, OORI_WHITE
-import discord_app.cargo_views
-import discord_app.vehicle_views
+import discord_app.cargo_menus
+import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
@@ -348,7 +348,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
             if v['vehicle_id'] == self.values[0]
         ), None)
 
-        await discord_app.vehicle_views.vehicle_menu(self.df_state)
+        await discord_app.vehicle_menus.vehicle_menu(self.df_state)
 
 class ConvoyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
@@ -382,7 +382,7 @@ class ConvoyCargoSelect(discord.ui.Select):
             if c['cargo_id'] == self.values[0]
         ), None)
 
-        await discord_app.cargo_views.cargo_menu(df_state=self.df_state)
+        await discord_app.cargo_menus.cargo_menu(df_state=self.df_state)
 
 
 async def send_convoy_menu(df_state: DFState):

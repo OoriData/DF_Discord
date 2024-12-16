@@ -11,8 +11,8 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import api_calls, df_embed_author
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
-import discord_app.vehicle_views
-import discord_app.cargo_views
+import discord_app.vehicle_menus
+import discord_app.cargo_menus
 
 from discord_app.df_state      import DFState
 
@@ -108,7 +108,7 @@ async def mech_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['base_desc']}*',
         '## Stats'
     ])
-    embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = MechView(df_state)
 
@@ -167,7 +167,7 @@ async def upgrade_vehicle_menu(df_state: DFState):
             part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
             continue
 
-        part_list.append(discord_app.cargo_views.format_part(part))
+        part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     embed = discord.Embed()
@@ -179,7 +179,7 @@ async def upgrade_vehicle_menu(df_state: DFState):
         displayable_vehicle_parts,
         '## Stats'
     ])
-    embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = UpgradeVehicleView(df_state)
 
@@ -247,7 +247,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
     
     part_list = []
     for cargo in part_cargos_to_display:
-        part_list.append(discord_app.cargo_views.format_part(cargo))
+        part_list.append(discord_app.cargo_menus.format_part(cargo))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     embed = discord.Embed()
@@ -260,7 +260,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
         f'{displayable_vehicle_parts}',
         '### Stats'
     ])
-    embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = PartSelectView(df_state, part_cargos_to_display)
 
@@ -334,12 +334,12 @@ async def part_install_confirm_menu(df_state: DFState):
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['base_desc']}*',
         '### Current Part',
-        f'{discord_app.cargo_views.format_part(current_part) if current_part else '- None'}',
+        f'{discord_app.cargo_menus.format_part(current_part) if current_part else '- None'}',
         '### New Part',
-        f'{discord_app.cargo_views.format_part(df_state.cargo_obj)}',
+        f'{discord_app.cargo_menus.format_part(df_state.cargo_obj)}',
         '## Stats'
     ])
-    embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
 
     view = InstallConfirmView(df_state)
 
@@ -376,7 +376,7 @@ class InstallConfirmView(discord.ui.View):
             f'*{self.df_state.vehicle_obj['base_desc']}*',
             '## Stats'
         ])
-        embed = discord_app.vehicle_views.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
+        embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = PostInstallView(self.df_state)
 

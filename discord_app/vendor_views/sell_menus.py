@@ -11,8 +11,8 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import api_calls, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
-import discord_app.vehicle_views
-import discord_app.cargo_views
+import discord_app.vehicle_menus
+import discord_app.cargo_menus
 
 from discord_app.df_state      import DFState
 
@@ -435,7 +435,7 @@ async def sell_vehicle_menu(df_state: DFState):
             part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
             continue
 
-        part_list.append(discord_app.cargo_views.format_part(part))
+        part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     embed = discord.Embed()
@@ -448,7 +448,7 @@ async def sell_vehicle_menu(df_state: DFState):
         displayable_vehicle_parts,
         '### Stats'
     ])
-    embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = VehicleSellConfirmView(df_state)
 

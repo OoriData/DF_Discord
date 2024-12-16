@@ -11,9 +11,9 @@ from discord_app               import api_calls, df_embed_author, add_tutorial_e
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views  import vendor_inv_md
 import                                discord_app.nav_menus
-import                                discord_app.vendor_views.vendor_views
-import                                discord_app.vehicle_views
-import                                discord_app.cargo_views
+import                                discord_app.vendor_views.vendor_menus
+import                                discord_app.vehicle_menus
+import                                discord_app.cargo_menus
 
 from discord_app.df_state      import DFState
 
@@ -405,7 +405,7 @@ class CargoBuyQuantityView(discord.ui.View):
 
         self.add_item(CargoConfirmBuyButton(self.df_state, self.cart_quantity, row=2))
         if self.df_state.cargo_obj['recipient']:
-            self.add_item(discord_app.cargo_views.MapButton(self.df_state, self.df_state.cargo_obj['recipient_vendor'], row=2))
+            self.add_item(discord_app.cargo_menus.MapButton(self.df_state, self.df_state.cargo_obj['recipient_vendor'], row=2))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
@@ -597,7 +597,7 @@ async def buy_vehicle_menu(df_state: DFState):
             part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
             continue
 
-        part_list.append(discord_app.cargo_views.format_part(part))
+        part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     vehicle_buy_confirm_embed = discord.Embed()
@@ -610,7 +610,7 @@ async def buy_vehicle_menu(df_state: DFState):
         displayable_vehicle_parts,
         '### Stats'
     ])
-    vehicle_buy_confirm_embed = discord_app.vehicle_views.df_embed_vehicle_stats(df_state, vehicle_buy_confirm_embed, df_state.vehicle_obj)
+    vehicle_buy_confirm_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, vehicle_buy_confirm_embed, df_state.vehicle_obj)
 
     embeds = [vehicle_buy_confirm_embed]
     embeds = add_tutorial_embed(embeds, df_state)

@@ -31,18 +31,17 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
         return
     df_state.sett_obj = tile_obj['settlements'][0]
+    embed.description = f'*{df_state.sett_obj['base_desc']}'
 
     df_state.warehouse_obj = next((
         w for w in df_state.user_obj['warehouses']
         if w['sett_id'] == df_state.sett_obj['sett_id']
     ), None)
     if df_state.warehouse_obj:
-        embed.description = '\n'.join([
+        embed.description += '\n' + '\n'.join([
             f'# {df_state.sett_obj['name']} Warehouse',
             await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
         ])
-    else:
-        embed.description = ''
     
     vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
@@ -76,7 +75,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             '\n'.join(displayable_services)
         ]))
     
-    embed.description += '\n'+ '\n'.join([
+    embed.description += '\n' + '\n'.join([
         f'# {df_state.sett_obj['name']} vendors',
         '\n'.join(vendor_displayables)
     ])

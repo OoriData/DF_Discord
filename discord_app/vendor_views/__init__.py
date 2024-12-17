@@ -35,7 +35,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
 
     cargo_list = []
     for cargo in vendor_obj['cargo_inventory']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['base_price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['price']:,} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -45,7 +45,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
 
             if cargo.get('recipient_vendor'):
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_location']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = round(cargo['delivery_reward'] / cargo['base_price'])
+                margin = round(cargo['delivery_reward'] / cargo['price'])
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
                 tile_distance = math.sqrt(
                     (cargo['recipient_vendor']['x'] - vendor_obj['x']) ** 2

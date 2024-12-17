@@ -173,7 +173,7 @@ class BuyCargoSelect(discord.ui.Select):
 
         options = []
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
-            label = f"{cargo['name']} | ${cargo['base_price']:,.0f}"
+            label = f"{cargo['name']} | ${cargo['price']:,.0f}"
             if cargo.get('recipient_vendor'):
                 label += f" | {cargo['recipient_location']}"
 
@@ -185,7 +185,7 @@ class BuyCargoSelect(discord.ui.Select):
                 if (
                     cargo['volume'] < self.df_state.convoy_obj['total_free_space'] and
                     cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
-                    cargo['base_price'] < self.df_state.convoy_obj['money'] and
+                    cargo['price'] < self.df_state.convoy_obj['money'] and
                     cargo['capacity'] is None
                 ):
                     emoji = DF_LOGO_EMOJI
@@ -344,7 +344,7 @@ class CargoBuyQuantityEmbed(discord.Embed):
         
         self = df_embed_author(self, self.df_state)
         
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
         cart_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
         
         resource_weights = {'fuel': 0.79, 'water': 1, 'food': 0.75}
@@ -358,7 +358,7 @@ class CargoBuyQuantityEmbed(discord.Embed):
 
         desc = [
             f'## {self.df_state.vendor_obj['name']}',
-            f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['base_price']:,.0f} per item',
+            f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['price']:,.0f} per item',
             f'*{self.df_state.cargo_obj['base_desc']}*',
             '',
             f'- Cart volume: **{cart_volume:,.1f}L**',
@@ -449,7 +449,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
 
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
 
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -472,7 +472,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
             await interaction.response.send_message(content=e, ephemeral=True)
             return
         
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['base_price']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
@@ -511,7 +511,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         if self.cargo_for_sale:  # Determine max quantities
             max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['volume']
             max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['weight']
-            max_by_price = self.df_state.convoy_obj['money'] / self.df_state.cargo_obj['base_price']
+            max_by_price = self.df_state.convoy_obj['money'] / self.df_state.cargo_obj['price']
             max_convoy_capacity = int(min(max_by_volume, max_by_weight, max_by_price))
             inventory_quantity = self.df_state.cargo_obj['quantity']
         else:
@@ -557,7 +557,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             if resultant_quantity > max_by_volume or resultant_quantity > max_by_weight:
                 return True
 
-            cart_price = resultant_quantity * self.df_state.cargo_obj['base_price']
+            cart_price = resultant_quantity * self.df_state.cargo_obj['price']
             
         else:
             if resultant_quantity > max_convoy_capacity:
@@ -605,7 +605,7 @@ async def buy_vehicle_menu(df_state: DFState):
     vehicle_buy_confirm_embed.description = '\n'.join([
         f'## {df_state.vendor_obj['name']}',
         f'### {df_state.vehicle_obj['name']} | ${df_state.vehicle_obj['value']:,.0f}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj['description']}*',
         '### Parts',
         displayable_vehicle_parts,
         '### Stats'
@@ -684,7 +684,7 @@ class BuyVehicleButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'Your convoy\'s new vehicle: {self.df_state.vehicle_obj['name']}',
-            f'*{self.df_state.vehicle_obj['base_desc']}*'
+            f'*{self.df_state.vehicle_obj['description']}*'
         ])
 
         embeds = [embed]

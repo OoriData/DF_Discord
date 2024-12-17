@@ -71,7 +71,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
 
     cargo_list = []
     for cargo in warehouse_obj['cargo_storage']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['base_price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['price']:,} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -82,7 +82,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
             if cargo['recipient']:
                 cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = round(cargo['delivery_reward'] / cargo['base_price'])
+                margin = round(cargo['delivery_reward'] / cargo['price'])
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
 
         cargo_list.append(cargo_str)

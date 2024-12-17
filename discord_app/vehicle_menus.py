@@ -39,7 +39,7 @@ async def vehicle_menu(df_state: DFState):
     vehicle_embed = df_embed_author(vehicle_embed, df_state)
     vehicle_embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj['description']}*',
         '',
         f'Value: **${df_state.vehicle_obj['value']:,}**',
         '### Parts',

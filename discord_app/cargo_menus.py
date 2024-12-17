@@ -40,7 +40,7 @@ async def cargo_menu(df_state: DFState):
     cargo_embed.description = '\n'.join([
         f'## {df_state.cargo_obj['name']}',
         '- $$$',
-        f'  - Base (sell) price: **${df_state.cargo_obj['base_price']}**',
+        f'  - Price: **${df_state.cargo_obj['price']}**',
         f'  - Recipient: **{recipient_vendor_obj.get('name')}**',
         f'  - Delivery Reward: **${df_state.cargo_obj['delivery_reward']}**',
         '- misc',

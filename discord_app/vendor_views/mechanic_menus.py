@@ -105,7 +105,7 @@ async def mech_vehicle_menu(df_state: DFState):
     embed.description = '\n'.join([
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj['description']}*',
         '## Stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
@@ -174,7 +174,7 @@ async def upgrade_vehicle_menu(df_state: DFState):
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj['description']}*',
         '## Parts',
         displayable_vehicle_parts,
         '## Stats'
@@ -238,7 +238,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
                 cargo['part']['installation_price'] = check_dict['installation_price']
                 
                 if is_vendor:  # Only assign kit_price if the cargo is from a vendor
-                    cargo['part']['kit_price'] = cargo['base_price']
+                    cargo['part']['kit_price'] = cargo['price']
                 
                 part_cargos_to_display.append(cargo)
             except RuntimeError as e:
@@ -332,7 +332,7 @@ async def part_install_confirm_menu(df_state: DFState):
     embed.description = '\n'.join([
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj['description']}*',
         '### Current Part',
         f'{discord_app.cargo_menus.format_part(current_part) if current_part else '- None'}',
         '### New Part',
@@ -373,7 +373,7 @@ class InstallConfirmView(discord.ui.View):
         embed.description = '\n'.join([
             f'# {self.df_state.vendor_obj['name']}',
             f'## {self.df_state.vehicle_obj['name']}',
-            f'*{self.df_state.vehicle_obj['base_desc']}*',
+            f'*{self.df_state.vehicle_obj['description']}*',
             '## Stats'
         ])
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)

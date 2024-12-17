@@ -217,12 +217,12 @@ class ConvoyView(discord.ui.View):
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
                     case 1 | 2 | 3 | 4:  # Enable 'nav_sett_button' only for stages 1-4, disable all others
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button'
                         )
                     case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'journey_button'
                         )
 
@@ -415,7 +415,7 @@ class DestinationView(discord.ui.View):
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
-                    # 'nav_back_button',
+                    'nav_back_button',
                     'nav_convoy_button',
                     'destination_select'
                 )
@@ -582,7 +582,7 @@ class SendConvoyConfirmView(discord.ui.View):
             for item in self.children:
                 if item.custom_id not in {'alt_route', 'confirm_journey_button'}:
                     item.disabled = item.custom_id not in (
-                        # 'nav_back_button',
+                        'nav_back_button',
                         'nav_convoy_button'
                     )
 

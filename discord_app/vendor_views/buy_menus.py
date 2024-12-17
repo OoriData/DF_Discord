@@ -69,13 +69,13 @@ class BuyView(discord.ui.View):
                 match tutorial_stage:
                     case 1:
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button',
                             'select_vehicle'
                         )
                     case 2 | 4:
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button',
                             'select_cargo'
                         )
@@ -414,13 +414,13 @@ class CargoBuyQuantityView(discord.ui.View):
                     match tutorial_stage:  # Use match-case to handle different tutorial stages
                         case 2:
                             item.disabled = item.custom_id not in (
-                                # 'nav_back_button',
+                                'nav_back_button',
                                 'nav_sett_button',
                                 'buy_cargo_button'
                             )
                         case 4:
                             item.disabled = item.custom_id not in (
-                                # 'nav_back_button',
+                                'nav_back_button',
                                 'nav_sett_button',
                                 'buy_cargo_button',
                                 'map_button'
@@ -632,7 +632,7 @@ class VehicleBuyConfirmView(discord.ui.View):
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
-                    # 'nav_back_button',
+                    'nav_back_button',
                     'nav_sett_button',
                     'buy_vehicle_button'
                 )
@@ -708,12 +708,12 @@ class PostBuyView(discord.ui.View):
                 match tutorial_stage:  # Use match-case to handle different tutorial stages
                     case 1 | 2 | 3 | 4:  # Enable 'nav_sett_button' only for stages 1-4, disable all others
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button'
                         )
                     case 5:  # Enable 'send_convoy_button' for stage 5, disable all others
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_convoy_button'
                         )
 

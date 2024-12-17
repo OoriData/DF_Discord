@@ -109,13 +109,13 @@ class SettView(discord.ui.View):
                 match tutorial_stage:
                     case 1 | 2 | 4:
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button',
                             'select_vendor'
                         )
                     case 3:
                         item.disabled = item.custom_id not in (
-                            # 'nav_back_button',
+                            'nav_back_button',
                             'nav_sett_button',
                             'top_up_button'
                         )

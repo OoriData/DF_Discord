@@ -58,7 +58,7 @@ class VendorView(discord.ui.View):
         if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
-                    # 'nav_back_button',
+                    'nav_back_button',
                     'nav_sett_button',
                     'buy_button'
                 )

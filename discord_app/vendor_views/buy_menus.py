@@ -129,7 +129,7 @@ class BuyVehicleSelect(discord.ui.Select):
                     value=vehicle['vehicle_id'],
                     emoji=DF_LOGO_EMOJI if (  # Add the tutorial emoji if
                         vehicle['value'] < 5000  # The vehicle's value is less than 5000
-                        and vehicle['base_cargo_capacity'] > 500  # The vehicle's value is greater than 500
+                        and vehicle['base_cargo_capacity'] > 400  # The vehicle's value is greater than 500
                     ) else None  # Else, don't add the emoji
                 )
                 for vehicle in self.df_state.vendor_obj['vehicle_inventory']

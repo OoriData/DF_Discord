@@ -20,25 +20,27 @@ FONT_OUTLINE_SIZE = 2  # Pixels
 FONT = ImageFont.load_default(size=FONT_SIZE)  # Load a default font
 
 GRID_COLOR = '#202020'   # Background grid color
+WATER_COLOR = '#142C55'
 TILE_COLORS = {
-    1: '#303030',   # Highway
-    2: '#606060',   # Road
-    3: '#CB8664',   # Trail
-    4: '#F6D0B0',   # Desert
-    5: '#3F5D4B',   # Plains
-    6: '#2C412E',   # Forest
-    7: '#2A4B46',   # Swamp
-    8: '#273833',   # Mountains
-    9: '#0F2227',   # Near Impassable
-    0: '#142C55',   # Impassable/Ocean
-    -1: '#9900FF',  # Marked
+    1: '#303030',    # Highway
+    2: '#606060',    # Road
+    3: '#CB8664',    # Trail
+    4: '#F6D0B0',    # Desert
+    5: '#3F5D4B',    # Plains
+    6: '#2C412E',    # Forest
+    7: '#2A4B46',    # Swamp
+    8: '#273833',    # Mountains
+    9: '#0F2227',    # Near Impassable
+    0: WATER_COLOR,  # Impassable/Ocean
+    -1: '#9900FF',   # Marked
 }
 SETTLEMENT_COLORS = {
     'dome': '#80A9B6',
     'city': '#ADADAD',
     'town': '#A1662F',
     'city-state': '#581B63',
-    'military_base': '#800000'
+    'military_base': '#800000',
+    'tutorial': WATER_COLOR
 }
 POLITICAL_COLORS = {
     0: '#00000000',   # Null (transparent)
@@ -46,8 +48,7 @@ POLITICAL_COLORS = {
     2: '#00000000',   # Desolate forest
     3: '#00000000',   # Desolate desert
     4: '#00000000',   # Desolate mountains
-    5: '#00000000',   # Desolate 
-    6: '#00000000',   # Desolate Swamp
+    5: '#00000000',   # Desolate Swamp
     9: '#00000000',   # Device Detonation Zone
     10: '#D5A6BD',    # Chicago
     11: '#D5A6BD',    # Indianapolis
@@ -159,6 +160,7 @@ def render_map(
     
     def draw_tile_bg(x, y, tile):
         if tile['settlements']:
+            print(tile['settlements'][0]['sett_type'])
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
         else:
             color = TILE_COLORS.get(tile['terrain_difficulty'], ERROR_COLOR)
@@ -216,26 +218,27 @@ def render_map(
 
     def annotate_settlements(x, y, tile):
         if tile['settlements']:
-            settlement = tile['settlements'][0]  # Assume only one settlement per tile
-            settlement_name = settlement['name']
+            if tile['settlements'][0]['sett_type'] != 'tutorial':
+                settlement = tile['settlements'][0]  # Assume only one settlement per tile
+                settlement_name = settlement['name']
 
-            # Calculate the text bounding box
-            bbox = draw.textbbox((0, 0), settlement_name, font=FONT)
-            text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                # Calculate the text bounding box
+                bbox = draw.textbbox((0, 0), settlement_name, font=FONT)
+                text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
-            # Calculate the text position (centered on the tile below the current one)
-            text_x = x * TILE_SIZE + (TILE_SIZE - text_width) // 2
-            text_y = (y + 0.4) * TILE_SIZE + (TILE_SIZE - text_height) // 2
+                # Calculate the text position (centered on the tile below the current one)
+                text_x = x * TILE_SIZE + (TILE_SIZE - text_width) // 2
+                text_y = (y + 0.4) * TILE_SIZE + (TILE_SIZE - text_height) // 2
 
-            draw.text(  # Annotate the settlement name with a black outline
-                xy=(text_x, text_y),
-                text=settlement_name,
-                fill='white',
-                font=FONT,
-                align='center',
-                stroke_width=FONT_OUTLINE_SIZE,
-                stroke_fill=GRID_COLOR
-            )
+                draw.text(  # Annotate the settlement name with a black outline
+                    xy=(text_x, text_y),
+                    text=settlement_name,
+                    fill='white',
+                    font=FONT,
+                    align='center',
+                    stroke_width=FONT_OUTLINE_SIZE,
+                    stroke_fill=GRID_COLOR
+                )
 
     # Calculate the size of the image
     rows = len(tiles)

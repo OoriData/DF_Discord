@@ -192,6 +192,17 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
 
     return embeds
 
+async def validate_interaction(interaction: discord.Interaction, df_state: DFState):
+    if df_state.user_discord_id != interaction.user.id:
+        import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
+
+        await discord_app.main_menu_menus.main_menu(
+            interaction=interaction,
+            df_map=df_state.map_obj,
+            edit=False
+        )
+
+
 class TutorialEmbed(discord.Embed):
     def __init__(self, author: bool=True):
         super().__init__(color=discord.Color.from_rgb(*OORI_RED))

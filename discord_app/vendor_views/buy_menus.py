@@ -7,7 +7,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views  import vendor_inv_md
 import                                discord_app.nav_menus
@@ -111,6 +111,8 @@ class BuyResourceButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await buy_resource_menu(self.df_state, self.resource_type)
 
@@ -153,6 +155,8 @@ class BuyVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -210,6 +214,8 @@ class BuyCargoSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -297,6 +303,8 @@ class ResourceConfirmBuyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         try:
@@ -459,6 +467,8 @@ class CargoConfirmBuyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         
         try:
@@ -585,6 +595,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         return False
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.cart_quantity += self.button_quantity  # Update cart quantity
@@ -682,6 +694,8 @@ class BuyVehicleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         try:
@@ -798,6 +812,8 @@ class TopUpButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         try:

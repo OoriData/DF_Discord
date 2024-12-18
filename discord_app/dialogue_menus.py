@@ -4,7 +4,7 @@ from uuid                  import UUID
 
 import                            discord
 
-from discord_app           import api_calls, df_embed_author, discord_timestamp
+from discord_app           import api_calls, df_embed_author, discord_timestamp, validate_interaction
 from discord_app.nav_menus import add_nav_buttons
 from discord_app.df_state  import DFState
 
@@ -70,6 +70,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='◀', custom_id='prev_dialogue', row=1)
     async def dialogue_prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         page = self.page - 1
         self.df_state.interaction = interaction
         
@@ -82,6 +84,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='▶', custom_id='next_dialogue', row=1)
     async def dialogue_next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         page = self.page + 1
         self.df_state.interaction = interaction
 
@@ -95,6 +99,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', row=2)
     async def send_message_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         
         await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))

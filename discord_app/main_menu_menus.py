@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata
+from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata, validate_interaction
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -125,16 +125,22 @@ class MainMenuView(discord.ui.View):
 
     @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple)
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await interaction.response.send_modal(UsernameModal(interaction.user.display_name, self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple)
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await interaction.response.send_modal(ConvoyNameModal(self.df_state))
 
     @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', row=0)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await options_menu(self.df_state)
 
@@ -230,6 +236,8 @@ class WarehouseSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         
@@ -249,6 +257,8 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
@@ -275,6 +285,8 @@ class ConvoySelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = next((
@@ -312,6 +324,8 @@ class OptionsView(discord.ui.View):
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await main_menu(interaction=interaction, edit=False, df_map=self.df_state.map_obj)
 
@@ -348,6 +362,8 @@ class AppModeButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']

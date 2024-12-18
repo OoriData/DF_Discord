@@ -6,7 +6,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed
+from discord_app               import api_calls, df_embed_author, add_tutorial_embed, validate_interaction
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
@@ -142,6 +142,8 @@ class ExpandCargoButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         # await expand_cargo_menu(self.df_state)
 
@@ -158,6 +160,8 @@ class ExpandVehiclesButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         # await expand_vehicles_menu(self.df_state)
 
@@ -175,6 +179,8 @@ class StoreCargoButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         # await store_cargo_menu(self.df_state)
 
@@ -192,6 +198,8 @@ class RetrieveCargoButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         # await retrieve_cargo_menu(self.df_state)
 
@@ -215,6 +223,8 @@ class StoreVehiclesButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await store_vehicle_menu(self.df_state)
 
@@ -231,6 +241,8 @@ class RetrieveVehicleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await retrieve_vehicle_menu(self.df_state)
 
@@ -247,6 +259,8 @@ class SpawnButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await spawn_convoy_menu(self.df_state)
 
@@ -311,6 +325,8 @@ class StoreVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         vehicle_to_store = next((
@@ -394,6 +410,8 @@ class RetrieveVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         vehicle_to_retrieve = next((
@@ -472,6 +490,8 @@ class SpawnVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(SpawnConvoyNameModal(self.df_state, self.values[0]))
@@ -556,6 +576,8 @@ class BuyWarehouseButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])

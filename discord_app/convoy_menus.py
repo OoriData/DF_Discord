@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, DF_LOGO_EMOJI, OORI_WHITE
+from discord_app               import api_calls, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
@@ -228,6 +228,8 @@ class ConvoyView(discord.ui.View):
 
     @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', emoji='🗺️', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await interaction.response.defer()
 
@@ -266,6 +268,8 @@ class ConvoyView(discord.ui.View):
 
     @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4, disabled=True)
     async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
 
@@ -306,6 +310,8 @@ class JourneyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         if not self.df_state.convoy_obj['journey']:  # If the convoy is not in transit
@@ -341,6 +347,8 @@ class ConvoyVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -375,6 +383,8 @@ class ConvoyCargoSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -505,6 +515,8 @@ class DestinationSelect(discord.ui.Select):
         return options
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         if self.values[0] in {'prev_page', 'next_page'}:  # If the choice is a page change
@@ -600,6 +612,8 @@ class NextJourneyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await self.df_state.interaction.response.defer()
 
@@ -634,6 +648,8 @@ class ConfirmJourneyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
 
         try:

@@ -24,6 +24,17 @@ OORI_YELLOW = (243, 213, 78)
 OORI_RED = (138, 43, 43)
 
 
+async def validate_interaction(interaction: discord.Interaction, df_state: DFState):
+    if df_state.user_discord_id != interaction.user.id:
+        import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
+
+        await discord_app.main_menu_menus.main_menu(
+            interaction=interaction,
+            df_map=df_state.map_obj,
+            edit=False
+        )
+
+
 async def get_image_as_discord_file(url: str) -> discord.File:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -191,16 +202,6 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
     embeds.append(tutorial_embed_footer)
 
     return embeds
-
-async def validate_interaction(interaction: discord.Interaction, df_state: DFState):
-    if df_state.user_discord_id != interaction.user.id:
-        import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
-
-        await discord_app.main_menu_menus.main_menu(
-            interaction=interaction,
-            df_map=df_state.map_obj,
-            edit=False
-        )
 
 
 class TutorialEmbed(discord.Embed):

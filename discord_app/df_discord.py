@@ -135,9 +135,9 @@ class Desolate_Cog(commands.Cog):
             user_role_ids = [role.id for role in member.roles]
             if WASTELANDER_ROLE not in user_role_ids:
                 try:
-                    await member.add_roles(*[self.wastelander_role, self.beta_role, self.alpha_role])
+                    await member.add_roles(*[self.wastelander_role, self.beta_role])
                 except HTTPException as e:
-                    logger.error(ansi_color(f'Couldn\'t add Player/Beta/Alpha roles to user {member.display_name}: {e}', 'red'))
+                    logger.error(ansi_color(f'Couldn\'t add Player/Beta roles to user {member.display_name}: {e}', 'red'))
 
         for member in guild.members:  # Update cache with current members
             if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call

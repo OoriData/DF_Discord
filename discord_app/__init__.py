@@ -31,6 +31,7 @@ async def validate_interaction(interaction: discord.Interaction, df_state: DFSta
         await discord_app.main_menu_menus.main_menu(
             interaction=interaction,
             df_map=df_state.map_obj,
+            user_cache=df_state.user_cache,
             edit=False
         )
 

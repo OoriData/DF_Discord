@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, OORI_RED, get_user_metadata, validate_interaction
+from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -23,8 +23,20 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
-async def main_menu(interaction: discord.Interaction, df_map=None, edit: bool=True):
+async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=None, edit: bool=True):
     'This menu should *always* perform a "full refresh" in order to allow it to function as a reset/refresh button'
+    df_logo = await get_image_as_discord_file(DF_TEXT_LOGO_URL)
+    title_embed = discord.Embed()
+    title_embed.color = discord.Color.from_rgb(*OORI_RED)
+    title_embed.set_image(url='attachment://image.png')
+
+    if interaction.user.id not in list(user_cache.keys()):
+        fancy_embed = discord.Embed(
+            description=f'## You must be in the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) to play.'
+        )
+        await interaction.response.send_message(embeds=[title_embed, fancy_embed], files=[df_logo])
+        return
+    
     await interaction.response.defer()
 
     try:
@@ -73,13 +85,10 @@ async def main_menu(interaction: discord.Interaction, df_map=None, edit: bool=Tr
         user_discord_id=interaction.user.id,
         map_obj=df_map,
         user_obj=user_obj,
-        interaction=interaction
+        interaction=interaction,
+        user_cache=user_cache
     )
 
-    df_logo = await get_image_as_discord_file(DF_TEXT_LOGO_URL)
-    title_embed = discord.Embed()
-    title_embed.color = discord.Color.from_rgb(*OORI_RED)
-    title_embed.set_image(url='attachment://image.png')
 
     main_menu_embed = discord.Embed()
     main_menu_embed = df_embed_author(main_menu_embed, df_state)

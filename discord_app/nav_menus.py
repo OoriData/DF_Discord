@@ -9,6 +9,7 @@ import discord_app.sett_menu
 import                           discord_app.vendor_views.vendor_menus
 
 from discord_app.df_state import DFState, DFMenu
+from discord_app          import validate_interaction
 
 
 def add_nav_buttons(view: discord.ui.View, df_state: DFState):
@@ -36,6 +37,8 @@ class NavBackButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await self.df_state.previous_menu()
 
@@ -51,6 +54,8 @@ class NavMainMenuButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         await discord_app.main_menu_menus.main_menu(interaction=interaction, df_map=self.df_state.map_obj)
 
 class NavConvoyButton(discord.ui.Button):
@@ -65,6 +70,8 @@ class NavConvoyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
@@ -88,6 +95,8 @@ class NavSettButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         self.df_state.vendor_obj = None  # Reset
         await discord_app.sett_menu.sett_menu(self.df_state)

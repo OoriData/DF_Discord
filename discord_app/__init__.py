@@ -192,7 +192,6 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
 
     return embeds
 
-
 async def validate_interaction(interaction: discord.Interaction, df_state: DFState):
     if df_state.user_discord_id != interaction.user.id:
         import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top

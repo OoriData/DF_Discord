@@ -228,6 +228,8 @@ class ConvoyView(discord.ui.View):
 
     @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', emoji='🗺️', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await interaction.response.defer()
 
@@ -266,6 +268,8 @@ class ConvoyView(discord.ui.View):
 
     @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4, disabled=True)
     async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
         self.df_state.interaction = interaction
         await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
 

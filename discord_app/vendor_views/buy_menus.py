@@ -413,11 +413,17 @@ class CargoBuyQuantityView(discord.ui.View):
                 if item.custom_id not in {'-10_button', '-1_button', '1_button', '10_button', 'max_button'}:
                     match tutorial_stage:  # Use match-case to handle different tutorial stages
                         case 2:
-                            item.disabled = item.custom_id not in (
-                                'nav_back_button',
-                                'nav_sett_button',
-                                'buy_cargo_button'
-                            )
+                            if not self.df_state.cargo_obj['recipient']:  # if the cargo doesn't have a recipient
+                                item.disabled = item.custom_id not in (
+                                    'nav_back_button',
+                                    'nav_sett_button',
+                                    'buy_cargo_button'
+                                )
+                            else:  # Don't let players buy commerce cargo early
+                                item.disabled = item.custom_id not in (
+                                    'nav_back_button',
+                                    'nav_sett_button'
+                                )
                         case 4:
                             item.disabled = item.custom_id not in (
                                 'nav_back_button',
@@ -451,9 +457,18 @@ class CargoConfirmBuyButton(discord.ui.Button):
 
         cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
 
+        label = f'Buy {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}'
+        disabled = False
+
+        if get_user_metadata(self.df_state, 'tutorial') == 2:
+            if self.df_state.cargo_obj['recipient']:  # if commerce cargo
+                label = 'You must buy water and food cargo first!'
+                disabled = True
+
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Buy {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}',
+            label=label,
+            disabled=disabled,
             custom_id='buy_cargo_button',
             row=row
         )

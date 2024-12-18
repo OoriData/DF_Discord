@@ -42,8 +42,14 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
 
     view = ConvoyView(df_state)
 
-    og_message = await df_state.interaction.original_response()
-    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
+    tutorial_stage = get_user_metadata(df_state, 'tutorial')
+    if tutorial_stage in {1, 2, 3, 4}:  # If we are in the early tutorial, and therefor on tutorial island:
+        og_message = await df_state.interaction.original_response()
+        await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
+    
+    else:  # Not in the tutorial
+        og_message = await df_state.interaction.original_response()
+        await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
     convoy_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))

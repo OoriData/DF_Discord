@@ -326,7 +326,7 @@ class CargoSellQuantityEmbed(discord.Embed):
             desc.append(f'### Selling {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['price']:,} per item')
             sale_price = self.sale_quantity * self.df_state.cargo_obj['price']
         desc.extend([
-            f'*{self.df_state.cargo_obj['description']}*',
+            f'*{self.df_state.cargo_obj['base_desc']}*',
             f'- Sale volume: {sale_volume:,}L',
             f'- Sale weight: {sale_weight:,}kg',
             f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'

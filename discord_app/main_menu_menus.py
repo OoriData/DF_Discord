@@ -34,7 +34,7 @@ async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=N
         fancy_embed = discord.Embed()
         fancy_embed.description = '\n'.join([
             f'## You must be in the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) to play.',
-            'Desolate Frontiers is an idle, mildly-apocalyptic solarpunk MMO logistics simulator. Join the server and sign up today!'
+            'Desolate Frontiers is an idle, mildly-apocalyptic solarpunk MMO logistics simulator, where you play as a logistics company moving cargo and passengers across a shattered US.'
         ])
         await interaction.response.send_message(embeds=[title_embed, fancy_embed], files=[df_logo])
         return

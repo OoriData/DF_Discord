@@ -808,12 +808,12 @@ class TopUpButton(discord.ui.Button):
                             'convoy_need': convoy_need
                         }
                         available_resources.append(resource_type)
+                else:
+                    label = 'Convoy is already topped up'
 
             if available_resources:  # Update label and disabled state based on available resources
                 available_resources_str = ', '.join(available_resources)
-                if self.top_up_price == 0:
-                    label = 'Convoy is already topped up'
-                else:
+                if self.top_up_price != 0:
                     label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
                     disabled = self.top_up_price > self.df_state.convoy_obj['money']
 

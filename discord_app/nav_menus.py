@@ -56,7 +56,11 @@ class NavMainMenuButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
-        await discord_app.main_menu_menus.main_menu(interaction=interaction, df_map=self.df_state.map_obj)
+        await discord_app.main_menu_menus.main_menu(
+            interaction=interaction,
+            df_map=self.df_state.map_obj,
+            user_cache=self.df_state.user_cache
+        )
 
 class NavConvoyButton(discord.ui.Button):
     def __init__(self, df_state: DFState):

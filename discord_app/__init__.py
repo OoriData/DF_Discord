@@ -11,6 +11,8 @@ import                             discord
 
 from discord_app.df_state   import DFState
 
+DF_GUILD_ID = 1225943320078057582
+
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 
 DF_LOGO_URL = 'https://www.oori.dev/assets/branding/df_Logo_FullColor.png'

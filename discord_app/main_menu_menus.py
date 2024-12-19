@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -30,10 +30,12 @@ async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=N
     title_embed.color = discord.Color.from_rgb(*OORI_RED)
     title_embed.set_image(url='attachment://image.png')
 
-    if interaction.user.id not in list(user_cache.keys()):
-        fancy_embed = discord.Embed(
-            description=f'## You must be in the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) to play.'
-        )
+    if interaction.user.id not in list(user_cache.keys()) and interaction.guild.id != DF_GUILD_ID:
+        fancy_embed = discord.Embed()
+        fancy_embed.description = '\n'.join([
+            f'## You must be in the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) to play.',
+            'Desolate Frontiers is an idle, mildly-apocalyptic solarpunk MMO logistics simulator. Join the server and sign up today!'
+        ])
         await interaction.response.send_message(embeds=[title_embed, fancy_embed], files=[df_logo])
         return
     
@@ -187,7 +189,7 @@ class UsernameModal(discord.ui.Modal):
         self.df_state.user_obj = await api_calls.get_user(user_id)
         self.df_state.user_obj['metadata']['mobile'] = True
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
-        await main_menu(interaction=interaction, df_map=self.df_state.map_obj)
+        await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache)
 
 class ConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
@@ -336,7 +338,7 @@ class OptionsView(discord.ui.View):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-        await main_menu(interaction=interaction, edit=False, df_map=self.df_state.map_obj)
+        await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
     async def on_timeout(self):
         timed_out_button = discord.ui.Button(

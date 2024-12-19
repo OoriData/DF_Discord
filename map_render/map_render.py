@@ -160,7 +160,6 @@ def render_map(
     
     def draw_tile_bg(x, y, tile):
         if tile['settlements']:
-            print(tile['settlements'][0]['sett_type'])
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)
         else:
             color = TILE_COLORS.get(tile['terrain_difficulty'], ERROR_COLOR)

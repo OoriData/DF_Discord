@@ -225,14 +225,17 @@ class WarehouseSelect(discord.ui.Select):
         disabled = False
         options=[]
         for warehouse in self.df_state.user_obj['warehouses']:
-            self.df_state.sett_obj = next((
+            warehouse_sett = next((
                 s
                 for row in df_state.map_obj['tiles']
                 for t in row
                 for s in t['settlements']
                 if s['sett_id'] == warehouse['sett_id']
             ), None)
-            options.append(discord.SelectOption(label=self.df_state.sett_obj['name'], value=warehouse['warehouse_id']))
+            options.append(discord.SelectOption(
+                label=warehouse_sett['name'],
+                value=warehouse['warehouse_id']
+            ))
         if not options:
             placeholder = 'No Warehouses'
             disabled = True
@@ -248,11 +251,16 @@ class WarehouseSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
-        
         self.df_state.warehouse_obj = await api_calls.get_warehouse(self.values[0])
+        self.df_state.sett_obj = next((
+            s
+            for row in self.df_state.map_obj['tiles']
+            for t in row
+            for s in t['settlements']
+            if s['sett_id'] == self.df_state.warehouse_obj['sett_id']
+        ), None)
 
         await warehouse_menus.warehouse_menu(self.df_state)
 
@@ -269,7 +277,6 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
@@ -306,7 +313,8 @@ class ConvoySelect(discord.ui.Select):
         ), None)
 
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
-        self.df_state.sett_obj = tile_obj['settlements'][0]
+        if tile_obj['settlements']:
+            self.df_state.sett_obj = tile_obj['settlements'][0]  # XXX presuming only one settlement
 
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 

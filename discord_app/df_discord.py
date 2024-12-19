@@ -89,10 +89,14 @@ class Desolate_Cog(commands.Cog):
                 break
 
     @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_main_menu(self, interaction: discord.Interaction):
         await main_menu(interaction=interaction, df_map=self.df_map_obj, user_cache=self.df_users_cache, edit=False)
         
     @app_commands.command(name='df-map', description='Show the full game map')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_map(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -113,6 +117,8 @@ class Desolate_Cog(commands.Cog):
             await interaction.followup.send(msg)
 
     @app_commands.command(name='df-help', description='Show the help message')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_help(self, interaction: discord.Interaction):
         help_embed = discord.Embed(description=DF_HELP)
         await interaction.response.send_message(embed=help_embed, ephemeral=True)

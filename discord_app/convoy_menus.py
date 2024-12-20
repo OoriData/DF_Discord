@@ -561,8 +561,10 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
         route_index=route_index
     )
 
-    og_message = await df_state.interaction.original_response()
-    await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
+    if df_state.interaction.response.is_done():
+        og_message = await df_state.interaction.original_response()
+        await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
+
 
 class SendConvoyConfirmView(discord.ui.View):
     '''Confirm button before sending convoy somewhere'''

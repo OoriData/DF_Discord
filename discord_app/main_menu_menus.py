@@ -44,7 +44,7 @@ async def main_menu(
         external_embed = discord.Embed()
         external_embed.description = '\n'.join([
             f"## To play, you must join the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK).",
-            "Desolate Frontiers is a solarpunk-inspired, mildly apocalyptic idle MMO logistics simulator. You take on the role of a logistics company, transporting cargo and passengers across a shattered United States.",
+            "Desolate Frontiers is a solarpunk-inspired, mildly apocalyptic idle MMO logistics simulator. You take on the role of a logistics company, transporting cargo and passengers across a shattered, not so United States.",
             "",
             "After signing up in the Desolate Frontiers server, you’ll be able to manage your convoys from any Discord server where the Desolate Frontiers app is installed, or by [adding the Desolate Frontiers app to your Discord account](https://discord.com/oauth2/authorize?client_id=1257782434896806009)."
         ])

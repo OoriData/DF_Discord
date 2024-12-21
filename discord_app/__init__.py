@@ -259,7 +259,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
     embeds.insert(0, tutorial_embed)
 
     tutorial_embed_footer = TutorialEmbed(author=False)
-    tutorial_embed_footer.description = '\n\n-# The tutorial guide is up above!\n-# If you get "Interaction Timed Out!", just call `/desolate_frontiers` again.'
+    tutorial_embed_footer.description = '\n\n-# The tutorial guide is up above!'
     embeds.append(tutorial_embed_footer)
 
     return embeds

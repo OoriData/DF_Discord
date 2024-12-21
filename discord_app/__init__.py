@@ -16,20 +16,78 @@ DF_GUILD_ID = 1225943320078057582
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 
 DF_LOGO_URL = 'https://www.oori.dev/assets/branding/df_Logo_FullColor.png'
-
 DF_TEXT_LOGO_URL = 'https://www.oori.dev/assets/branding/df_TextLogo_FullColor.png'
 
 OORI_WHITE = (219, 226, 233)
-
 OORI_YELLOW = (243, 213, 78)
-
 OORI_RED = (138, 43, 43)
+
+
+async def handle_timeout(df_state: DFState, message: discord.Message=None):
+    if message:
+        await message.edit(
+            view=TimeoutView(df_state.user_cache)
+        )
+
+    else:
+        await df_state.interaction.edit_original_response(
+            view=TimeoutView(df_state.user_cache)
+        )
+
+class TimeoutView(discord.ui.View):
+    def __init__(self, user_cache):
+        super().__init__(timeout=None)
+
+        self = add_external_URL_buttons(self)  # Add external link buttons
+
+        self.add_item(TimedOutMainMenuButton(user_cache))
+
+class TimedOutMainMenuButton(discord.ui.Button):
+    def __init__(self, user_cache: DFState):
+        self.user_cache = user_cache
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Interaction timed out; Main Menu',
+            custom_id='timed_out_main_menu_button',
+            row=1
+        )
+
+    async def callback(self, interaction):
+        new_message = await interaction.channel.send(content=DF_LOGO_EMOJI)
+
+        import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
+        await discord_app.main_menu_menus.main_menu(
+            interaction=interaction,
+            message=new_message,
+            user_cache=self.user_cache,
+            user_id=interaction.user.id
+        )
+
+        await interaction.response.pong()
+
+
+def add_external_URL_buttons(view: discord.ui.View) -> discord.ui.View:
+    view.add_item(URLButton('Join the DF Server', 'https://discord.gg/nS7NVC7PaK'))
+    view.add_item(URLButton('Add the DF App', 'https://discord.com/oauth2/authorize?client_id=1257782434896806009'))
+
+    return view
+
+
+class URLButton(discord.ui.Button):
+    def __init__(self, label, url, row=0):
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=label,
+            url=url,
+            emoji=DF_LOGO_EMOJI,
+            row=row
+        )
 
 
 async def validate_interaction(interaction: discord.Interaction, df_state: DFState):
     if df_state.user_discord_id != interaction.user.id:
         import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
-
         await discord_app.main_menu_menus.main_menu(
             interaction=interaction,
             df_map=df_state.map_obj,
@@ -56,7 +114,7 @@ def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
 
     embed.set_author(
         name=name,
-        icon_url=df_state.interaction.user.avatar.url
+        icon_url=df_state.interaction.user.avatar.url if df_state.interaction.user.avatar else None
     )
     return embed
 

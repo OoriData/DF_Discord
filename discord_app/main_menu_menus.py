@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+from discord_app               import api_calls, convoy_menus, warehouse_menus, URLButton, handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -23,26 +23,54 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
-async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=None, edit: bool=True):
+async def main_menu(
+        interaction: discord.Interaction,
+        user_cache: dict,
+        message: discord.Message=None,
+        user_id: int=None,
+        df_map=None,
+        edit: bool=True
+):
     'This menu should *always* perform a "full refresh" in order to allow it to function as a reset/refresh button'
     df_logo = await get_image_as_discord_file(DF_TEXT_LOGO_URL)
     title_embed = discord.Embed()
     title_embed.color = discord.Color.from_rgb(*OORI_RED)
     title_embed.set_image(url='attachment://image.png')
 
-    if interaction.user.id not in list(user_cache.keys()) and interaction.guild.id != DF_GUILD_ID:
-        fancy_embed = discord.Embed()
-        fancy_embed.description = '\n'.join([
-            f'## You must be in the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) to play.',
-            'Desolate Frontiers is an idle, mildly-apocalyptic solarpunk MMO logistics simulator, where you play as a logistics company moving cargo and passengers across a shattered US.'
+    if not user_id:
+        user_id = interaction.user.id
+
+    if user_id not in list(user_cache.keys()) and interaction.guild.id != DF_GUILD_ID:
+        external_embed = discord.Embed()
+        external_embed.description = '\n'.join([
+            f"## To play, you must join the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK).",
+            "Desolate Frontiers is a solarpunk-inspired, mildly apocalyptic idle MMO logistics simulator. You take on the role of a logistics company, transporting cargo and passengers across a shattered United States.",
+            "",
+            "After signing up in the Desolate Frontiers server, you’ll be able to manage your convoys from any Discord server where the Desolate Frontiers app is installed, or by [adding the Desolate Frontiers app to your Discord account](https://discord.com/oauth2/authorize?client_id=1257782434896806009)."
         ])
-        await interaction.response.send_message(embeds=[title_embed, fancy_embed], files=[df_logo])
+
+        if message:
+            await message.edit(
+                content=None,
+                embeds=[title_embed, external_embed],
+                attachments=[df_logo],
+                view=add_external_URL_buttons(discord.ui.View())
+            )
+
+        else:
+            await interaction.response.send_message(
+                embeds=[title_embed, external_embed],
+                files=[df_logo],
+                view=add_external_URL_buttons(discord.ui.View())
+            )
+
         return
     
-    await interaction.response.defer()
+    if interaction:
+        await interaction.response.defer()
 
     try:
-        user_obj = await api_calls.get_user_by_discord(interaction.user.id)
+        user_obj = await api_calls.get_user_by_discord(user_id)
     except RuntimeError as e:
         # print(f'user not registered: {e}')
         user_obj = None
@@ -84,13 +112,12 @@ async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=N
         df_map = await api_calls.get_map()
 
     df_state = DFState(  # Prepare the DFState object
-        user_discord_id=interaction.user.id,
+        user_discord_id=user_id,
         map_obj=df_map,
         user_obj=user_obj,
         interaction=interaction,
         user_cache=user_cache
     )
-
 
     main_menu_embed = discord.Embed()
     main_menu_embed = df_embed_author(main_menu_embed, df_state)
@@ -98,17 +125,43 @@ async def main_menu(interaction: discord.Interaction, user_cache: dict, df_map=N
 
     embeds = [title_embed, main_menu_embed]
 
-    main_menu_view = MainMenuView(df_state)
+    if message:
+        main_menu_view = MainMenuView(df_state, message)
 
-    if edit:
+        await message.edit(
+            content=None,
+            embeds=embeds,
+            view=main_menu_view,
+            attachments=[df_logo]
+        )
+
+    elif edit:
+        main_menu_view = MainMenuView(df_state)
+
         og_message = await df_state.interaction.original_response()
-        await interaction.followup.edit_message(og_message.id, embeds=embeds, view=main_menu_view, attachments=[df_logo])
+        await interaction.followup.edit_message(
+            message_id=og_message.id,
+            content=None,
+            embeds=embeds,
+            view=main_menu_view,
+            attachments=[df_logo]
+        )
+
     else:
-        await interaction.followup.send(embeds=[title_embed, main_menu_embed], view=main_menu_view, files=[df_logo])
+        main_menu_view = MainMenuView(df_state)
+
+        await interaction.followup.send(
+            content=None,
+            embeds=[title_embed, main_menu_embed],
+            view=main_menu_view,
+            files=[df_logo]
+        )
 
 class MainMenuView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, message: discord.Message=None):
         self.df_state = df_state
+        self.message = message
+
         super().__init__(timeout=600)
 
         self.clear_items()
@@ -156,17 +209,7 @@ class MainMenuView(discord.ui.View):
         await options_menu(self.df_state)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state, self.message)
 
 class UsernameModal(discord.ui.Modal):
     def __init__(self, discord_nickname: str, df_state: DFState):
@@ -359,7 +402,6 @@ class OptionsView(discord.ui.View):
         self.add_item(timed_out_button)
 
         await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
     
 class AppModeButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row=1):

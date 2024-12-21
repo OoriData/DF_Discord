@@ -1,26 +1,24 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-import                                 os
-import                                 asyncio
-import                                 logging
-import                                 textwrap
-from typing                     import Optional
-from datetime                   import datetime, timezone, timedelta
-from io                         import BytesIO
+import                                  os
+import                                  asyncio
+import                                  logging
+import                                  textwrap
+from typing                      import Optional
+from datetime                    import datetime, timezone, timedelta
+from io                          import BytesIO
 
-import                                 discord
-import                                 httpx
-from discord                    import app_commands, HTTPException
-from discord.ext                import commands, tasks
+import                                  discord
+import                                  httpx
+from discord                     import app_commands, HTTPException
+from discord.ext                 import commands, tasks
 
-from utiloori.ansi_color        import ansi_color
+from utiloori.ansi_color         import ansi_color
 
-from discord_app                import DF_DISCORD_LOGO as API_BANNER, convoy_menus
-from discord_app                import api_calls, DF_HELP, df_embed_author
-from discord_app.map_rendering  import add_map_to_embed
-from discord_app.vendor_views   import vendor_menus
+from discord_app                 import DF_DISCORD_LOGO as API_BANNER
+from discord_app                 import TimeoutView, api_calls, DF_HELP
+from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
-from discord_app.df_state       import DFState
 
 DF_API_HOST = os.environ['DF_API_HOST']
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -40,6 +38,7 @@ class Desolate_Cog(commands.Cog):
         self.bot: commands.Bot = bot
         self.message_history_limit = 1
         self.ephemeral = True
+        self.cache_ready = asyncio.Event()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -60,6 +59,8 @@ class Desolate_Cog(commands.Cog):
         logger.debug(ansi_color('Initializing users cache...', 'yellow'))
         self.df_users_cache = None
         self.update_user_cache.start()
+        await self.cache_ready.wait()  # Wait until cache is initialized
+        self.bot.add_view(TimeoutView(self.df_users_cache))
 
         df_guild = self.bot.get_guild(DF_GUILD_ID)
         logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
@@ -92,7 +93,12 @@ class Desolate_Cog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_main_menu(self, interaction: discord.Interaction):
-        await main_menu(interaction=interaction, df_map=self.df_map_obj, user_cache=self.df_users_cache, edit=False)
+        await main_menu(
+            interaction=interaction,
+            df_map=self.df_map_obj,
+            user_cache=self.df_users_cache,
+            edit=False
+        )
         
     @app_commands.command(name='df-map', description='Show the full game map')
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -127,7 +133,9 @@ class Desolate_Cog(commands.Cog):
     async def update_user_cache(self):
         if not isinstance(self.df_users_cache, dict):  # Initialize cache if not already a dictionary
             self.df_users_cache = {}
+            initial_setup = True
         else:
+            initial_setup = False
             await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
@@ -160,6 +168,10 @@ class Desolate_Cog(commands.Cog):
                 continue
             except Exception as e:
                 logger.error(ansi_color(f'Error updating the cache for user {member.name}: {e}', 'red'))
+
+        if initial_setup:
+            logger.info(ansi_color('User cache initialization complete', 'green'))
+            self.cache_ready.set()  # Signal that the cache is ready
 
 
     @tasks.loop(minutes=1)

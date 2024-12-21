@@ -539,10 +539,10 @@ class DestinationSelect(discord.ui.Select):
 
 
 async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
-    # df_state.append_menu_to_back_stack(func=route_menu, args={  # XXX commented out until i can figure out how to if/else defering if nessisary
-    #     'route_choices': route_choices,
-    #     'route_index': route_index
-    # })  # Add this menu to the back stack
+    df_state.append_menu_to_back_stack(func=route_menu, args={  # XXX commented out until i can figure out how to if/else defering if nessisary
+        'route_choices': route_choices,
+        'route_index': route_index
+    })  # Add this menu to the back stack
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
@@ -563,7 +563,18 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
 
     if df_state.interaction.response.is_done():
         og_message = await df_state.interaction.original_response()
-        await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
+        await df_state.interaction.followup.edit_message(
+            og_message.id,
+            embeds=embeds,
+            view=view,
+            attachments=[image_file]
+        )
+    else:
+        await df_state.interaction.response.edit_message(
+            embeds=embeds,
+            view=view,
+            attachments=[image_file]
+        )
 
 
 class SendConvoyConfirmView(discord.ui.View):

@@ -830,6 +830,7 @@ class TopUpButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         if not interaction.response.is_done():
             await interaction.response.defer()
+
         self.df_state.interaction = interaction
 
         try:

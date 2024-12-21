@@ -191,7 +191,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Select from the `Vehicle Inventory` dropdown. Vehicles you can afford are marked with {DF_LOGO_EMOJI}",
                 "- The block will update, allowing you to inspect the chosen vehicle. If it suits you, hit the green `Buy Vehicle| $X,XXX` button.",
-                f"  - To inspect a different vehicle, hit the gray `{df_state.sett_obj['name']}` button again to start over.",
+                "  - To inspect a different vehicle, hit the gray `⬅ Back` button",
             ])
         case 2:
             tutorial_embed.description = '\n'.join([
@@ -209,7 +209,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "### Now that you have rations, you'll need fuel. The cheap-ass dealership sold you a vehicle with an empty tank. ⛽️",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
                 "- `Top up fuel | $XXX` button to fill your empty tank",
-                "  - Seek out this button in future as a convenient shortcut to separately buy resources depleted on the road",
+                "  - Seek out this button in future as a convenient shortcut to buy resources depleted on the road",
             ])
         case 4:
             tutorial_embed.description = '\n'.join([
@@ -219,7 +219,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Select your chosen cargo to transport from the `Cargo Inventory` dropdown. Cargo you can fit in your car are marked with {DF_LOGO_EMOJI}",
                 "  - Refer below. 💵 emojis indicate the profit margin for that delivery",
-                "  - Also consider the distance for the delivery; a high margin delivery might not be worth the time & resource expense of a cross-country trip.",
+                "  - Also consider the distance for the delivery; a high margin delivery might not be worth the time & resource expense of a cross-country trip!",
                 "- Blurple `max (+X)` button adds to your cart the maximum amount of this cargo that you can afford and carry",
                 "  - **if you just hit the green buy button now, you'll only buy one. Seek big deliveries for big profits!**",
                 "- Green `Buy X cargo(s)` button to complete the purchase",
@@ -231,9 +231,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
-                "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
-                "  - **If it's disabled, saying `Not enough resource`, you'll have to make this journey in several segments.**",
-                "  - Invoke **`/desolate-frontiers`** again and select a destination between your current location and the recipient's.",
+                "- Hit the green `Embark upon Journey` button to send your convoy on its way!",
             ])
         case 6:
             tutorial_embed.description = '\n'.join([
@@ -244,9 +242,6 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
-                "- If the green `Embark upon Journey` button is enabled, you can hit it to send your convoy on its way!",
-                "  - **If it's disabled, saying `Not enough resource`, you'll have to make this journey in several segments.**",
-                "  - Invoke **`/desolate-frontiers`** again and select a destination between your current location and the recipient's.",
             ])
         case 7:
             tutorial_embed.description = '\n'.join([
@@ -295,9 +290,8 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 - With the basics down, it's time for your first delivery. 📦
   - Head to the market once again and look into the goods with a **Profit margin**, which will earn you some money once you bring them to their destination.
 - Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️
-  - Use the gray `convoy` button, hit `Embark on new Journey` **wait a really long time for that menu to load** (we're working on that lag, sorry!), and select the destination of the cargo you just bought.
+  - Use the gray `convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
   - Your convoy will present you the path it will take to get there and how many resources you'll use in the process; hit `Embark upon Journey` to send them on their way!
-    - If you picked a really far delivery, you might not be able to make it. You can either make the journey in two parts by going halfway, then later going the rest of the way, or you can go back to the market and buy some more resources.
 - ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱
   - If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.
 

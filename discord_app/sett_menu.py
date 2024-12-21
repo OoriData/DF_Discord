@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
@@ -125,17 +125,7 @@ class SettView(discord.ui.View):
                         )
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class WarehouseButton(discord.ui.Button):
     def __init__(self, df_state: DFState):

@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, validate_interaction
+from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -62,17 +62,7 @@ class MechVehicleDropdownView(discord.ui.View):
         pass
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState):
@@ -157,17 +147,7 @@ class MechView(discord.ui.View):
         pass
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 
 async def upgrade_vehicle_menu(df_state: DFState):
@@ -227,17 +207,7 @@ class UpgradeVehicleView(discord.ui.View):
         await part_inventory_menu(self.df_state, is_vendor=True)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 
 async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
@@ -292,17 +262,7 @@ class PartSelectView(discord.ui.View):
         self.add_item(PartSelect(self.df_state, part_cargos_to_display))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class PartSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, part_cargos_to_display):
@@ -403,17 +363,7 @@ class InstallConfirmView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class PostInstallView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -423,14 +373,4 @@ class PostInstallView(discord.ui.View):
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)

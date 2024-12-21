@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, df_embed_author, get_user_metadata, validate_interaction
+from discord_app               import api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -92,17 +92,7 @@ class SellView(discord.ui.View):
         self.add_item(SellCargoSelect(self.df_state))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class SellResourceButton(discord.ui.Button):
     def __init__(self, df_state: DFState, resource_type: str, row: int=1):
@@ -245,17 +235,7 @@ class ResourceSellQuantityView(discord.ui.View):
         self.add_item(ResourceConfirmSellButton(self.df_state, self.sale_quantity, self.resource_type, row=2))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class ResourceConfirmSellButton(discord.ui.Button):
     def __init__(
@@ -370,17 +350,7 @@ class CargoSellQuantityView(discord.ui.View):
         self.add_item(CargoConfirmSellButton(self.df_state, self.sale_quantity, row=2))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class CargoConfirmSellButton(discord.ui.Button):
     def __init__(
@@ -474,17 +444,7 @@ class VehicleSellConfirmView(discord.ui.View):
         self.add_item(SellVehicleButton(self.df_state))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class SellVehicleButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
@@ -602,14 +562,4 @@ class PostSellView(discord.ui.View):
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)

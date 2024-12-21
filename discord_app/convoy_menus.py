@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, dialogue_menus, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE
+from discord_app               import api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
@@ -280,17 +280,7 @@ class ConvoyView(discord.ui.View):
         await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class JourneyButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int=1):
@@ -437,17 +427,7 @@ class DestinationView(discord.ui.View):
                 )
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class DestinationSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, df_map, page: int):
@@ -683,14 +663,4 @@ class ConfirmJourneyButton(discord.ui.Button):
         await convoy_menu(self.df_state)
     
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)

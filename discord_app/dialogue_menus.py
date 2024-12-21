@@ -4,7 +4,7 @@ from uuid                  import UUID
 
 import                            discord
 
-from discord_app           import api_calls, df_embed_author, discord_timestamp, validate_interaction
+from discord_app           import api_calls, handle_timeout, df_embed_author, discord_timestamp, validate_interaction
 from discord_app.nav_menus import add_nav_buttons
 from discord_app.df_state  import DFState
 
@@ -106,17 +106,7 @@ class DialogueView(discord.ui.View):
         await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class SendMessageModal(discord.ui.Modal):
     def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID):

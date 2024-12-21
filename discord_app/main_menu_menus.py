@@ -10,7 +10,7 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, URLButton, handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+from discord_app               import api_calls, convoy_menus, warehouse_menus, handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -392,16 +392,7 @@ class OptionsView(discord.ui.View):
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
+        await handle_timeout(self.df_state)
     
 class AppModeButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row=1):

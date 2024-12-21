@@ -10,7 +10,7 @@ import                                discord
 
 import discord_app.nav_menus
 import discord_app.cargo_menus
-from discord_app               import api_calls, discord_timestamp, df_embed_author, get_user_metadata
+from discord_app               import api_calls, handle_timeout, discord_timestamp, df_embed_author, get_user_metadata
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus# from discord_app.nav_menus     import add_nav_buttons
 
@@ -63,17 +63,7 @@ class VehicleView(discord.ui.View):
         # self.add_item(VehicleSelect(self.df_state))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 
 def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict=None):

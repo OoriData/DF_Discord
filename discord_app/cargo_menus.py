@@ -8,7 +8,7 @@ import                                textwrap
 
 import                                discord
 
-from discord_app               import api_calls, discord_timestamp, df_embed_author, validate_interaction
+from discord_app               import api_calls, handle_timeout, discord_timestamp, df_embed_author, validate_interaction
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.convoy_menus
@@ -73,17 +73,7 @@ class ConvoyCargoView(discord.ui.View):
             self.add_item(MapButton(self.df_state, recipient_vendor_obj))
 
     async def on_timeout(self):
-        timed_out_button = discord.ui.Button(
-            label='Interaction timed out!',
-            style=discord.ButtonStyle.gray,
-            disabled=True
-        )
-
-        self.clear_items()
-        self.add_item(timed_out_button)
-
-        await self.df_state.interaction.edit_original_response(view=self)
-        return await super().on_timeout()
+        await handle_timeout(self.df_state)
 
 class MoveCargoVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):

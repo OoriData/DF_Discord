@@ -86,9 +86,14 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
     view = SettView(df_state, df_state.sett_obj['vendors'])
 
     if edit:
-        await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+        if df_state.interaction.response.is_done():
+            og_message = await df_state.interaction.original_response()
+            await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
+        else:
+         await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
+
 
 class SettView(discord.ui.View):
     ''' Overarching convoy button menu '''

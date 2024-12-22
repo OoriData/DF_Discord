@@ -86,14 +86,14 @@ async def main_menu(
                     progress_percent = ((convoy['journey']['progress']) / len(convoy['journey']['route_x'])) * 100
                     eta = convoy['journey']['eta']
                     convoy_descs.extend([
-                        f'## {convoy['name']}\n'
-                        f'🛣️ In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
+                        f'## {convoy['name']} 🛣️\n'
+                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
                         '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
                 else:
                     convoy_descs.extend([
-                        f'## {convoy['name']}\n'
-                        f'🅿️ Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
+                        f'## {convoy['name']} 🅿️\n'
+                        f'Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
                         '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
 
@@ -169,17 +169,17 @@ class MainMenuView(discord.ui.View):
         if self.df_state.user_obj:  # If user exists
             if len(df_state.user_obj['convoys']) == 1:  # If the user has 1 convoy
                 self.add_item(self.user_options_button)
-                self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
+                self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
                 self.add_item(MainMenuSingleConvoyButton(df_state=df_state, row=2))
 
             elif self.df_state.user_obj['convoys']:  # If the user has serveral convoys
                 self.add_item(self.user_options_button)
-                self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
-                self.add_item(ConvoySelect(df_state=self.df_state, row=2))
+                self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
+                self.add_item(MainMenuConvoySelect(df_state=self.df_state, row=2))
 
             elif any(w['vehicle_storage'] for w in self.df_state.user_obj['warehouses']):  # If the user has no convoys, but has vehicles in warehouses
                 self.add_item(self.user_options_button)
-                self.add_item(WarehouseSelect(df_state=self.df_state, row=1))
+                self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
 
             else:  # If the user has no convoys and no warehoused vehicles (presumably fresh user)
                 self.add_item(self.create_convoy_button)
@@ -192,14 +192,14 @@ class MainMenuView(discord.ui.View):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-        await interaction.response.send_modal(UsernameModal(interaction.user.display_name, self.df_state))
+        await interaction.response.send_modal(MainMenuUsernameModal(interaction.user.display_name, self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple)
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-        await interaction.response.send_modal(ConvoyNameModal(self.df_state))
+        await interaction.response.send_modal(MainMenuConvoyNameModal(self.df_state))
 
     @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', row=0)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -211,7 +211,7 @@ class MainMenuView(discord.ui.View):
     async def on_timeout(self):
         await handle_timeout(self.df_state, self.message)
 
-class UsernameModal(discord.ui.Modal):
+class MainMenuUsernameModal(discord.ui.Modal):
     def __init__(self, discord_nickname: str, df_state: DFState):
         self.df_state = df_state
 
@@ -234,7 +234,7 @@ class UsernameModal(discord.ui.Modal):
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache)
 
-class ConvoyNameModal(discord.ui.Modal):
+class MainMenuConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         
@@ -260,7 +260,7 @@ class ConvoyNameModal(discord.ui.Modal):
 
         await convoy_menus.convoy_menu(self.df_state)
 
-class WarehouseSelect(discord.ui.Select):
+class MainMenuWarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):
         self.df_state = df_state
 
@@ -315,6 +315,7 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label=df_state.user_obj['convoys'][0]['name'],
             custom_id='single_convoy_button',
+            emoji='🛣️' if df_state.user_obj['convoys'][0]['journey'] else '🅿️',
             row=row
         )
 
@@ -329,7 +330,7 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
         
         await convoy_menus.convoy_menu(self.df_state)
 
-class ConvoySelect(discord.ui.Select):
+class MainMenuConvoySelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row=1):
         self.df_state = df_state
 

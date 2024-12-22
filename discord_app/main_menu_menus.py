@@ -46,7 +46,7 @@ async def main_menu(
             f"## To play, you must join the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK).",
             "Desolate Frontiers is a solarpunk-inspired, mildly apocalyptic idle MMO logistics simulator. You take on the role of a logistics company, transporting cargo and passengers across a shattered, not so United States.",
             "",
-            "After signing up in the Desolate Frontiers server, you’ll be able to manage your convoys from any Discord server where the Desolate Frontiers app is installed, or by [adding the Desolate Frontiers app to your Discord account](https://discord.com/oauth2/authorize?client_id=1257782434896806009)."
+            "After signing up in the Desolate Frontiers server, you'll be able to manage your convoys from any Discord server where the Desolate Frontiers app is installed, or by [adding the Desolate Frontiers app to your Discord account](https://discord.com/oauth2/authorize?client_id=1257782434896806009)."
         ])
 
         if message:
@@ -87,13 +87,13 @@ async def main_menu(
                     eta = convoy['journey']['eta']
                     convoy_descs.extend([
                         f'## {convoy['name']}\n'
-                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
+                        f'🛣️ In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
                         '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
                 else:
                     convoy_descs.extend([
                         f'## {convoy['name']}\n'
-                        f'Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
+                        f'🅿️ Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
                         '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
                     ])
 
@@ -334,7 +334,11 @@ class ConvoySelect(discord.ui.Select):
         self.df_state = df_state
 
         options = [
-            discord.SelectOption(label=convoy['name'], value=convoy['convoy_id'])
+            discord.SelectOption(
+                label=convoy['name'],
+                value=convoy['convoy_id'],
+                emoji='🛣️' if convoy['journey'] else '🅿️'
+            )
             for convoy in df_state.user_obj['convoys']
         ]
         

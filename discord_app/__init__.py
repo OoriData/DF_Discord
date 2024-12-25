@@ -64,7 +64,8 @@ class TimedOutMainMenuButton(discord.ui.Button):
             user_id=interaction.user.id
         )
 
-        await interaction.response.pong()
+        if not interaction.response.is_done():
+            await interaction.response.pong()
 
 
 def add_external_URL_buttons(view: discord.ui.View) -> discord.ui.View:

@@ -172,7 +172,7 @@ class SellCargoSelect(discord.ui.Select):
         
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=options[:25],
             disabled=disabled,
             custom_id='select_cargo',
             row=row

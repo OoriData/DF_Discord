@@ -49,7 +49,12 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
     
     else:  # Not in the tutorial
         og_message = await df_state.interaction.original_response()
-        await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[image_file])
+        await df_state.interaction.followup.edit_message(
+            og_message.id,
+            embeds=embeds,
+            view=view,
+            attachments=[image_file]
+        )
 
 async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
     convoy_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))
@@ -363,7 +368,11 @@ class ConvoyCargoSelect(discord.ui.Select):
         options = []
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
-                if not cargo['intrinsic']:
+                if (
+                    not cargo['intrinsic']
+                    and not cargo['pending_deletion']
+                    and cargo['quantity'] > 0
+                ):
                     options.append(discord.SelectOption(label=f'{cargo['name']} ({vehicle['name']})', value=cargo['cargo_id']))
         if not options:
             placeholder = 'No cargo in convoy'

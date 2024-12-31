@@ -54,7 +54,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
         )
 
     async def callback(self, interaction):
-        new_message = await interaction.channel.send(content=f'{DF_LOGO_EMOJI} Loading...')
+        new_message = await interaction.channel.send(content='-# Loading...')
 
         import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
         await discord_app.main_menu_menus.main_menu(

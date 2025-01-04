@@ -373,7 +373,10 @@ class ConvoyCargoSelect(discord.ui.Select):
                     and not cargo['pending_deletion']
                     and cargo['quantity'] > 0
                 ):
-                    options.append(discord.SelectOption(label=f'{cargo['name']} ({vehicle['name']})', value=cargo['cargo_id']))
+                    options.append(discord.SelectOption(
+                        label=f'{cargo['quantity']} {cargo['name']} ({vehicle['name']})',
+                        value=cargo['cargo_id']
+                    ))
         if not options:
             placeholder = 'No cargo in convoy'
             disabled = True

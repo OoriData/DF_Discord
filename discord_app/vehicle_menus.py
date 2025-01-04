@@ -68,15 +68,21 @@ class VehicleView(discord.ui.View):
 
 def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict=None):
     fields = {
-        '💵 Value': ('value', '${:,}', '', 'part_value', ' (${:+})'),
-        '🔧 Wear': ('wear', '{}', ' / 100', None, ''),
-        '🛡️ AP': ('ap', '{}', f' / {vehicle['max_ap']}', 'max_ap_mod', ' ({:+})'),
-        '⛽️ Fuel Efficiency': ('fuel_efficiency', '{}', ' / 100', 'fuel_efficiency_mod', ' ({:+})'),
-        '🏎️ Top Speed': ('top_speed', '{}', ' / 100', 'top_speed_mod', ' ({:+})'),
-        '🏔️ Off-road Capability': ('offroad_capability', '{}', ' / 100', 'offroad_capability_mod', ' ({:+})'),
-        '📦 Cargo Capacity': ('cargo_capacity', '{:,}', ' L', 'cargo_capacity_mod', ' ({:+} L)'),
-        '🏋️ Weight Capacity': ('weight_capacity', '{:,}', ' kg', 'weight_capacity_mod', ' ({:+} kg)'),
-        '🚛 Towing Capacity': ('towing_capacity', '{:,}', ' kg', 'towing_capacity_mod', ' ({:+} kg)')
+        '💵 Value': ('value', '**${:,}**', '', 'part_value', ' (${:+})'),
+        '🔧 Wear': ('wear', '**{}**', ' / 100', None, ''),
+        '🛡️ AP': ('ap', '**{}**', f' / {vehicle['max_ap']}', 'max_ap_mod', ' ({:+})'),
+        '⛽️ Fuel Efficiency': ('fuel_efficiency', '**{}**', ' / 100', 'fuel_efficiency_mod', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '**{}**', ' / 100', 'top_speed_mod', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '**{}**', ' / 100', 'offroad_capability_mod', ' ({:+})'),
+        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_mod', ' ({:+} L)'),
+        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_mod', ' ({:+} kg)'),
+        '🚛 Towing Capacity': ('towing_capacity', '**{:,}**', ' kg', 'towing_capacity_mod', ' ({:+} kg)')
+    }
+
+    raw_stats = {  # Stats that should show raw values
+        'fuel_efficiency': 'raw_fuel_efficiency',
+        'top_speed': 'raw_top_speed',
+        'offroad_capability': 'raw_offroad_capability'
     }
 
     for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
@@ -91,10 +97,17 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
 
         # Get the modifier value and apply it if available
         mod_value = new_part.get(mod_key) if new_part and mod_key else None
+        print(f'{mod_value=}')
         if mod_value is not None and value_str != 'N/A':
             value_str += mod_format.format(mod_value)
 
         value_str += suffix
+
+        # Add raw stats if applicable
+        if stat_key in raw_stats and base_value is not None:
+            raw_value = vehicle.get(raw_stats[stat_key])
+            if raw_value is not None:
+                value_str += f' (*raw: {raw_value}*)'
         
         # Add the formatted field to the embed
         if get_user_metadata(df_state, 'mobile'):

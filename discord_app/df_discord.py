@@ -93,6 +93,10 @@ class Desolate_Cog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_main_menu(self, interaction: discord.Interaction):
+        if not self.cache_ready.is_set():
+            await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
+            return
+
         await main_menu(
             interaction=interaction,
             df_map=self.df_map_obj,
@@ -104,6 +108,10 @@ class Desolate_Cog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_map(self, interaction: discord.Interaction):
+        if not self.cache_ready.is_set():
+            await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         try:

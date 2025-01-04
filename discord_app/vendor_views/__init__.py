@@ -12,6 +12,7 @@ def vehicles_md(vehicles, verbose: bool = False):
 
         if verbose:
             vehicle_str += '\n' + '\n'.join([
+                f'  - *{vehicle['make_model']}*',
                 f'  - Top Speed: **{vehicle['top_speed']}** / 100',
                 f'  - Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
                 f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100',

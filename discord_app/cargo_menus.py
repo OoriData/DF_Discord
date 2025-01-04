@@ -188,27 +188,27 @@ def format_part(part_cargo: dict):
         f'- {part['category'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['category'].replace('_', ' ').capitalize()}',
         f'  - **{name}**' if part.get('name') else None,
 
-        f'  - {part['capacity']} L ({fuel_gal} gal)' if part.get('capacity') else None,
+        f'  - **{part['capacity']}** L (**{fuel_gal}** gal)' if part.get('capacity') else None,
 
-        f'  - {part['Nm']} N·m ({lbft} lb·ft)' if part.get('Nm') else None,
-        f'  - {part['kW']} kW ({horsepower} hp)' if part.get('kW') else None,
-        f'  - {part['displacement']} L ({displacement_cubic_inches} in³)' if part.get('displacement') else None,
+        f'  - **{part['Nm']}** N·m (**{lbft}** lb·ft)' if part.get('Nm') else None,
+        f'  - **{part['kW']}** kW (**{horsepower}** hp)' if part.get('kW') else None,
+        f'  - **{part['displacement']}** L (**{displacement_cubic_inches}** in³)' if part.get('displacement') else None,
 
-        f'  - Max AP: {part['max_ap_mod']:+}' if part.get('max_ap_mod') else None,
-        f'  - Fuel efficiency: {part['fuel_efficiency_mod']:+}' if part.get('fuel_efficiency_mod') else None,
-        f'  - Top speed: {part['top_speed_mod']:+}' if part.get('top_speed_mod') else None,
-        f'  - Offroad capability: {part['offroad_capability_mod']:+}' if part.get('offroad_capability_mod') else None,
-        f'  - Cargo capacity: {part['cargo_capacity_mod']:+} L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_mod') else None,
-        f'  - Weight capacity: {part['weight_capacity_mod']:+} kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_mod') else None,
-        f'  - Towing capacity: {part['towing_capacity_mod']:+} kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
+        f'  - Max AP: **{part['max_ap_mod']:+}**' if part.get('max_ap_mod') else None,
+        f'  - Fuel efficiency: **{part['fuel_efficiency_mod']:+}**' if part.get('fuel_efficiency_mod') else None,
+        f'  - Top speed: **{part['top_speed_mod']:+}**' if part.get('top_speed_mod') else None,
+        f'  - Offroad capability: **{part['offroad_capability_mod']:+}**' if part.get('offroad_capability_mod') else None,
+        f'  - Cargo capacity: **{part['cargo_capacity_mod']:+}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_mod') else None,
+        f'  - Weight capacity: **{part['weight_capacity_mod']:+}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_mod') else None,
+        f'  - Towing capacity: **{part['towing_capacity_mod']:+}** kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
 
-        f'  - {part['diameter']} m ({diameter_in} in) diameter' if part.get('diameter') else None,
+        f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 
         f'  - *{part['description']}*' if part.get('description') else None,
         # f'  - ${part['part_value']}' if part.get('part_value') else None,
-        f'    - Part price: ${part['kit_price']}' if part.get('kit_price') else None,
-        f'    - Installation price: ${part['installation_price']}' if part.get('installation_price') else None,
-        f'    - Total price: ${part['kit_price'] + part['installation_price']}' if part.get('kit_price') and part.get('installation_price') else None,
+        f'    - Part price: **${part['kit_price']}**' if part.get('kit_price') else None,
+        f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') else None,
+        f'    - Total price: **${part['kit_price'] + part['installation_price']}**' if part.get('kit_price') and part.get('installation_price') else None,
     ]
 
     return '\n'.join(bit for bit in part_bits if bit)

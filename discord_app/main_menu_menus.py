@@ -40,7 +40,8 @@ async def main_menu(
     if not user_id:
         user_id = interaction.user.id
 
-    if user_id not in list(user_cache.keys()) and interaction.guild.id != DF_GUILD_ID:
+    guild_id = interaction.guild.id if interaction.guild else None
+    if user_id not in list(user_cache.keys()) and guild_id != DF_GUILD_ID:
         external_embed = discord.Embed()
         external_embed.description = '\n'.join([
             f"## To play, you must join the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK).",

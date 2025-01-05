@@ -97,7 +97,7 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
 
         # Get the modifier value and apply it if available
         mod_value = new_part.get(mod_key) if new_part and mod_key else None
-        print(f'{mod_value=}')
+        # print(f'{mod_value=}')
         if mod_value is not None and value_str != 'N/A':
             value_str += mod_format.format(mod_value)
 

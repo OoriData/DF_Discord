@@ -141,7 +141,6 @@ def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str
     Returns:
         str: The Discord-formatted timestamp string.
     '''
-
     # Convert ISO format string to datetime object if necessary
     if isinstance(formatted_time, str):
         formatted_time = datetime.fromisoformat(formatted_time)
@@ -152,7 +151,7 @@ def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str
         raise ValueError(msg)
 
     # Create the Discord timestamp format
-    discord_format = f"<t:{int(formatted_time.timestamp())}:{format_letter}>"
+    discord_format = f'<t:{int(formatted_time.timestamp())}:{format_letter}>'
 
     return discord_format
 

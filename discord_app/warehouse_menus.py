@@ -21,6 +21,7 @@ async def warehouse_menu(df_state: DFState, edit: bool=True):
     df_state.append_menu_to_back_stack(func=warehouse_menu)  # Add this menu to the back stack
 
     if df_state.warehouse_obj:
+        df_state.warehouse_obj = await api_calls.get_warehouse(df_state.warehouse_obj['warehouse_id'])
         await warehoused(df_state, edit)
     else:
         await warehouseless(df_state, edit)
@@ -778,11 +779,11 @@ class CargoRetrieveQuantityButton(discord.ui.Button):  # XXX: Explode this butto
         
         self.df_state.interaction = interaction
 
-        self.cart_quantity += self.button_quantity  # Update cart quantity
+        self.retrieve_quantity += self.button_quantity  # Update cart quantity
 
 
-        embed = CargoRetrieveQuantityEmbed(self.df_state, self.cart_quantity)
-        view = CargoRetrieveQuantityView(self.df_state, self.cart_quantity)
+        embed = CargoRetrieveQuantityEmbed(self.df_state, self.retrieve_quantity)
+        view = CargoRetrieveQuantityView(self.df_state, self.retrieve_quantity)
 
         embeds = [embed]
         embeds = add_tutorial_embed(embeds, self.df_state)
@@ -832,12 +833,13 @@ class CargoConfirmRetrieveButton(discord.ui.Button):
         #     f'## {self.df_state.user_obj['name']}\'s Warehouse',
         #     f'Retrieved {self.retrieve_quantity} {self.df_state.cargo_obj['name']}(s) from warehouse.'
         # ]
+        # embed.description = desc[0]  # i dont understand whats going on here tbh
 
-        # XXX: Probably don't need tutorial embeds
+        # # XXX: Probably don't need tutorial embeds
         # embeds = [embed]
-        # embeds = add_tutorial_embed(embeds, self.df_state)
+        # # embeds = add_tutorial_embed(embeds, self.df_state)
 
-        # view = PostBuyView(self.df_state)
+        # # view = PostBuyView(self.df_state)
         await warehouse_menu(self.df_state)
 
         # await interaction.response.edit_message(embeds=embeds, view=view)

@@ -34,7 +34,7 @@ async def warehoused(df_state: DFState, edit: bool):
     embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
     embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
 
-    cargo_volume = sum(cargo['volume'] for cargo in df_state.warehouse_obj['cargo_storage'])
+    cargo_volume = sum(cargo['volume'] * cargo['quantity'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
 
     if df_state.user_obj['metadata']['mobile']:
         embed.description += '\n' + '\n'.join([
@@ -45,6 +45,8 @@ async def warehoused(df_state: DFState, edit: bool):
     else:
         embed.add_field(name='Cargo Storage 📦', value=f'**{cargo_volume:,}**\n/{df_state.warehouse_obj['cargo_storage_capacity']:,} liters')
         embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']:,}')
+
+    embed.description = embed.description[:4096]
 
     embeds = [embed]
     embeds = add_tutorial_embed(embeds, df_state)
@@ -364,7 +366,7 @@ class ExpandVehiclesButtonConfirm(discord.ui.Button):
 async def store_cargo_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=store_cargo_menu)  # Add this menu to the back stack
     
-    cargo_volume = sum(cargo['volume'] for cargo in df_state.warehouse_obj['cargo_storage'])
+    cargo_volume = sum(cargo['volume'] * cargo['quantity'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
@@ -587,8 +589,7 @@ async def retrieve_cargo_menu(df_state: DFState):
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
-    # TODO: Think about implementing this stat in the backend
-    cargo_volume = sum(cargo['volume'] for cargo in df_state.warehouse_obj['cargo_storage'])
+    cargo_volume = sum(cargo['volume'] * cargo['quantity'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
 
     embed.description += f'\nCargo Storage 📦: **{cargo_volume:,}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L'
 

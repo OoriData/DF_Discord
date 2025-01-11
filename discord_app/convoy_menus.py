@@ -186,10 +186,23 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
             
             vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters'
             vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
+            # more verbose
+            # vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters ({vehicle['cargo_capacity'] - vehicle['total_cargo_volume']} available)'
+            # vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg ({vehicle['weight_capacity'] - vehicle['']} available)'
+
             vehicles_list.append(vehicle_str)
 
         vehicles_str += '\n'.join(vehicles_list)
 
+        total_cargo_volume = sum(vehicle['total_cargo_volume'] for vehicle in vehicles)
+        total_volume_capacity = sum(vehicle['cargo_capacity'] for vehicle in vehicles)
+
+        total_cargo_weight = sum(vehicle['total_cargo_weight'] for vehicle in vehicles)
+        total_weight_capacity = sum(vehicle['weight_capacity'] for vehicle in vehicles)
+
+        vehicles_str += f'\n**Total space across convoy**: **{total_cargo_volume}** / {total_volume_capacity} liters'
+        vehicles_str += f' & **{total_cargo_weight}** / {total_weight_capacity} kg'
+        
     else:
         vehicles_str = '*No vehicles in convoy. Buy one at the dealership.*'
 

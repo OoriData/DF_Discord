@@ -174,7 +174,9 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     vehicles_str = '### Vehicles\n'
     if vehicles:
         for vehicle in vehicles:
-            vehicle_str = f'**{vehicle['name']}**\n'
+            vehicle_str = f'**{vehicle['name']}**'
+            # vehicle_str += f' | 🌿 {vehicle['fuel_efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
+            vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
                     f'- AP: **{vehicle['ap']}** / {vehicle['max_ap']}',
@@ -186,7 +188,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
             
             vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters'
             vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
-            # more verbose
+            # more verbose option, can we find a way to have this as well, without being as wordy?
             # vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters ({vehicle['cargo_capacity'] - vehicle['total_cargo_volume']} available)'
             # vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg ({vehicle['weight_capacity'] - vehicle['']} available)'
 

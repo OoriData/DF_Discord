@@ -22,6 +22,7 @@ async def warehouse_menu(df_state: DFState, edit: bool=True):
 
     if df_state.warehouse_obj:
         df_state.warehouse_obj = await api_calls.get_warehouse(df_state.warehouse_obj['warehouse_id'])
+        
         await warehoused(df_state, edit)
     else:
         await warehouseless(df_state, edit)

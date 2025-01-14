@@ -16,6 +16,7 @@ from discord.ext                 import commands, tasks
 from utiloori.ansi_color         import ansi_color
 
 from discord_app                 import DF_DISCORD_LOGO as API_BANNER
+from discord_app                 import DF_GUILD_ID, DF_CHANNEL_ID, WASTELANDER_ROLE, ALPHA_ROLE, BETA_ROLE
 from discord_app                 import TimeoutView, api_calls, DF_HELP
 from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
@@ -23,11 +24,6 @@ from discord_app.main_menu_menus import main_menu
 DF_API_HOST = os.environ['DF_API_HOST']
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
-DF_GUILD_ID = int(os.environ['DF_GUILD_ID'])
-DF_CHANNEL_ID = int(os.environ['DF_CHANNEL_ID'])
-WASTELANDER_ROLE = int(os.environ['WASTELANDER_ROLE'])
-ALPHA_ROLE = int(os.environ['ALPHA_ROLE'])
-BETA_ROLE = int(os.environ['BETA_ROLE'])
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)

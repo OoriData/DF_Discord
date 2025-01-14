@@ -4,6 +4,7 @@
 from __future__             import annotations
 from datetime               import datetime
 import                             io
+import                             os
 
 import                             httpx
 
@@ -11,7 +12,11 @@ import                             discord
 
 from discord_app.df_state   import DFState
 
-DF_GUILD_ID = 1225943320078057582
+DF_GUILD_ID = int(os.environ['DF_GUILD_ID'])
+DF_CHANNEL_ID = int(os.environ['DF_CHANNEL_ID'])
+WASTELANDER_ROLE = int(os.environ['WASTELANDER_ROLE'])
+ALPHA_ROLE = int(os.environ['ALPHA_ROLE'])
+BETA_ROLE = int(os.environ['BETA_ROLE'])
 
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 

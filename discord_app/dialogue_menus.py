@@ -102,24 +102,37 @@ class DialogueView(discord.ui.View):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-        
-        await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))
+
+        dialogue_obj = await api_calls.get_dialogue_by_char_ids(self.char_a_id, self.char_b_id)
+        dialogue_msg = dialogue_obj['messages'][self.page]['content']
+
+        await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id, dialogue_msg=dialogue_msg))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 class SendMessageModal(discord.ui.Modal):
-    def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID):
+    def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID, dialogue_msg: str = None):
         self.df_state = df_state
         self.char_a_id = char_a_id
         self.char_b_id = char_b_id
+        self.dialogue_msg = dialogue_msg
         
         super().__init__(title='Send a message to your convoy captain')
 
+        self.add_item(discord.ui.TextInput(
+            label='Previous message from convoy',
+            style=discord.TextStyle.paragraph,
+            required=False,
+            default=self.dialogue_msg,
+            max_length=2048,
+            custom_id='previous_message'
+        ))
         self.convoy_name_input = discord.ui.TextInput(
             label='Message to send',
             style=discord.TextStyle.paragraph,
             required=True,
+            placeholder='',
             default='hello!',
             max_length=2048,
             custom_id='new_message'

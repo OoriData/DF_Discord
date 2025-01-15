@@ -292,7 +292,7 @@ class ConvoyView(discord.ui.View):
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
 
-    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4, disabled=True)
+    @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4, disabled=False)
     async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         

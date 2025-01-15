@@ -167,12 +167,13 @@ class BuyCargoSelect(discord.ui.Select):
 
         options = []
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
-            label = f"{cargo['name']} | ${cargo['price']:,.0f}"
+            label = f'{cargo['name']} | ${cargo['price']:,.0f}'
             if cargo.get('recipient_vendor'):
-                label += f" | {cargo['recipient_location']}"
+                label += f' | {cargo['recipient_location']}'
 
-            emoji = None  # Determine emoji based on tutorial stage
-            if tutorial_stage == 2:
+            emoji = None
+
+            if tutorial_stage == 2:  # Determine emoji based on tutorial stage
                 if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'}:
                     emoji = DF_LOGO_EMOJI
             elif tutorial_stage == 4:
@@ -183,6 +184,12 @@ class BuyCargoSelect(discord.ui.Select):
                     cargo['capacity'] is None
                 ):
                     emoji = DF_LOGO_EMOJI
+
+            if (
+                len(self.df_state.user_obj['convoys']) == 1
+                and cargo['name'] == 'Mail'
+            ):
+                emoji = DF_LOGO_EMOJI
 
             options.append(discord.SelectOption(
                 label=label,

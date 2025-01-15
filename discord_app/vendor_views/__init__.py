@@ -46,7 +46,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
 
             if cargo.get('recipient_vendor'):
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_location']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = round(cargo['delivery_reward'] / cargo['price'])
+                margin = min(round(cargo['delivery_reward'] / cargo['price']), 24)  # limit emojis to 24
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
                 tile_distance = math.sqrt(
                     (cargo['recipient_vendor']['x'] - vendor_obj['x']) ** 2

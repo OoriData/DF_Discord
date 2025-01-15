@@ -46,10 +46,9 @@ async def warehoused(df_state: DFState, edit: bool):
         embed.add_field(name='Cargo Storage 📦', value=f'**{cargo_volume:,}**\n/{df_state.warehouse_obj['cargo_storage_capacity']:,} liters')
         embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']:,}')
 
-    embed.description = embed.description[:4096]
+    embed.description = embed.description[:4096]  # Limit the length of the description to ensure it is within the limit
 
     embeds = [embed]
-    embeds = add_tutorial_embed(embeds, df_state)
 
     view = WarehouseView(df_state)
 
@@ -88,7 +87,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
             if cargo['recipient']:
                 cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = round(cargo['delivery_reward'] / cargo['price'])
+                margin = min(round(cargo['delivery_reward'] / cargo['price']), 24)  # limit emojis to 24
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
 
         cargo_list.append(cargo_str)

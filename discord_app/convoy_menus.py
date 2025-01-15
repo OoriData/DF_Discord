@@ -484,6 +484,7 @@ class DestinationSelect(discord.ui.Select):
             for tile in row
             for sett in tile['settlements']
             if not (sett['x'] == convoy_x and sett['y'] == convoy_y)  # Exclude settlements on the same tile as convoy
+            and 'tutorial' not in sett['name'].lower()                # Exclude settlements with "tutorial" in their name
         ]
 
         # Sort settlements, prioritizing cargo destinations and then by distance

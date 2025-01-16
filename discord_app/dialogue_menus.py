@@ -144,3 +144,38 @@ class SendMessageModal(discord.ui.Modal):
 
         await api_calls.send_message(self.char_a_id, self.char_b_id, self.convoy_name_input.value)
         await dialogue_menu(self.df_state, self.char_a_id, self.char_b_id)
+
+
+class RespondToConvoyView(discord.ui.View):
+    def __init__(
+            self,
+            user_discord_id,
+            user_convoy_id,
+            user_cache
+    ):
+        self.user_discord_id = user_discord_id
+        self.user_convoy_id = user_convoy_id
+        self.user_cache = user_cache
+
+        super().__init__(timeout=600)
+
+        self.df_state = DFState(user_discord_id=self.user_discord_id)
+
+        add_nav_buttons(self, self.df_state)
+    
+    @discord.ui.button(style=discord.ButtonStyle.blurple, label='Respond')
+    async def respond_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
+        self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)
+        self.df_state.map_obj = await api_calls.get_map()
+        self.df_state.user_cache = self.user_cache
+
+        self.df_state.interaction = interaction
+        
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+
+        await dialogue_menu(
+            df_state=self.df_state,
+            char_a_id=self.df_state.user_obj['user_id'],
+            char_b_id=self.df_state.convoy_obj['convoy_id']
+        )

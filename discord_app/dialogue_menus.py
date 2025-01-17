@@ -160,13 +160,11 @@ class RespondToConvoyView(discord.ui.View):
         super().__init__(timeout=600)
 
         self.df_state = DFState(user_discord_id=self.user_discord_id)
-
-        add_nav_buttons(self, self.df_state)
     
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='Respond')
     async def respond_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
-        self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)
+        self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)  # TODO: implement 'next' pattern to fetch this out of user_obj
         self.df_state.map_obj = await api_calls.get_map()
         self.df_state.user_cache = self.user_cache
 

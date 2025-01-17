@@ -201,8 +201,6 @@ class Desolate_Cog(commands.Cog):
                             await notification_channel.send(ping)
 
                             # Compile message content from unseen dialogues
-                            import pprint
-                            pprint.pprint(unseen_dialogue_dicts[0])
                             # notifications = [
                             #     message['content']
                             #     for dialogue in unseen_dialogue_dicts
@@ -211,7 +209,7 @@ class Desolate_Cog(commands.Cog):
                             
                             notifications = []
                             for dialogue in unseen_dialogue_dicts:
-                                notification = {'message_content': None, 'message_metadata': dialogue}
+                                notification = {'message_content': None, 'message_metadata': dialogue}  # TODO: unpack 'dialogue' object later rather than storing message content and message metadata separately
                                 for message in dialogue['messages']:
                                     notification['message_content'] = message['content']
                                     notifications.append(notification)
@@ -226,6 +224,7 @@ class Desolate_Cog(commands.Cog):
 
                                 user_convoy_id = notification['message_metadata']['char_b_id']
 
+                                # use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
                                 view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
 
                                 await notification_channel.send(embed=embed, view=view)

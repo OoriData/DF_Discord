@@ -232,7 +232,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
         case 5:
             tutorial_embed.description = '\n'.join([
                 "### Now that you have a vehicle, provisions, and a delivery to fulfill, let's get you on the road! 🛣️",
-                "1. Gray `convoy` button",
+                "1. Gray `Convoy` button",
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
@@ -243,7 +243,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "### Finishing this ~~fight~~ delivery... 🚛",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
                 "- `Top up fuel | $XXX` button to refill your resources",
-                "- Gray `convoy` button",
+                "- Gray `Convoy` button",
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
@@ -295,7 +295,7 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 - With the basics down, it's time for your first delivery. 📦
   - Head to the market once again and look into the goods with a **Profit margin**, which will earn you some money once you bring them to their destination.
 - Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️
-  - Use the gray `convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
+  - Use the gray `Convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
   - Your convoy will present you the path it will take to get there and how many resources you'll use in the process; hit `Embark upon Journey` to send them on their way!
 - ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱
   - If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.

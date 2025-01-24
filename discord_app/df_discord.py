@@ -85,10 +85,7 @@ class Desolate_Cog(commands.Cog):
             if self.wastelander_role and self.alpha_role and self.beta_role:  # Break early if all roles are found
                 break
 
-    @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def df_main_menu(self, interaction: discord.Interaction):
+    async def mm(self, interaction):
         if not self.cache_ready.is_set():
             await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
             return
@@ -99,6 +96,18 @@ class Desolate_Cog(commands.Cog):
             user_cache=self.df_users_cache,
             edit=False
         )
+
+    @app_commands.command(name='desolate-frontiers', description='Show the Desolate Frontiers main menu')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def desolate_frontiers_main_menu(self, interaction: discord.Interaction):
+        await self.mm(interaction)
+
+    @app_commands.command(name='df', description='A short alias to show the Desolate Frontiers main menu')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def df_main_menu(self, interaction: discord.Interaction):
+        await self.mm(interaction)
         
     @app_commands.command(name='df-map', description='Show the full game map')
     @app_commands.allowed_installs(guilds=True, users=True)

@@ -10,7 +10,11 @@ import                                asyncio
 import                                discord
 
 import                                discord_app
-from discord_app               import api_calls, convoy_menus, warehouse_menus, handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file, DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+from discord_app               import (
+    api_calls, convoy_menus, warehouse_menus, banner_menus,
+    handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file,
+    DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+)
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
 
@@ -170,16 +174,19 @@ class MainMenuView(discord.ui.View):
         if self.df_state.user_obj:  # If user exists
             if len(df_state.user_obj['convoys']) == 1:  # If the user has 1 convoy
                 self.add_item(self.user_options_button)
+                self.add_item(MainMenuBannerButton(df_state=self.df_state, row=0))
                 self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
                 self.add_item(MainMenuSingleConvoyButton(df_state=df_state, row=2))
 
             elif self.df_state.user_obj['convoys']:  # If the user has serveral convoys
                 self.add_item(self.user_options_button)
+                self.add_item(MainMenuBannerButton(df_state=self.df_state, row=0))
                 self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
                 self.add_item(MainMenuConvoySelect(df_state=self.df_state, row=2))
 
             elif any(w['vehicle_storage'] for w in self.df_state.user_obj['warehouses']):  # If the user has no convoys, but has vehicles in warehouses
                 self.add_item(self.user_options_button)
+                self.add_item(MainMenuBannerButton(df_state=self.df_state, row=0))
                 self.add_item(MainMenuWarehouseSelect(df_state=self.df_state, row=1))
 
             else:  # If the user has no convoys and no warehoused vehicles (presumably fresh user)
@@ -260,6 +267,29 @@ class MainMenuConvoyNameModal(discord.ui.Modal):
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_menus.convoy_menu(self.df_state)
+
+class MainMenuBannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row=0):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Banners',
+            custom_id='banner_button',
+            emoji='🎌',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        # self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
+
+        # tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        # self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
+
+        await banner_menus.banner_menu(self.df_state)
 
 class MainMenuWarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):

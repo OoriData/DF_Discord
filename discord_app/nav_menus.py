@@ -5,7 +5,7 @@ import                           discord
 
 import                           discord_app.main_menu_menus
 import                           discord_app.convoy_menus
-import discord_app.sett_menu
+import discord_app.sett_menus
 import                           discord_app.vendor_views.vendor_menus
 
 from discord_app.df_state import DFState, DFMenu
@@ -103,4 +103,4 @@ class NavSettButton(discord.ui.Button):
         
         self.df_state.interaction = interaction
         self.df_state.vendor_obj = None  # Reset
-        await discord_app.sett_menu.sett_menu(self.df_state)
+        await discord_app.sett_menus.sett_menu(self.df_state)

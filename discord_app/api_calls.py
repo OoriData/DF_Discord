@@ -560,3 +560,86 @@ async def spawn_convoy_from_warehouse(warehouse_id: UUID, vehicle_id: UUID, new_
 
     _check_code(response)
     return response.json()
+
+
+async def new_banner(
+        user_id: UUID,
+        name: str,
+        description: str,
+        banner_desc: str,
+        public: bool,
+        discord_id: int
+) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/banner/new',
+            params={
+                'user_id': user_id,
+                'name': name,
+                'description': description,
+                'banner_desc': banner_desc,
+                'public': public,
+                'discord_id': discord_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_banner_by_discord_id(discord_id: int) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/get_by_discord_id',
+            params={'discord_id': discord_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_settlement_banner(sett_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/settlement/get',
+            params={'sett_id': sett_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def banner_internal_leaderboard(banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/leaderboard/internal',
+            params={'banner_id': banner_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def banner_global_leaderboard(banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/leaderboard/global',
+            params={'banner_id': banner_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def form_allegiance(user_id: UUID, banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/banner/allegiance/form',
+            params={
+                'user_id': user_id,
+                'banner_id': banner_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()

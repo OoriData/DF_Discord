@@ -10,6 +10,7 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
 from discord_app.map_rendering import add_map_to_embed
+import                                discord_app.main_menu_menus
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
 import                                discord_app.warehouse_menus
@@ -18,72 +19,20 @@ import                                discord_app.warehouse_menus
 from discord_app.df_state      import DFState
 
 
-async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | None = None, edit: bool=True):
-    df_state.append_menu_to_back_stack(func=sett_menu)  # Add this menu to the back stack
+async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | None = None, edit: bool=True):
+    if df_state.convoy_obj:
+        df_state.append_menu_to_back_stack(func=banner_menu)  # Add this menu to the back stack
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
-    tile_obj = await api_calls.get_tile(df_state.convoy_obj['x'], df_state.convoy_obj['y'])
-    if not tile_obj['settlements']:
-        await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
-        return
-    df_state.sett_obj = tile_obj['settlements'][0]
-    embed.description = f'*{df_state.sett_obj['base_desc']}*' if df_state.sett_obj['base_desc'] else ''
-
-    df_state.warehouse_obj = next((
-        w for w in df_state.user_obj['warehouses']
-        if w['sett_id'] == df_state.sett_obj['sett_id']
-    ), None)
-    if df_state.warehouse_obj:
-        embed.description += '\n' + '\n'.join([
-            f'# {df_state.sett_obj['name']} Warehouse',
-            await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
-        ])
-    
-    vendor_displayables = []  # TODO: make these more better
-    for vendor in df_state.sett_obj['vendors']:
-        displayable_services = []
-
-        deliverable_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['recipient']]
-        if deliverable_cargo:
-            displayable_services.append(f'- {len(deliverable_cargo)} deliverable cargo')
-
-        RESOURCES = ['fuel', 'water', 'food']
-        for key in RESOURCES:
-            if vendor[key]:
-                displayable_services.append(f'- {key.capitalize()}')
-
-            resource_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo[key]]
-            if resource_cargo:
-                displayable_services.append(f'  - {len(resource_cargo)} {key.capitalize()} container(s)')
-
-        if vendor['vehicle_inventory']:
-            displayable_services.append(f'- {len(vendor['vehicle_inventory'])} vehicles')
-
-        if vendor['repair_price']:
-            displayable_services.append('- Mechanic services')
-
-        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['part']]
-        if part_cargo:
-            displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
-
-        vendor_displayables.append('\n'.join([
-            f'## {vendor['name']}',
-            '\n'.join(displayable_services)
-        ]))
-    
-    embed.description += '\n' + '\n'.join([
-        f'# {df_state.sett_obj['name']} vendors',
-        '\n'.join(vendor_displayables)
-    ])
+    embed.description = 'BANUHS'
 
     embeds = [embed, *follow_on_embeds]
-    embeds = add_tutorial_embed(embeds, df_state)
 
-    view = SettView(df_state, df_state.sett_obj['vendors'])
+    view = BannerView(df_state)
 
     if edit:
         if df_state.interaction.response.is_done():
@@ -94,36 +43,49 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
-
-class SettView(discord.ui.View):
+class BannerView(discord.ui.View):
     ''' Overarching convoy button menu '''
-    def __init__(self, df_state: DFState, vendors):
+    def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)
 
-        discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+        if df_state.convoy_obj:
+            self.clear_items()
+            discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
-        self.add_item(WarehouseButton(self.df_state))
-        self.add_item(VendorSelect(self.df_state, vendors, row=2))
+        # self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
+        # self.add_item(WarehouseButton(self.df_state))
+        # self.add_item(VendorSelect(self.df_state, vendors, row=2))
 
-        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
-        if tutorial_stage in {1, 2, 3, 4}:
-            for item in self.children:
-                match tutorial_stage:
-                    case 1 | 2 | 4:
-                        item.disabled = item.custom_id not in (
-                            'nav_back_button',
-                            'nav_sett_button',
-                            'select_vendor'
-                        )
-                    case 3:
-                        item.disabled = item.custom_id not in (
-                            'nav_back_button',
-                            'nav_sett_button',
-                            'top_up_button'
-                        )
+        # tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
+        # if tutorial_stage in {1, 2, 3, 4}:
+        #     for item in self.children:
+        #         match tutorial_stage:
+        #             case 1 | 2 | 4:
+        #                 item.disabled = item.custom_id not in (
+        #                     'nav_back_button',
+        #                     'nav_sett_button',
+        #                     'select_vendor'
+        #                 )
+        #             case 3:
+        #                 item.disabled = item.custom_id not in (
+        #                     'nav_back_button',
+        #                     'nav_sett_button',
+        #                     'top_up_button'
+        #                 )
 
+    @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
+    async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
+        self.df_state.interaction = interaction
+        await discord_app.main_menu_menus.main_menu(
+            interaction=interaction,
+            df_map=self.df_state.map_obj,
+            user_cache=self.df_state.user_cache,
+            edit=False
+        )
+    
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 

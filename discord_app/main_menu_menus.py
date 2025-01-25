@@ -284,11 +284,6 @@ class MainMenuBannerButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        # self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
-
-        # tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
-        # self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
-
         await banner_menus.banner_menu(self.df_state)
 
 class MainMenuWarehouseSelect(discord.ui.Select):

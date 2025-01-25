@@ -22,6 +22,8 @@ from discord_app.df_state      import DFState
 async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | None = None, edit: bool=True):
     if df_state.convoy_obj:
         df_state.append_menu_to_back_stack(func=banner_menu)  # Add this menu to the back stack
+    if df_state.sett_obj:
+        df_state.sett_obj['banner'] = await api_calls.get_settlement_banner(df_state.sett_obj['sett_id'])
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
@@ -53,26 +55,35 @@ class BannerView(discord.ui.View):
             self.clear_items()
             discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        # self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
-        # self.add_item(WarehouseButton(self.df_state))
-        # self.add_item(VendorSelect(self.df_state, vendors, row=2))
+        allegiance_types = ['civic', 'guild', 'syndicate']
 
-        # tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
-        # if tutorial_stage in {1, 2, 3, 4}:
-        #     for item in self.children:
-        #         match tutorial_stage:
-        #             case 1 | 2 | 4:
-        #                 item.disabled = item.custom_id not in (
-        #                     'nav_back_button',
-        #                     'nav_sett_button',
-        #                     'select_vendor'
-        #                 )
-        #             case 3:
-        #                 item.disabled = item.custom_id not in (
-        #                     'nav_back_button',
-        #                     'nav_sett_button',
-        #                     'top_up_button'
-        #                 )
+        for row, allegiance_type in enumerate(allegiance_types, start=1):
+            allegiance = self.df_state.user_obj.get(f'{allegiance_type}_allegiance')
+            if allegiance:
+                self.add_item(BannerButton(
+                    df_state=self.df_state,
+                    banner_obj=allegiance['banner'],
+                    row=row
+                ))
+            else:
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.blurple,
+                    label=f'No {allegiance_type} banner',
+                    disabled=True,
+                    row=row
+                ))
+
+        if df_state.sett_obj:
+            sett_banner = df_state.sett_obj['banner']
+            civic_allegiance = df_state.user_obj.get('civic_allegiance')
+
+            # Check if there is no civic allegiance or the banner IDs differ
+            if not civic_allegiance or civic_allegiance.get('banner', {}).get('banner_id') != sett_banner['banner_id']:
+                self.add_item(ProspectiveBannerButton(
+                    df_state=self.df_state,
+                    banner_obj=sett_banner,
+                    row=1
+                ))
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -89,67 +100,14 @@ class BannerView(discord.ui.View):
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
-class WarehouseButton(discord.ui.Button):
-    def __init__(self, df_state: DFState):
+class BannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, banner_obj: dict, row: int=1):
         self.df_state = df_state
+        self.banner_obj = banner_obj
 
-        label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label=label,
-            custom_id='warehouse_button',
-            emoji='📦',
-            row=1
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
-        self.df_state.interaction = interaction
-
-        local_warehouse = next((
-            w for w in self.df_state.user_obj['warehouses']
-            if w['sett_id'] == self.df_state.sett_obj['sett_id']
-        ), None)
-        if local_warehouse:
-            self.df_state.warehouse_obj = await api_calls.get_warehouse(local_warehouse['warehouse_id'])
-
-        await discord_app.warehouse_menus.warehouse_menu(self.df_state)
-
-class VendorSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, vendors, row: int=1):
-        self.df_state = df_state
-        self.vendors = vendors
-
-        tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
-        if tutorial_stage == 1:
-            options=[
-                discord.SelectOption(
-                    label=vendor['name'],
-                    value=vendor['vendor_id'],
-                    emoji=DF_LOGO_EMOJI if 'Dealership' in vendor['name'] else None  # Add the tutorial emoji if dealership, else don't
-                )
-                for vendor in self.vendors
-            ]
-        elif tutorial_stage in [2, 4]:
-            options=[
-                discord.SelectOption(
-                    label=vendor['name'],
-                    value=vendor['vendor_id'],
-                    emoji=DF_LOGO_EMOJI if 'Market' in vendor['name'] else None  # Add the tutorial emoji if dealership, else don't
-                )
-                for vendor in self.vendors
-            ]
-        else:  # Not in tutorial
-            options=[
-                discord.SelectOption(label=vendor['name'],value=vendor['vendor_id'])
-                for vendor in self.vendors
-            ]
-        
-        super().__init__(
-            placeholder='Select vendor to visit',
-            options=options,
-            custom_id='select_vendor',
+            label=banner_obj['name'],
             row=row
         )
 
@@ -158,9 +116,28 @@ class VendorSelect(discord.ui.Select):
         
         self.df_state.interaction = interaction
 
-        self.df_state.vendor_obj = next((
-            v for v in self.vendors
-            if v['vendor_id'] == self.values[0]
-        ), None)
+        # await discord_app.warehouse_menus.warehouse_menu(self.df_state)
 
-        await discord_app.vendor_views.vendor_menus.vendor_menu(self.df_state)
+
+class ProspectiveBannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, banner_obj: dict, row: int=1):
+        self.df_state = df_state
+        self.banner_obj = banner_obj
+
+        super().__init__(
+            style=discord.ButtonStyle.red,
+            label=f'Join {banner_obj['name']}',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
+        self.df_state.interaction = interaction
+
+        self.df_state.user_obj = await api_calls.form_allegiance(
+            self.df_state.user_obj['user_id'],
+            banner_id=self.banner_obj['banner_id']
+        )
+
+        await banner_menu(self.df_state)

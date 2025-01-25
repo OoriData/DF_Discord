@@ -30,7 +30,42 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
-    embed.description = 'BANUHS'
+    if df_state.user_obj['civic_allegiance']:
+        civic_allegiance = df_state.user_obj['civic_allegiance']
+        civic_banner_info = '\n'.join([
+            f'- **{civic_allegiance['banner']['name']}**',
+            f'- *{civic_allegiance['banner']['description']}*',
+        ])
+    else:
+        civic_banner_info = '- N/a'
+
+    if df_state.user_obj['guild_allegiance']:
+        guild_allegiance = df_state.user_obj['guild_allegiance']
+        guild_banner_info = '\n'.join([
+            f'- **{guild_allegiance['banner']['name']}**',
+            f'- *{guild_allegiance['banner']['description']}*',
+        ])
+    else:
+        guild_banner_info = '- N/a'
+
+    if df_state.user_obj['syndicate_allegiance']:
+        syndicate_allegiance = df_state.user_obj['syndicate_allegiance']
+        syndicate_banner_info = '\n'.join([
+            f'- **{syndicate_allegiance['banner']['name']}**',
+            f'- *{syndicate_allegiance['banner']['description']}*',
+        ])
+    else:
+        syndicate_banner_info = '- N/a'
+
+    embed.description = '\n'.join([
+        '# Banners',
+        '### Civic banner',
+        civic_banner_info,
+        '### Guild banner',
+        guild_banner_info,
+        '### Syndicate banner',
+        syndicate_banner_info,
+    ])
 
     embeds = [embed, *follow_on_embeds]
 

@@ -32,27 +32,71 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
 
     if df_state.user_obj['civic_allegiance']:
         civic_allegiance = df_state.user_obj['civic_allegiance']
+
+        civic_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
+            civic_allegiance['banner']['banner_id']
+        )
+        internal_leaderboard_position = civic_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
+        civic_allegiance['banner']['global_leaderboard'] = await api_calls.get_banner_global_leaderboard(
+            civic_allegiance['banner']['banner_id']
+        )
+        global_leaderboard_position = civic_allegiance['banner']['global_leaderboard'][civic_allegiance['banner']['banner_id']]['leaderboard_position']
+
         civic_banner_info = '\n'.join([
             f'- **{civic_allegiance['banner']['name']}**',
-            f'- *{civic_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
+            f'  - Global civic leaderboard position: **{global_leaderboard_position}**',
+            '- Allegiance Stats:',
+            f'  - Total volume moved: **{civic_allegiance['stats'].get('total_volume_moved', 0)}L**',
+            f'  - Total weight moved: **{civic_allegiance['stats'].get('total_weight_moved', 0)}kg**',
+            f'  - Total value moved: **${civic_allegiance['stats'].get('total_value_moved', 0)}**',
+            # f'- *{civic_allegiance['banner']['description']}*',
         ])
     else:
         civic_banner_info = '- N/a'
 
     if df_state.user_obj['guild_allegiance']:
         guild_allegiance = df_state.user_obj['guild_allegiance']
+
+        guild_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
+            guild_allegiance['banner']['banner_id']
+        )
+        internal_leaderboard_position = guild_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
+        guild_allegiance['banner']['global_leaderboard'] = None
+
         guild_banner_info = '\n'.join([
             f'- **{guild_allegiance['banner']['name']}**',
-            f'- *{guild_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
+            '- Allegiance Stats:',
+            f'  - Total volume moved: **{guild_allegiance['stats'].get('total_volume_moved', 0)}L**',
+            f'  - Total weight moved: **{guild_allegiance['stats'].get('total_weight_moved', 0)}kg**',
+            f'  - Total value moved: **${guild_allegiance['stats'].get('total_value_moved', 0)}**',
+            # f'- *{guild_allegiance['banner']['description']}*',
         ])
     else:
         guild_banner_info = '- N/a'
 
     if df_state.user_obj['syndicate_allegiance']:
         syndicate_allegiance = df_state.user_obj['syndicate_allegiance']
+
+        syndicate_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
+            syndicate_allegiance['banner']['banner_id']
+        )
+        internal_leaderboard_position = syndicate_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
+        syndicate_allegiance['banner']['global_leaderboard'] = await api_calls.get_banner_global_leaderboard(
+            syndicate_allegiance['banner']['banner_id']
+        )
+        global_leaderboard_position = syndicate_allegiance['banner']['global_leaderboard'][syndicate_allegiance['banner']['banner_id']]['leaderboard_position']
+
         syndicate_banner_info = '\n'.join([
             f'- **{syndicate_allegiance['banner']['name']}**',
-            f'- *{syndicate_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
+            f'  - Global syndicate leaderboard position: **{global_leaderboard_position}**',
+            '- Allegiance Stats:',
+            f'  - Total volume moved: **{syndicate_allegiance['stats'].get('total_volume_moved', 0)}L**',
+            f'  - Total weight moved: **{syndicate_allegiance['stats'].get('total_weight_moved', 0)}kg**',
+            f'  - Total value moved: **${syndicate_allegiance['stats'].get('total_value_moved', 0)}**',
+            # f'- *{syndicate_allegiance['banner']['description']}*',
         ])
     else:
         syndicate_banner_info = '- N/a'

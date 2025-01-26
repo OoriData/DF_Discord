@@ -609,7 +609,7 @@ async def get_settlement_banner(sett_id: UUID) -> dict:
     return response.json()
 
 
-async def banner_internal_leaderboard(banner_id: UUID) -> dict:
+async def get_banner_internal_leaderboard(banner_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/banner/leaderboard/internal',
@@ -620,7 +620,7 @@ async def banner_internal_leaderboard(banner_id: UUID) -> dict:
     return response.json()
 
 
-async def banner_global_leaderboard(banner_id: UUID) -> dict:
+async def get_banner_global_leaderboard(banner_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
             url=f'{DF_API_HOST}/banner/leaderboard/global',

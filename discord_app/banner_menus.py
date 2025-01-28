@@ -328,46 +328,45 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
     def create_condensed_internal_leaderboard(internal_leaderboard_data, allegiance_id):
         condensed_internal_leaderboard = []
         allegiance_pos = None
-        
-        for user_id, spot in internal_leaderboard_data.items():  # Find allegiance position and collect top 3 banners
-            if user_id == spot['user_id']:
+
+        for user_id, spot in internal_leaderboard_data.items():  # Find allegiance position and collect top 3 users
+            if spot['allegiance']['allegiance_id'] == allegiance_id:  # Find the allegiance (and therefor user) we're looking for
                 allegiance_pos = spot['leaderboard_position']
             if spot['leaderboard_position'] <= 3:
-                condensed_internal_leaderboard.append(user_id)  # Add top 3 banner IDs
-                
+                condensed_internal_leaderboard.append(user_id)  # Add top 3 user IDs
+
         if allegiance_pos is None:
             return []  # Return empty if allegiance not found
-                
+
         if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
-            for banner_id, spot in internal_leaderboard_data.items():
+            for user_id, spot in internal_leaderboard_data.items():
                 if 3 < spot['leaderboard_position'] <= 5:
-                    condensed_internal_leaderboard.append(banner_id)
+                    condensed_internal_leaderboard.append(user_id)
         else:
             condensed_internal_leaderboard.append('...')  # Add ellipsis
-            for banner_id, spot in internal_leaderboard_data.items():  # Add the banners around allegiance position
+            for user_id, spot in internal_leaderboard_data.items():  # Add the users around allegiance position
                 if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
-                    condensed_internal_leaderboard.append(banner_id)
-        
+                    condensed_internal_leaderboard.append(user_id)
+
         return condensed_internal_leaderboard
 
     def format_internal_leaderboard_for_display(internal_leaderboard_data, condensed_allegiance_ids):
         internal_formatted_output = []
         last_pos = 0
         added_ellipsis = False
-        
-        # First pass - process actual banner entries
-        for user_id, spot in internal_leaderboard_data.items():
+
+        for user_id, spot in internal_leaderboard_data.items():  # First pass - process actual user entries
             if user_id in condensed_allegiance_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
                 if '...' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
                     internal_formatted_output.append('...')
                     added_ellipsis = True
-                    
+
                 position_line = (
                     f'{spot['leaderboard_position']}. **{spot['username']}**'
                     if user_id == allegiance['user_id']
                     else f'{spot['leaderboard_position']}. {spot['username']}'
-                )  # Bold the name if it's the allegiance banner
+                )  # Bold the name if it's the current user
                 volume_line = f'  - Total volume moved: **{spot['allegiance']['stats'].get('total_volume_moved', 0)}L**'
                 internal_formatted_output.extend([position_line, volume_line])
                 last_pos = spot['leaderboard_position']
@@ -377,16 +376,16 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
     def create_condensed_global_leaderboard(global_leaderboard_data, allegiance_banner_id):
         condensed_global_leaderboard = []
         allegiance_pos = None
-        
+
         for banner_id, spot in global_leaderboard_data.items():  # Find allegiance position and collect top 3 banners
             if banner_id == allegiance_banner_id:
                 allegiance_pos = spot['leaderboard_position']
             if spot['leaderboard_position'] <= 3:
                 condensed_global_leaderboard.append(banner_id)  # Add top 3 banner IDs
-                
+
         if allegiance_pos is None:
             return []  # Return empty if allegiance not found
-                
+
         if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
             for banner_id, spot in global_leaderboard_data.items():
                 if 3 < spot['leaderboard_position'] <= 5:
@@ -396,51 +395,36 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
             for banner_id, spot in global_leaderboard_data.items():  # Add the banners around allegiance position
                 if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
                     condensed_global_leaderboard.append(banner_id)
-        
+
         return condensed_global_leaderboard
 
     def format_global_leaderboard_for_display(global_leaderboard_data, condensed_banner_ids):
         global_leaderboard_string = []
         last_pos = 0
         added_ellipsis = False
-        
+
         for banner_id, spot in global_leaderboard_data.items():  # First pass - process actual banner entries
             if banner_id in condensed_banner_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
                 if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
                     global_leaderboard_string.append('...')
                     added_ellipsis = True
-                    
+
                 position_line = (
                     f'{spot['leaderboard_position']}. **{spot['name']}**'
                     if banner_id == allegiance['banner']['banner_id']
-                    else f'{spot['leaderboard_position']}. {spot["name"]}'
+                    else f'{spot['leaderboard_position']}. {spot['name']}'
                 )  # Bold the name if it's the allegiance banner
-                volume_line = f'  - Total volume moved: **{spot["stats"].get("total_volume_moved", 0)}L**'
+                volume_line = f'  - Total volume moved: **{spot['stats'].get('total_volume_moved', 0)}L**'
                 global_leaderboard_string.extend([position_line, volume_line])
                 last_pos = spot['leaderboard_position']
 
         return global_leaderboard_string
-    
-    # print()
-    # import pprint;pprint.pprint(allegiance['banner']['internal_leaderboard'])
-    print()
-    condensed_internal_leaderboard = create_condensed_internal_leaderboard(
-        internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
-        allegiance_id=allegiance['allegiance_id']
-    )
-    import pprint;pprint.pprint(condensed_internal_leaderboard)
-    print()
-    import pprint;pprint.pprint(format_internal_leaderboard_for_display(
-        internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
-        condensed_allegiance_ids=condensed_internal_leaderboard
-    ))
-    print()
 
     embed.description = '\n'.join([
         f'# {banner['name']}',
         f'*{banner['description']}*',
-        '### Internal leaderboard',
+        '### Internal Player leaderboard',
         '\n'.join(format_internal_leaderboard_for_display(
             internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
             condensed_allegiance_ids=create_condensed_internal_leaderboard(
@@ -448,7 +432,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                 allegiance_id=allegiance['allegiance_id']
             )
         )),
-        '### Global leaderboard',
+        '### Global Banner leaderboard',
         '\n'.join(format_global_leaderboard_for_display(
             global_leaderboard_data=allegiance['banner']['global_leaderboard'],
             condensed_banner_ids=create_condensed_global_leaderboard(

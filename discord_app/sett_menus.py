@@ -175,7 +175,6 @@ class SettBannerButton(discord.ui.Button):
 
         await discord_app.banner_menus.banner_menu(self.df_state)
 
-
 class VendorSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, vendors, row: int=1):
         self.df_state = df_state

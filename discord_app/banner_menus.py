@@ -1,14 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
-import                                os
-import                                textwrap
 
 import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction, DF_LOGO_EMOJI, DF_GUILD_ID
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.main_menu_menus
 import                                discord_app.vendor_views.vendor_menus
@@ -22,8 +20,13 @@ from discord_app.df_state      import DFState
 async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | None = None, edit: bool=True):
     if df_state.convoy_obj:
         df_state.append_menu_to_back_stack(func=banner_menu)  # Add this menu to the back stack
-    if df_state.sett_obj:
+    if df_state.sett_obj:  # If there is a settlement's civic banner to join
         df_state.sett_obj['banner'] = await api_calls.get_settlement_banner(df_state.sett_obj['sett_id'])
+    if df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild
+        try:
+            server_banner = await api_calls.get_banner_by_discord_id(df_state.interaction.guild_id)
+        except RuntimeError as e:
+            server_banner = None
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
@@ -31,7 +34,10 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
     embed = df_embed_author(embed, df_state)
 
     if df_state.user_obj['civic_allegiance']:
-        civic_allegiance = df_state.user_obj['civic_allegiance']
+        civic_allegiance = next(
+            a for a in df_state.user_obj['allegiances']
+            if a['allegiance_id'] == df_state.user_obj['civic_allegiance']['allegiance_id']
+        )
 
         civic_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
             civic_allegiance['banner']['banner_id']
@@ -44,19 +50,20 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
 
         civic_banner_info = '\n'.join([
             f'- **{civic_allegiance['banner']['name']}**',
-            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
-            f'  - Global civic leaderboard position: **{global_leaderboard_position}**',
-            '- Allegiance Stats:',
             f'  - Total volume moved: **{civic_allegiance['stats'].get('total_volume_moved', 0)}L**',
             f'  - Total weight moved: **{civic_allegiance['stats'].get('total_weight_moved', 0)}kg**',
             f'  - Total value moved: **${civic_allegiance['stats'].get('total_value_moved', 0)}**',
-            # f'- *{civic_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
+            f'  - Global civic leaderboard position: **{global_leaderboard_position}**',
         ])
     else:
         civic_banner_info = '- N/a'
 
     if df_state.user_obj['guild_allegiance']:
-        guild_allegiance = df_state.user_obj['guild_allegiance']
+        guild_allegiance = next(
+            a for a in df_state.user_obj['allegiances']
+            if a['allegiance_id'] == df_state.user_obj['guild_allegiance']['allegiance_id']
+        )
 
         guild_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
             guild_allegiance['banner']['banner_id']
@@ -66,18 +73,19 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
 
         guild_banner_info = '\n'.join([
             f'- **{guild_allegiance['banner']['name']}**',
-            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
-            '- Allegiance Stats:',
             f'  - Total volume moved: **{guild_allegiance['stats'].get('total_volume_moved', 0)}L**',
             f'  - Total weight moved: **{guild_allegiance['stats'].get('total_weight_moved', 0)}kg**',
             f'  - Total value moved: **${guild_allegiance['stats'].get('total_value_moved', 0)}**',
-            # f'- *{guild_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
         ])
     else:
         guild_banner_info = '- N/a'
 
     if df_state.user_obj['syndicate_allegiance']:
-        syndicate_allegiance = df_state.user_obj['syndicate_allegiance']
+        syndicate_allegiance = next(
+            a for a in df_state.user_obj['allegiances']
+            if a['allegiance_id'] == df_state.user_obj['syndicate_allegiance']['allegiance_id']
+        )
 
         syndicate_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
             syndicate_allegiance['banner']['banner_id']
@@ -90,13 +98,11 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
 
         syndicate_banner_info = '\n'.join([
             f'- **{syndicate_allegiance['banner']['name']}**',
-            f'  - {df_state.user_obj['username']} leaderboard position: **{internal_leaderboard_position}**',
-            f'  - Global syndicate leaderboard position: **{global_leaderboard_position}**',
-            '- Allegiance Stats:',
             f'  - Total volume moved: **{syndicate_allegiance['stats'].get('total_volume_moved', 0)}L**',
             f'  - Total weight moved: **{syndicate_allegiance['stats'].get('total_weight_moved', 0)}kg**',
             f'  - Total value moved: **${syndicate_allegiance['stats'].get('total_value_moved', 0)}**',
-            # f'- *{syndicate_allegiance['banner']['description']}*',
+            f'  - {df_state.user_obj['username']}\'s leaderboard position: **{internal_leaderboard_position}**',
+            f'  - Global syndicate leaderboard position: **{global_leaderboard_position}**',
         ])
     else:
         syndicate_banner_info = '- N/a'
@@ -113,21 +119,21 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
 
     embeds = [embed, *follow_on_embeds]
 
-    view = BannerView(df_state)
+    view = BannerView(df_state, server_banner)
 
     if edit:
         if df_state.interaction.response.is_done():
             og_message = await df_state.interaction.original_response()
             await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
         else:
-         await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+            await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
 class BannerView(discord.ui.View):
-    ''' Overarching convoy button menu '''
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, server_banner: dict):
         self.df_state = df_state
+        self.server_banner = server_banner
         super().__init__(timeout=600)
 
         if df_state.convoy_obj:
@@ -152,16 +158,36 @@ class BannerView(discord.ui.View):
                     row=row
                 ))
 
-        if df_state.sett_obj:
+        if df_state.sett_obj:  # If there is a settlement's civic banner to join
             sett_banner = df_state.sett_obj['banner']
             civic_allegiance = df_state.user_obj.get('civic_allegiance')
 
-            # Check if there is no civic allegiance or the banner IDs differ
-            if not civic_allegiance or civic_allegiance.get('banner', {}).get('banner_id') != sett_banner['banner_id']:
+            if (  # Check if the user has no civic allegiance or a different allegiance
+                not civic_allegiance
+                or civic_allegiance.get('banner', {}).get('banner_id') != sett_banner['banner_id']
+            ):
                 self.add_item(ProspectiveBannerButton(
                     df_state=self.df_state,
                     banner_obj=sett_banner,
                     row=1
+                ))
+
+        if df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild
+            syndicate_allegiance = df_state.user_obj.get('syndicate_allegiance')
+
+            if not self.server_banner:  # If the server has no banner
+                self.add_item(NewSyndicateBannerButton(
+                    df_state=self.df_state,
+                    row=3
+                ))
+            elif (  # Check if user has no syndicate allegiance or a different allegiance
+                not syndicate_allegiance
+                or syndicate_allegiance.get('banner', {}).get('banner_id') != self.server_banner['banner_id']
+            ):
+                self.add_item(ProspectiveBannerButton(
+                    df_state=self.df_state,
+                    banner_obj=self.server_banner,
+                    row=3
                 ))
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
@@ -195,8 +221,7 @@ class BannerButton(discord.ui.Button):
         
         self.df_state.interaction = interaction
 
-        # await discord_app.warehouse_menus.warehouse_menu(self.df_state)
-
+        await banner_inspect_menu(self.df_state, self.banner_obj)
 
 class ProspectiveBannerButton(discord.ui.Button):
     def __init__(self, df_state: DFState, banner_obj: dict, row: int=1):
@@ -211,7 +236,6 @@ class ProspectiveBannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         self.df_state.user_obj = await api_calls.form_allegiance(
@@ -220,3 +244,295 @@ class ProspectiveBannerButton(discord.ui.Button):
         )
 
         await banner_menu(self.df_state)
+
+class NewSyndicateBannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int=1):
+        self.df_state = df_state
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label='Create banner',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
+        self.df_state.interaction = interaction
+
+        await self.df_state.interaction.response.send_modal(NewBannerModal(self.df_state))
+
+class NewBannerModal(discord.ui.Modal):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        super().__init__(title='Sign up for Desolate Frontiers')
+
+        self.new_banner_name_input = discord.ui.TextInput(
+            label='New banner name',
+            style=discord.TextStyle.short,
+            required=True,
+            default=self.df_state.interaction.guild.name,
+            max_length=32,
+            custom_id='new_banner_name'
+        )
+        self.add_item(self.new_banner_name_input)
+
+        self.new_banner_description_input = discord.ui.TextInput(
+            label='New banner description',
+            style=discord.TextStyle.long,
+            required=True,
+            placeholder='The description and mission statement of your new banner',
+            max_length=512,
+            custom_id='new_banner_description'
+        )
+        self.add_item(self.new_banner_description_input)
+
+        self.new_banner_physical_description_input = discord.ui.TextInput(
+            label='New banner description',
+            style=discord.TextStyle.long,
+            required=True,
+            placeholder='The description of the actual flag/tapestry/etc that convoys will fly when representing this banner',
+            max_length=512,
+            custom_id='new_banner_physical_desc'
+        )
+        self.add_item(self.new_banner_physical_description_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        self.df_state.user_obj = await api_calls.new_banner(
+            user_id=self.df_state.user_obj['user_id'],
+            name=self.new_banner_name_input.value,
+            description=self.new_banner_description_input.value,
+            banner_desc=self.new_banner_physical_description_input.value,
+            public=True,
+            discord_id=self.df_state.interaction.guild_id
+        )
+
+        await banner_menu(self.df_state)
+
+
+async def banner_inspect_menu(df_state: DFState, banner: dict):
+    if df_state.convoy_obj:
+        df_state.append_menu_to_back_stack(func=banner_inspect_menu)  # Add this menu to the back stack
+
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
+
+    allegiance = next((
+        a for a in df_state.user_obj['allegiances']
+        if a['banner']['banner_id'] == banner['banner_id']
+    ), None)
+
+    def create_condensed_internal_leaderboard(internal_leaderboard_data, allegiance_id):
+        result = []
+        allegiance_pos = None
+        
+        for banner_id, spot in leaderboard_data.items():  # Find allegiance position and collect top 3 banners
+            if banner_id == allegiance_banner_id:
+                allegiance_pos = spot['leaderboard_position']
+            if spot['leaderboard_position'] <= 3:
+                result.append(banner_id)  # Add top 3 banner IDs
+                
+        if allegiance_pos is None:
+            return []  # Return empty if allegiance not found
+                
+        if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
+            for banner_id, spot in leaderboard_data.items():
+                if 3 < spot['leaderboard_position'] <= 5:
+                    result.append(banner_id)
+        else:
+            result.append('...')  # Add ellipsis
+            for banner_id, spot in leaderboard_data.items():  # Add the banners around allegiance position
+                if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
+                    result.append(banner_id)
+        
+        return result
+
+    def format_internal_leaderboard_for_display(internal_leaderboard_data, condensed_allegiance_ids):
+        formatted_output = []
+        last_pos = 0
+        added_ellipsis = False
+        
+        # First pass - process actual banner entries
+        for banner_id, spot in leaderboard_data.items():
+            if banner_id in condensed_banner_ids:
+                # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
+                if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
+                    formatted_output.append('...')
+                    added_ellipsis = True
+                    
+                position_line = (
+                    f'{spot['leaderboard_position']}. **{spot['name']}**'
+                    if banner_id == allegiance['banner']['banner_id']
+                    else f'{spot['leaderboard_position']}. {spot["name"]}'
+                )  # Bold the name if it's the allegiance banner
+                volume_line = f'  - Total volume moved: **{spot["stats"].get("total_volume_moved", 0)}L**'
+                formatted_output.extend([position_line, volume_line])
+                last_pos = spot['leaderboard_position']
+
+        return formatted_output
+
+
+    def create_condensed_global_leaderboard(global_leaderboard_data, allegiance_banner_id):
+        condensed_global_leaderboard = []
+        allegiance_pos = None
+        
+        for banner_id, spot in global_leaderboard_data.items():  # Find allegiance position and collect top 3 banners
+            if banner_id == allegiance_banner_id:
+                allegiance_pos = spot['leaderboard_position']
+            if spot['leaderboard_position'] <= 3:
+                condensed_global_leaderboard.append(banner_id)  # Add top 3 banner IDs
+                
+        if allegiance_pos is None:
+            return []  # Return empty if allegiance not found
+                
+        if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
+            for banner_id, spot in global_leaderboard_data.items():
+                if 3 < spot['leaderboard_position'] <= 5:
+                    condensed_global_leaderboard.append(banner_id)
+        else:
+            condensed_global_leaderboard.append('...')  # Add ellipsis
+            for banner_id, spot in global_leaderboard_data.items():  # Add the banners around allegiance position
+                if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
+                    condensed_global_leaderboard.append(banner_id)
+        
+        return condensed_global_leaderboard
+
+    def format_global_leaderboard_for_display(global_leaderboard_data, condensed_banner_ids):
+        global_leaderboard_string = []
+        last_pos = 0
+        added_ellipsis = False
+        
+        for banner_id, spot in global_leaderboard_data.items():  # First pass - process actual banner entries
+            if banner_id in condensed_banner_ids:
+                # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
+                if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
+                    global_leaderboard_string.append('...')
+                    added_ellipsis = True
+                    
+                position_line = (
+                    f'{spot['leaderboard_position']}. **{spot['name']}**'
+                    if banner_id == allegiance['banner']['banner_id']
+                    else f'{spot['leaderboard_position']}. {spot["name"]}'
+                )  # Bold the name if it's the allegiance banner
+                volume_line = f'  - Total volume moved: **{spot["stats"].get("total_volume_moved", 0)}L**'
+                global_leaderboard_string.extend([position_line, volume_line])
+                last_pos = spot['leaderboard_position']
+
+        return global_leaderboard_string
+
+    embed.description = '\n'.join([
+        f'# {banner['name']}',
+        f'*{banner['description']}*',
+        '### Internal leaderboard',
+        '\n'.join(create_condensed_internal_leaderboard(
+            leaderboard_data=allegiance['banner']['internal_leaderboard'],
+            condensed_banner_ids=format_internal_leaderboard_for_display(allegiance['banner']['internal_leaderboard'], allegiance['banner']['banner_id'])
+        )),
+        '### Global leaderboard',
+        '\n'.join(create_condensed_global_leaderboard(
+            leaderboard_data=allegiance['banner']['global_leaderboard'],
+            condensed_banner_ids=format_global_leaderboard_for_display(allegiance['banner']['global_leaderboard'], allegiance['banner']['banner_id'])
+        )),
+    ])
+
+    if allegiance:
+        internal_leaderboard_position = allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
+
+        allegiance_stats = [
+            '### Leaderboard',
+            f'- Total volume moved: **{allegiance['stats'].get('total_volume_moved', 0)}L**',
+            f'- Total weight moved: **{allegiance['stats'].get('total_weight_moved', 0)}kg**',
+            f'- Total value moved: **${allegiance['stats'].get('total_value_moved', 0)}**',
+            f'- {df_state.user_obj['username']}\'s leaderboard position: **{internal_leaderboard_position}**',
+        ]
+        if allegiance['banner'].get('global_leaderboard'):
+            global_leaderboard_position = allegiance['banner']['global_leaderboard'][allegiance['banner']['banner_id']]['leaderboard_position']
+            allegiance_stats.append(f'- Global syndicate leaderboard position: **{global_leaderboard_position}**')
+        
+        embed.description += '\n' + '\n'.join(allegiance_stats)
+
+    embeds = [embed]
+
+    view = BannerInspectView(df_state)
+
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+
+class BannerInspectView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        if df_state.convoy_obj:
+            self.clear_items()
+            discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+    @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.gray, row=0)
+    async def banner_inspect_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        await banner_menu(self.df_state)
+    
+    async def on_timeout(self):
+        await handle_timeout(self.df_state)
+
+
+async def leaderboard_inspect_menu(df_state: DFState, banner: dict):
+    if df_state.convoy_obj:
+        df_state.append_menu_to_back_stack(func=leaderboard_inspect_menu)  # Add this menu to the back stack
+    
+    embed = discord.Embed()
+    embed = df_embed_author(embed, df_state)
+
+    allegiance = next((
+        a for a in df_state.user_obj['allegiances']
+        if a['banner']['banner_id'] == banner['banner_id']
+    ), None)
+
+    embed.description = '\n'.join([
+        f'# {banner['name']}',
+        f'*{banner['description']}*',
+    ])
+
+    if allegiance:
+        internal_leaderboard_position = allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
+        global_leaderboard_position = allegiance['banner']['global_leaderboard'][allegiance['banner']['banner_id']]['leaderboard_position']
+
+        allegiance_stats = '\n'.join([
+            '### Leaderboard',
+            f'- Total volume moved: **{allegiance['stats'].get('total_volume_moved', 0)}L**',
+            f'- Total weight moved: **{allegiance['stats'].get('total_weight_moved', 0)}kg**',
+            f'- Total value moved: **${allegiance['stats'].get('total_value_moved', 0)}**',
+            f'- {df_state.user_obj['username']}\'s leaderboard position: **{internal_leaderboard_position}**',
+            f'- Global syndicate leaderboard position: **{global_leaderboard_position}**',
+        ])
+        embed.description += '\n' + allegiance_stats
+
+    embeds = [embed]
+
+    view = LeaderboardInspectView(df_state)
+
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+
+class LeaderboardInspectView(discord.ui.View):
+    def __init__(self, df_state: DFState, banner):
+        self.df_state = df_state
+        self.banner = banner
+        super().__init__(timeout=600)
+
+        if df_state.convoy_obj:
+            self.clear_items()
+            discord_app.nav_menus.add_nav_buttons(self, self.df_state)
+
+    @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.gray, row=0)
+    async def leaderboard_inspect_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        await banner_inspect_menu(self.df_state, self.banner)
+    
+    async def on_timeout(self):
+        await handle_timeout(self.df_state)

@@ -200,7 +200,7 @@ class MainMenuView(discord.ui.View):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-        await interaction.response.send_modal(MainMenuUsernameModal(interaction.user.display_name, self.df_state))
+        await interaction.response.send_modal(MainMenuUsernameModal(self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple)
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -220,7 +220,7 @@ class MainMenuView(discord.ui.View):
         await handle_timeout(self.df_state, self.message)
 
 class MainMenuUsernameModal(discord.ui.Modal):
-    def __init__(self, discord_nickname: str, df_state: DFState):
+    def __init__(self, df_state: DFState):
         self.df_state = df_state
 
         super().__init__(title='Sign up for Desolate Frontiers')
@@ -229,7 +229,7 @@ class MainMenuUsernameModal(discord.ui.Modal):
             label='Desolate Frontiers username',
             style=discord.TextStyle.short,
             required=True,
-            default=discord_nickname,
+            default=self.df_state.interaction.user.display_name,
             max_length=32,
             custom_id='new_username'
         )

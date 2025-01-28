@@ -326,54 +326,53 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
     ), None)
 
     def create_condensed_internal_leaderboard(internal_leaderboard_data, allegiance_id):
-        result = []
+        condensed_internal_leaderboard = []
         allegiance_pos = None
         
-        for banner_id, spot in leaderboard_data.items():  # Find allegiance position and collect top 3 banners
-            if banner_id == allegiance_banner_id:
+        for user_id, spot in internal_leaderboard_data.items():  # Find allegiance position and collect top 3 banners
+            if user_id == spot['user_id']:
                 allegiance_pos = spot['leaderboard_position']
             if spot['leaderboard_position'] <= 3:
-                result.append(banner_id)  # Add top 3 banner IDs
+                condensed_internal_leaderboard.append(user_id)  # Add top 3 banner IDs
                 
         if allegiance_pos is None:
             return []  # Return empty if allegiance not found
                 
         if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
-            for banner_id, spot in leaderboard_data.items():
+            for banner_id, spot in internal_leaderboard_data.items():
                 if 3 < spot['leaderboard_position'] <= 5:
-                    result.append(banner_id)
+                    condensed_internal_leaderboard.append(banner_id)
         else:
-            result.append('...')  # Add ellipsis
-            for banner_id, spot in leaderboard_data.items():  # Add the banners around allegiance position
+            condensed_internal_leaderboard.append('...')  # Add ellipsis
+            for banner_id, spot in internal_leaderboard_data.items():  # Add the banners around allegiance position
                 if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
-                    result.append(banner_id)
+                    condensed_internal_leaderboard.append(banner_id)
         
-        return result
+        return condensed_internal_leaderboard
 
     def format_internal_leaderboard_for_display(internal_leaderboard_data, condensed_allegiance_ids):
-        formatted_output = []
+        internal_formatted_output = []
         last_pos = 0
         added_ellipsis = False
         
         # First pass - process actual banner entries
-        for banner_id, spot in leaderboard_data.items():
-            if banner_id in condensed_banner_ids:
+        for user_id, spot in internal_leaderboard_data.items():
+            if user_id in condensed_allegiance_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
-                if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
-                    formatted_output.append('...')
+                if '...' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
+                    internal_formatted_output.append('...')
                     added_ellipsis = True
                     
                 position_line = (
-                    f'{spot['leaderboard_position']}. **{spot['name']}**'
-                    if banner_id == allegiance['banner']['banner_id']
-                    else f'{spot['leaderboard_position']}. {spot["name"]}'
+                    f'{spot['leaderboard_position']}. **{spot['username']}**'
+                    if user_id == allegiance['user_id']
+                    else f'{spot['leaderboard_position']}. {spot['username']}'
                 )  # Bold the name if it's the allegiance banner
-                volume_line = f'  - Total volume moved: **{spot["stats"].get("total_volume_moved", 0)}L**'
-                formatted_output.extend([position_line, volume_line])
+                volume_line = f'  - Total volume moved: **{spot['allegiance']['stats'].get('total_volume_moved', 0)}L**'
+                internal_formatted_output.extend([position_line, volume_line])
                 last_pos = spot['leaderboard_position']
 
-        return formatted_output
-
+        return internal_formatted_output
 
     def create_condensed_global_leaderboard(global_leaderboard_data, allegiance_banner_id):
         condensed_global_leaderboard = []
@@ -422,37 +421,42 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                 last_pos = spot['leaderboard_position']
 
         return global_leaderboard_string
+    
+    # print()
+    # import pprint;pprint.pprint(allegiance['banner']['internal_leaderboard'])
+    print()
+    condensed_internal_leaderboard = create_condensed_internal_leaderboard(
+        internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
+        allegiance_id=allegiance['allegiance_id']
+    )
+    import pprint;pprint.pprint(condensed_internal_leaderboard)
+    print()
+    import pprint;pprint.pprint(format_internal_leaderboard_for_display(
+        internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
+        condensed_allegiance_ids=condensed_internal_leaderboard
+    ))
+    print()
 
     embed.description = '\n'.join([
         f'# {banner['name']}',
         f'*{banner['description']}*',
         '### Internal leaderboard',
-        '\n'.join(create_condensed_internal_leaderboard(
-            leaderboard_data=allegiance['banner']['internal_leaderboard'],
-            condensed_banner_ids=format_internal_leaderboard_for_display(allegiance['banner']['internal_leaderboard'], allegiance['banner']['banner_id'])
+        '\n'.join(format_internal_leaderboard_for_display(
+            internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
+            condensed_allegiance_ids=create_condensed_internal_leaderboard(
+                internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
+                allegiance_id=allegiance['allegiance_id']
+            )
         )),
         '### Global leaderboard',
-        '\n'.join(create_condensed_global_leaderboard(
-            leaderboard_data=allegiance['banner']['global_leaderboard'],
-            condensed_banner_ids=format_global_leaderboard_for_display(allegiance['banner']['global_leaderboard'], allegiance['banner']['banner_id'])
+        '\n'.join(format_global_leaderboard_for_display(
+            global_leaderboard_data=allegiance['banner']['global_leaderboard'],
+            condensed_banner_ids=create_condensed_global_leaderboard(
+                global_leaderboard_data=allegiance['banner']['global_leaderboard'],
+                allegiance_banner_id=allegiance['banner']['banner_id']
+            )
         )),
     ])
-
-    if allegiance:
-        internal_leaderboard_position = allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
-
-        allegiance_stats = [
-            '### Leaderboard',
-            f'- Total volume moved: **{allegiance['stats'].get('total_volume_moved', 0)}L**',
-            f'- Total weight moved: **{allegiance['stats'].get('total_weight_moved', 0)}kg**',
-            f'- Total value moved: **${allegiance['stats'].get('total_value_moved', 0)}**',
-            f'- {df_state.user_obj['username']}\'s leaderboard position: **{internal_leaderboard_position}**',
-        ]
-        if allegiance['banner'].get('global_leaderboard'):
-            global_leaderboard_position = allegiance['banner']['global_leaderboard'][allegiance['banner']['banner_id']]['leaderboard_position']
-            allegiance_stats.append(f'- Global syndicate leaderboard position: **{global_leaderboard_position}**')
-        
-        embed.description += '\n' + '\n'.join(allegiance_stats)
 
     embeds = [embed]
 

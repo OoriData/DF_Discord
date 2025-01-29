@@ -359,7 +359,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
             if user_id in condensed_allegiance_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
                 if '...' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
-                    internal_formatted_output.append('...')
+                    internal_formatted_output.append('-# •••')
                     added_ellipsis = True
 
                 position_line = (
@@ -367,6 +367,13 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                     if user_id == allegiance['user_id']
                     else f'{spot['leaderboard_position']}. {spot['username']}'
                 )  # Bold the name if it's the current user
+                match spot['leaderboard_position']:
+                    case 1:
+                        position_line += '🥇'
+                    case 2:
+                        position_line += '🥈'
+                    case 3:
+                        position_line += '🥉'
                 volume_line = f'  - Total volume moved: **{spot['allegiance']['stats'].get('total_volume_moved', 0)}L**'
                 internal_formatted_output.extend([position_line, volume_line])
                 last_pos = spot['leaderboard_position']
@@ -407,7 +414,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
             if banner_id in condensed_banner_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
                 if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
-                    global_leaderboard_string.append('...')
+                    global_leaderboard_string.append('•••')
                     added_ellipsis = True
 
                 position_line = (
@@ -415,6 +422,13 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                     if banner_id == allegiance['banner']['banner_id']
                     else f'{spot['leaderboard_position']}. {spot['name']}'
                 )  # Bold the name if it's the allegiance banner
+                match spot['leaderboard_position']:
+                    case 1:
+                        position_line += '🥇'
+                    case 2:
+                        position_line += '🥈'
+                    case 3:
+                        position_line += '🥉'
                 volume_line = f'  - Total volume moved: **{spot['stats'].get('total_volume_moved', 0)}L**'
                 global_leaderboard_string.extend([position_line, volume_line])
                 last_pos = spot['leaderboard_position']

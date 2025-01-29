@@ -7,7 +7,7 @@ op run --env-file op_discord_prod.env --no-masking -- docker compose -f compose.
 ### environment
 In order to run that, you need an `op_discord_prod.env` should look something like this:
 ```env
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "WARNING"
 
 DF_API_HOST = "http://70.90.116.204:8001"  # Official DF API
 

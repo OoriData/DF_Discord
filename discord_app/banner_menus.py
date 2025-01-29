@@ -22,6 +22,8 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         df_state.append_menu_to_back_stack(func=banner_menu)  # Add this menu to the back stack
     if df_state.sett_obj:  # If there is a settlement's civic banner to join
         df_state.sett_obj['banner'] = await api_calls.get_settlement_banner(df_state.sett_obj['sett_id'])
+    
+    server_banner = None
     if df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild
         try:
             server_banner = await api_calls.get_banner_by_discord_id(df_state.interaction.guild_id)
@@ -238,10 +240,14 @@ class ProspectiveBannerButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        self.df_state.user_obj = await api_calls.form_allegiance(
-            self.df_state.user_obj['user_id'],
-            banner_id=self.banner_obj['banner_id']
-        )
+        try:
+            self.df_state.user_obj = await api_calls.form_allegiance(
+                self.df_state.user_obj['user_id'],
+                banner_id=self.banner_obj['banner_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         await banner_menu(self.df_state)
 

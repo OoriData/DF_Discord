@@ -470,7 +470,23 @@ class DestinationSelect(discord.ui.Select):
             recipient = cargo['recipient']
             if recipient:
                 recipient_to_cargo_names.setdefault(recipient, []).append(cargo['name'])
+
+        warehouse_names = [
+            s['name']
+            for row in self.df_state.map_obj['tiles']
+            for t in row
+            for s in t['settlements']
+            if any(warehouse['sett_id'] == s['sett_id'] for warehouse in self.df_state.user_obj['warehouses'])
+        ]
         
+        settlement_emojis = {
+            'dome': '🏙️',
+            'city': '🏢',
+            'city-state': '🏢',
+            'military_base': '🪖',
+            'town': '🏘️'
+        }
+
         settlements = [    # Flatten settlements list from map tiles, calculate distances, and filter out same-tile settlements
             (
                 sett['name'],
@@ -478,7 +494,8 @@ class DestinationSelect(discord.ui.Select):
                 sett['y'],
                 math.sqrt((sett['x'] - convoy_x) ** 2 + (sett['y'] - convoy_y) ** 2),
                 [cargo_name for vendor in sett['vendors'] if vendor['vendor_id'] in recipient_to_cargo_names
-                 for cargo_name in recipient_to_cargo_names[vendor['vendor_id']]]  # List of cargo names
+                 for cargo_name in recipient_to_cargo_names[vendor['vendor_id']]],  # List of cargo names
+                '🏭' if sett['name'] in warehouse_names else settlement_emojis.get(sett['sett_type'], None)
             )
             for row in self.df_map['tiles']
             for tile in row
@@ -513,14 +530,14 @@ class DestinationSelect(discord.ui.Select):
         if current_page > 0:  # Add 'previous page' option if not on the first page
             options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
         
-        for sett_name, x, y, _, cargo_names in settlements:
+        for sett_name, x, y, _, cargo_names, emoji in settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
             options.append(discord.SelectOption(
                 label=label[:100],  # Only the first 100 chars of the label string
                 value=f'{x},{y}',
-                emoji=DF_LOGO_EMOJI if cargo_names else None  # Add the tutorial emoji if cargo destination, else don't
+                emoji=DF_LOGO_EMOJI if cargo_names else emoji  # Add the tutorial emoji if cargo destination, else use city based emoji
             ))
         
         if current_page < max_pages:  # Add 'next page' option if not on the last page

@@ -83,6 +83,16 @@ class NavSettButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
+        if df_state.sett_obj['sett_type'] == 'dome':
+            emoji= '🏙️'
+        elif df_state.sett_obj['sett_type'] == 'city' or 'city-state':
+            emoji = '🏢'
+        elif df_state.sett_obj['sett_type'] == 'military_base':
+            emoji = '🪖'
+        elif df_state.sett_obj['sett_type'] == 'town':
+            emoji = '🏘️'
+        
+
         if df_state.sett_obj:
             label = df_state.sett_obj['name']
             disabled = False
@@ -95,6 +105,7 @@ class NavSettButton(discord.ui.Button):
             label=label,
             disabled=disabled,
             custom_id='nav_sett_button',
+            emoji = emoji,
             row=0
         )
 

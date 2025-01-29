@@ -188,14 +188,14 @@ class MainMenuView(discord.ui.View):
         else:  # If no user
             self.add_item(self.register_user_button)
 
-    @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple, emoji = '🖊️')
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
         await interaction.response.send_modal(MainMenuUsernameModal(interaction.user.display_name, self.df_state))
 
-    @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple, emoji='➕')
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
@@ -265,26 +265,42 @@ class MainMenuWarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):
         self.df_state = df_state
 
+        settlement_emojis = {
+            'dome': '🏙️',
+            'city': '🏢',
+            'city-state': '🏢',
+            'military_base': '🪖',
+            'town': '🏘️'
+        }
+
         placeholder = 'Warehouses'
         disabled = False
         options=[]
         for warehouse in self.df_state.user_obj['warehouses']:
-            warehouse_sett = next((
-                s
-                for row in df_state.map_obj['tiles']
-                for t in row
-                for s in t['settlements']
-                if s['sett_id'] == warehouse['sett_id']
-            ), None)
-            options.append(discord.SelectOption(
-                label=warehouse_sett['name'],
-                value=warehouse['warehouse_id']
-            ))
+            warehouse_sett = next(
+                (
+                    s
+                    for row in self.df_state.map_obj['tiles']
+                    for t in row
+                    for s in t['settlements']
+                    if s['sett_id'] == warehouse['sett_id']
+                ),
+                None
+            )
+            
+            if warehouse_sett:  # Ensure the settlement exists
+                options.append(discord.SelectOption(
+                    label=warehouse_sett['name'],
+                    value=warehouse['warehouse_id'],
+                    emoji=settlement_emojis.get(warehouse_sett['sett_type'])  # Use the settlement type emoji
+                ))
         if not options:
             placeholder = 'No Warehouses'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
         
+
+
         super().__init__(
             placeholder=placeholder,
             options=options,

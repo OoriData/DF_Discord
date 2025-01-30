@@ -295,7 +295,7 @@ class NewBannerModal(discord.ui.Modal):
         self.add_item(self.new_banner_description_input)
 
         self.new_banner_physical_description_input = discord.ui.TextInput(
-            label='New banner description',
+            label='New banner (physical) description',
             style=discord.TextStyle.long,
             required=True,
             placeholder='The description of the actual flag/tapestry/etc that convoys will fly when representing this banner',

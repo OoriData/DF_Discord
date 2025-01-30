@@ -131,18 +131,13 @@ class SettView(discord.ui.View):
 class WarehouseButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-
-        if self.df_state.warehouse_obj is not None:
-            emoji = '🏭'
-        else:
-            emoji = '📦'
         
         label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label=label,
             custom_id='warehouse_button',
-            emoji=emoji,
+            emoji='🏭',
             row=1
         )
 

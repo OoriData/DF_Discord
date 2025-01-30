@@ -93,7 +93,6 @@ class NavSettButton(discord.ui.Button):
             emoji = '🏘️'
         else:
             emoji = ''
-        
 
         if df_state.sett_obj:
             label = df_state.sett_obj['name']

@@ -142,6 +142,7 @@ class MapButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label='Map to Recipient',
             custom_id='map_button',
+            emoji='🗺️',
             row=row
         )
         self.df_state = df_state

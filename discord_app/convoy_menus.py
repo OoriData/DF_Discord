@@ -310,9 +310,11 @@ class JourneyButton(discord.ui.Button):
         if not self.df_state.convoy_obj['journey']:  # If the convoy is not in transit
             style = discord.ButtonStyle.green
             label = 'Embark on new Journey'
+            emoji = '🗺️'
         else:  # If the convoy is already on a journey
             style = discord.ButtonStyle.red
             label = 'Cancel current Journey'
+            emoji = None
             
         if not self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
             disabled = True
@@ -322,6 +324,7 @@ class JourneyButton(discord.ui.Button):
             label=label,
             disabled=disabled,
             custom_id='journey_button',
+            emoji=emoji,
             row=row
         )
 
@@ -361,7 +364,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
             discord.SelectOption(
                 label=vehicle['name'],
                 value=vehicle['vehicle_id'],
-                emoji=vehicle_emojis.get(vehicle['shape'], '')  # Direct dictionary lookup
+                emoji=vehicle_emojis.get(vehicle['shape'], None)  # Direct dictionary lookup
             )
             for vehicle in self.df_state.convoy_obj['vehicles']
         ]
@@ -668,6 +671,7 @@ class NextJourneyButton(discord.ui.Button):
             label='Show Next Route',
             custom_id='alt_route',
             style=discord.ButtonStyle.blurple,
+            emoji='🗺️',
             row=row
         )
 
@@ -704,6 +708,7 @@ class ConfirmJourneyButton(discord.ui.Button):
             label=label,
             disabled=disabled,
             custom_id='confirm_journey_button',
+            emoji='🛣️',
             row=row
         )
 

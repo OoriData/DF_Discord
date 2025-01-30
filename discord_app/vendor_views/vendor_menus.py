@@ -106,9 +106,10 @@ class MechanicButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Mechanic (Repairs, part/upgrade management)',
+            label='Mechanic',
             disabled=disabled,
             custom_id='mech_button',
+            emoji='🛠️',
             row=2
         )
 

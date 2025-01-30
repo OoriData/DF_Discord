@@ -132,6 +132,7 @@ class ExpandCargoButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label='Expand cargo storage',
             custom_id='expand_cargo_button',
+            emoji='🏗️',
             row=row
         )
 
@@ -149,6 +150,7 @@ class ExpandVehiclesButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label='Expand vehicle storage',
             custom_id='expand_vehicles_button',
+            emoji='🅿️',
             row=row
         )
 
@@ -246,6 +248,7 @@ class SpawnButton(discord.ui.Button):
             label='Initialize new convoy',
             disabled=False if self.df_state.warehouse_obj['vehicle_storage'] else True,
             custom_id='spawn_button',
+            emoji='➕',
             row=row
         )
 

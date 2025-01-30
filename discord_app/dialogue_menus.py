@@ -97,7 +97,7 @@ class DialogueView(discord.ui.View):
         )
 
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', emoji='💬', row=2)
     async def send_message_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         

@@ -981,8 +981,9 @@ class RetrieveVehicleSelect(discord.ui.Select):
 
         options = [
             discord.SelectOption(
-                label=f"{vehicle_emojis.get(vehicle['shape'], '')} {vehicle['name']}".strip(),
-                value=vehicle['vehicle_id']
+                label=vehicle['name'],
+                value=vehicle['vehicle_id'],
+                emoji = vehicle_emojis.get(vehicle['shape'], '')
             )
             for vehicle in self.df_state.warehouse_obj['vehicle_storage']
         ]

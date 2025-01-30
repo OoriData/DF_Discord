@@ -91,6 +91,8 @@ class NavSettButton(discord.ui.Button):
             emoji = '🪖'
         elif df_state.sett_obj['sett_type'] == 'town':
             emoji = '🏘️'
+        else:
+            emoji = ''
         
 
         if df_state.sett_obj:

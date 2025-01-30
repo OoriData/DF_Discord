@@ -100,12 +100,17 @@ class NavSettButton(discord.ui.Button):
             label = 'Settlement'
             disabled = True
 
+        if df_state.sett_obj is not None:
+            emoji = sett_emojis.get(df_state.sett_obj['sett_type'], None)
+        else:
+            emoji = None
+
         super().__init__(
             style=discord.ButtonStyle.gray,
             label=label,
             disabled=disabled,
             custom_id='nav_sett_button',
-            emoji = sett_emojis.get(df_state.sett_obj['sett_type'], None),
+            emoji = emoji,
             row=0
         )
 

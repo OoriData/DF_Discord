@@ -15,6 +15,7 @@ import                                discord_app.vendor_views.buy_menus
 import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
 import                                discord_app.warehouse_menus
+import                                discord_app.banner_menus
 from discord_app.df_state      import DFState
 
 
@@ -94,7 +95,6 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
-
 class SettView(discord.ui.View):
     ''' Overarching convoy button menu '''
     def __init__(self, df_state: DFState, vendors):
@@ -105,6 +105,7 @@ class SettView(discord.ui.View):
 
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
         self.add_item(WarehouseButton(self.df_state))
+        self.add_item(SettBannerButton(self.df_state))
         self.add_item(VendorSelect(self.df_state, vendors, row=2))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
@@ -158,6 +159,26 @@ class WarehouseButton(discord.ui.Button):
             self.df_state.warehouse_obj = await api_calls.get_warehouse(local_warehouse['warehouse_id'])
 
         await discord_app.warehouse_menus.warehouse_menu(self.df_state)
+
+class SettBannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        label = 'Banner'
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=label,
+            custom_id='sett_banner_button',
+            emoji='🎌',
+            row=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
+        self.df_state.interaction = interaction
+
+        await discord_app.banner_menus.banner_menu(self.df_state)
 
 class VendorSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, vendors, row: int=1):

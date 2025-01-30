@@ -84,9 +84,24 @@ class MoveCargoVehicleSelect(discord.ui.Select):
         else:
             disabled = False
 
+        vehicle_emojis = {shape: emoji for emoji, shapes in {
+            '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
+            '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
+            '🏎️': {'2_door_sedan', 'convertible'},
+            '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
+            '🚐': {'cargo_van', 'van'},
+            '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
+            '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
+            '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'}
+        }.items() for shape in shapes}  # Flattens the mapping
+
         placeholder = 'Select vehicle to move cargo into'
         options = [
-            discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
+            discord.SelectOption(
+                label=vehicle['name'],
+                value=vehicle['vehicle_id'],
+                emoji=vehicle_emojis.get(vehicle['shape'], '')  # Direct dictionary lookup
+            )
             for vehicle in self.df_state.convoy_obj['vehicles']
             if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']
         ]

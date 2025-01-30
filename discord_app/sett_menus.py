@@ -132,12 +132,17 @@ class WarehouseButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
+        if self.df_state.warehouse_obj is not None:
+            emoji = '🏭'
+        else:
+            emoji = '📦'
+        
         label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label=label,
             custom_id='warehouse_button',
-            emoji='📦',
+            emoji=emoji,
             row=1
         )
 
@@ -181,6 +186,16 @@ class VendorSelect(discord.ui.Select):
         self.vendors = vendors
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
+
+        vendor_emojis = {
+            'Depot': '📦',
+            'Refinery': '🏢',
+            'Dealership': '🏢',
+            'Water': '🪖',
+            'town': '🏘️'
+        }
+
+
         if tutorial_stage == 1:
             options=[
                 discord.SelectOption(
@@ -201,8 +216,20 @@ class VendorSelect(discord.ui.Select):
             ]
         else:  # Not in tutorial
             options=[
-                discord.SelectOption(label=vendor['name'],value=vendor['vendor_id'])
+                discord.SelectOption(
+                    label=f"{vendor['name']} {emoji}",
+                    value=vendor['vendor_id']
+                )
                 for vendor in self.vendors
+                for emoji in [
+                    "📦" if vendor['supply_request'].get('cargo', 0) > 0 else
+                    "🚗" if vendor['supply_request'].get('vehicle', 0) > 0 else
+                    "🔧" if vendor['supply_request'].get('repair_price', 0) > 0 else
+                    "⛽" if vendor['supply_request'].get('fuel', 0) > 0 else
+                    "🚰" if vendor['supply_request'].get('water', 0) > 0 else
+                    "🍱" if vendor['supply_request'].get('food', 0) > 0 else
+                    ""
+                ]
             ]
         
         super().__init__(

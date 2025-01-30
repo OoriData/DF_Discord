@@ -279,6 +279,7 @@ class NewBannerModal(discord.ui.Modal):
             style=discord.TextStyle.short,
             required=True,
             default=self.df_state.interaction.guild.name,
+            placeholder=self.df_state.interaction.guild.name,
             max_length=32,
             custom_id='new_banner_name'
         )

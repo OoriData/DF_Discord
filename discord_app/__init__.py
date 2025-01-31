@@ -303,3 +303,102 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 Happy trails! The game will be updated frequently, and we will be listening closely for any feedback you've got. Have fun!
 -# You can show this message at any time with **`/df-help`**
 '''
+
+
+def get_vehicle_emoji(vehicle_shape: str) -> str | None:
+    '''
+    Returns the corresponding emoji for a given vehicle shape.
+
+    Args:
+        vehicle_shape (str): The shape of the vehicle to retrieve the emoji for.
+
+    Returns:
+        str | None: The emoji corresponding to the vehicle shape, or None if no emoji is found.
+    '''
+    vehicle_emojis = {shape: emoji for emoji, shapes in {
+        '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
+        '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
+        '🏎️': {'2_door_sedan', 'convertible'},
+        '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
+        '🚐': {'cargo_van', 'van'},
+        '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
+        '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
+        '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'},
+    }.items() for shape in shapes}  # Invert the dictionary to map vehicle shapes to emojis
+
+    return vehicle_emojis.get(vehicle_shape)  # Retrieve and return the corresponding emoji (or None if not found)
+
+
+def get_cargo_emoji(cargo: dict) -> str | None:
+    '''
+    Returns the corresponding emoji for a given cargo type.
+
+    Args:
+        cargo (dict): The cargo object to retrieve the emoji for.
+
+    Returns:
+        str | None: The emoji corresponding to the cargo type, or None if no match is found.
+    '''
+    cargo_emoji = {
+        'recipient': '📦',
+        'part': '⚙️',
+        'fuel': '🛢️',
+        'water': '💧',
+        'food': '🥪',
+    }
+
+    for key, emoji in cargo_emoji.items():  # Iterate over (key, emoji) pairs to check for a match
+        if cargo.get(key) is not None:
+            return emoji
+
+    return None  # Default to None if no match is found
+
+
+def get_vendor_emoji(vendor: dict) -> str | None:
+    '''
+    Returns the appropriate emoji for a vendor based on their supply request.
+
+    Args:
+        vendor (dict): The vendor object containing supply request details.
+
+    Returns:
+        str | None: The corresponding emoji, or None if no match is found.
+    '''
+    supply_request = vendor.get('supply_request', {})
+
+    emoji_mapping = {
+        'cargo': '📦',
+        'vehicle': '🚗',
+        'repair_price': '🔧',
+        'fuel': '⛽',
+        'water': '🚰',
+        'food': '🍱',
+    }
+
+    # Find the first matching supply request type with a value > 0
+    for key, emoji in emoji_mapping.items():
+        if supply_request.get(key, 0) > 0:
+            return emoji
+
+    return None  # Default to None if no matching request
+
+
+def get_settlement_emoji(settlement_type: str) -> str | None:
+    '''
+    Returns the appropriate emoji for a settlement based on its type.
+
+    Args:
+        settlement (dict): The settlement object containing type information.
+
+    Returns:
+        str | None: The corresponding emoji, or None if no match is found.
+    '''
+    settlement_emojis = {
+        'dome': '🏙️',
+        'city': '🏢',
+        'city-state': '🏢',
+        'town': '🏘️',
+        'military_base': '🪖',
+    }
+
+    return settlement_emojis.get(settlement_type)

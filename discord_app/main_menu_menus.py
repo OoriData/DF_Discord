@@ -13,7 +13,7 @@ import                                discord_app
 from discord_app               import (
     api_calls, convoy_menus, warehouse_menus, banner_menus,
     handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file,
-    DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction
+    DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction, get_settlement_emoji
 )
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
@@ -290,14 +290,6 @@ class MainMenuWarehouseSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=0):
         self.df_state = df_state
 
-        settlement_emojis = {
-            'dome': '🏙️',
-            'city': '🏢',
-            'city-state': '🏢',
-            'military_base': '🪖',
-            'town': '🏘️'
-        }
-
         placeholder = 'Warehouses'
         disabled = False
         options=[]
@@ -317,7 +309,7 @@ class MainMenuWarehouseSelect(discord.ui.Select):
                 options.append(discord.SelectOption(
                     label=warehouse_sett['name'],
                     value=warehouse['warehouse_id'],
-                    emoji=settlement_emojis.get(warehouse_sett['sett_type'])  # Use the settlement type emoji
+                    emoji=get_settlement_emoji(warehouse_sett['sett_type'])
                 ))
         if not options:
             placeholder = 'No Warehouses'

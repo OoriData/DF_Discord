@@ -9,7 +9,7 @@ import discord_app.sett_menus
 import                           discord_app.vendor_views.vendor_menus
 
 from discord_app.df_state import DFState, DFMenu
-from discord_app          import validate_interaction
+from discord_app          import validate_interaction, get_settlement_emoji
 
 
 def add_nav_buttons(view: discord.ui.View, df_state: DFState):
@@ -83,16 +83,6 @@ class NavSettButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
-
-        sett_emojis = {
-            'dome': '🏙️',
-            'city': '🏢',
-            'city-state': '🏢',
-            'military_base': '🪖',
-            'town': '🏘️'
-        }
-        
-
         if df_state.sett_obj:
             label = df_state.sett_obj['name']
             disabled = False
@@ -100,8 +90,8 @@ class NavSettButton(discord.ui.Button):
             label = 'Settlement'
             disabled = True
 
-        if df_state.sett_obj is not None:
-            emoji = sett_emojis.get(df_state.sett_obj['sett_type'], None)
+        if df_state.sett_obj:
+            emoji = get_settlement_emoji(df_state.sett_obj['sett_type'])
         else:
             emoji = None
 

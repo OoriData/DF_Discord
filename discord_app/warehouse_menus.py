@@ -6,7 +6,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata, get_vehicle_emoji, get_cargo_emoji
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
@@ -401,37 +401,15 @@ class StoreCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be stored'
         disabled = False
-        emoji = None
-
-        cargo_emoji = {
-            'recipient': '📦',
-            'part': '⚙️',
-            'fuel': '🛢️',
-            'water': '💧',
-            'food': '🥪'
-        }
 
         options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
-                    # Determine the emoji based on cargo type
-                    emoji = None
-                    if cargo.get('recipient'):
-                        emoji = cargo_emoji['recipient']
-                    elif cargo.get('part'):
-                        emoji = cargo_emoji['part']
-                    elif cargo.get('fuel'):
-                        emoji = cargo_emoji['fuel']
-                    elif cargo.get('water'):
-                        emoji = cargo_emoji['water']
-                    elif cargo.get('food', None):
-                        emoji = cargo_emoji['food']
-
                     options.append(discord.SelectOption(
-                        label=f'{cargo["name"]} | {vehicle["name"]}',
+                        label=f'{cargo['name']} | {vehicle['name']}',
                         value=cargo['cargo_id'],
-                        emoji=emoji  # Set emoji for each cargo
+                        emoji=get_cargo_emoji(cargo)
                     ))
 
         if not options:
@@ -635,34 +613,13 @@ class RetrieveCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be retrieved'
         disabled = False
-        emoji = None
-        cargo_emoji = {
-            'recipient': '📦',
-            'part': '⚙️',
-            'fuel': '🛢️',
-            'water': '💧',
-            'food': '🥪'
-        }
 
         options = []
         for cargo in df_state.warehouse_obj['cargo_storage']:
-            # Determine the emoji based on cargo type
-            emoji = None
-            if cargo.get('recipient'):
-                emoji = cargo_emoji['recipient']
-            elif cargo.get('part'):
-                emoji = cargo_emoji['part']
-            elif cargo.get('fuel'):
-                emoji = cargo_emoji['fuel']
-            elif cargo.get('water'):
-                emoji = cargo_emoji['water']
-            elif cargo.get('food', None):
-                emoji = cargo_emoji['food']
-
             options.append(discord.SelectOption(
                 label=f'{cargo["name"]}',
                 value=cargo['cargo_id'],
-                emoji=emoji  # Set emoji for each cargo
+                emoji=get_cargo_emoji(cargo)
             ))
 
         if not options:
@@ -934,17 +891,6 @@ class StoreVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
-        vehicle_emojis = {shape: emoji for emoji, shapes in {
-            '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
-            '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
-            '🏎️': {'2_door_sedan', 'convertible'},
-            '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
-            '🚐': {'cargo_van', 'van'},
-            '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
-            '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
-            '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'}
-        }.items() for shape in shapes}  # Flattens the mapping
-
         placeholder = 'Select vehicle to move cargo into'
         options = []
 
@@ -956,7 +902,7 @@ class StoreVehicleSelect(discord.ui.Select):
                         discord.SelectOption(
                             label=vehicle['name'],
                             value=vehicle['vehicle_id'],
-                            emoji=vehicle_emojis.get(vehicle['shape'], '')  # Direct dictionary lookup
+                            emoji=get_vehicle_emoji(vehicle['shape'])
                         )
                     )
         else:
@@ -1030,17 +976,6 @@ class RetrieveVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
-        vehicle_emojis = {shape: emoji for emoji, shapes in {
-            '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
-            '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
-            '🏎️': {'2_door_sedan', 'convertible'},
-            '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
-            '🚐': {'cargo_van', 'van'},
-            '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
-            '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
-            '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'}
-        }.items() for shape in shapes}  # Flattens the mapping
-
         placeholder = 'Select vehicle to retrieve'
         disabled = False
 
@@ -1048,7 +983,7 @@ class RetrieveVehicleSelect(discord.ui.Select):
             discord.SelectOption(
                 label=vehicle['name'],
                 value=vehicle['vehicle_id'],
-                emoji = vehicle_emojis.get(vehicle['shape'], '')
+                emoji=get_vehicle_emoji(vehicle['shape'])
             )
             for vehicle in self.df_state.warehouse_obj['vehicle_storage']
         ]

@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_vendor_emoji
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
@@ -210,19 +210,11 @@ class VendorSelect(discord.ui.Select):
         else:  # Not in tutorial
             options=[
                 discord.SelectOption(
-                    label=f"{vendor['name']} {emoji}",
-                    value=vendor['vendor_id']
+                    label=f'{vendor['name']}',
+                    value=vendor['vendor_id'],
+                    emoji=get_vendor_emoji(vendor)
                 )
                 for vendor in self.vendors
-                for emoji in [
-                    "📦" if vendor['supply_request'].get('cargo', 0) > 0 else
-                    "🚗" if vendor['supply_request'].get('vehicle', 0) > 0 else
-                    "🔧" if vendor['supply_request'].get('repair_price', 0) > 0 else
-                    "⛽" if vendor['supply_request'].get('fuel', 0) > 0 else
-                    "🚰" if vendor['supply_request'].get('water', 0) > 0 else
-                    "🍱" if vendor['supply_request'].get('food', 0) > 0 else
-                    ""
-                ]
             ]
         
         super().__init__(

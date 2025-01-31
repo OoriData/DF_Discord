@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction
+from discord_app               import api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -160,37 +160,15 @@ class SellCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be sold'
         disabled = False
-        emoji = None
-        cargo_emoji = {
-            'recipient': '📦',
-            'part': '⚙️',
-            'fuel': '🛢️',
-            'water': '💧',
-            'food': '🥪'
-        }
 
         options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
-                    # Determine the emoji based on cargo type
-                    emoji = None
-                    if cargo.get('recipient'):
-                        emoji = cargo_emoji['recipient']
-                    elif cargo.get('part'):
-                        emoji = cargo_emoji['part']
-                    elif cargo.get('fuel'):
-                        emoji = cargo_emoji['fuel']
-                    elif cargo.get('water'):
-                        emoji = cargo_emoji['water']
-                    elif cargo.get('food'):
-                        emoji = cargo_emoji['food']
-
-                    # Append the cargo option with the emoji
-                    options.append(discord.SelectOption(
-                        label=f'{cargo["name"]} | {vehicle["name"]} | ${cargo["price"]:,}',
+                    options.append(discord.SelectOption(  # Append the cargo option with the emoji
+                        label=f'{cargo['name']} | {vehicle['name']} | ${cargo['price']:,}',
                         value=cargo['cargo_id'],
-                        emoji=emoji  # Set emoji for each cargo
+                        emoji=get_cargo_emoji(cargo)
                     ))
 
         if not options:

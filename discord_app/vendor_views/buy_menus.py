@@ -7,7 +7,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_cargo_emoji
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views  import vendor_inv_md
 import                                discord_app.nav_menus
@@ -166,21 +166,18 @@ class BuyCargoSelect(discord.ui.Select):
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')
 
         options = []
-        emoji = None
-        cargo_emoji = {
-            'recipient': '📦',
-            'part': '⚙️',
-            'fuel': '🛢️',
-            'water': '💧',
-            'food': '🥪'
-        }
-
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
-            label = f'{cargo["name"]} | ${cargo["price"]:,.0f}'
+            label = f'{cargo['name']} | ${cargo['price']:,.0f}'
             if cargo.get('recipient_vendor'):
-                label += f' | {cargo["recipient_location"]}'
+                label += f' | {cargo['recipient_location']}'
 
-            emoji = None
+            emoji = get_cargo_emoji(cargo)
+            
+            if (
+                len(self.df_state.user_obj['convoys']) == 1 and
+                cargo['name'] == 'Mail'
+            ):
+                emoji = DF_LOGO_EMOJI
 
             # Emoji based on tutorial stage
             if tutorial_stage == 2:
@@ -194,24 +191,6 @@ class BuyCargoSelect(discord.ui.Select):
                     cargo['capacity'] is None
                 ):
                     emoji = DF_LOGO_EMOJI
-
-            if (
-                len(self.df_state.user_obj['convoys']) == 1 and
-                cargo['name'] == 'Mail'
-            ):
-                emoji = DF_LOGO_EMOJI
-
-            # Determine the emoji based on cargo type
-            if cargo.get('recipient'):
-                emoji = cargo_emoji['recipient']
-            elif cargo.get('part'):
-                emoji = cargo_emoji['part']
-            elif cargo.get('fuel'):
-                emoji = cargo_emoji['fuel']
-            elif cargo.get('water'):
-                emoji = cargo_emoji['water']
-            elif cargo.get('food'):
-                emoji = cargo_emoji['food']
 
             options.append(discord.SelectOption(
                 label=label,  # No emoji in label

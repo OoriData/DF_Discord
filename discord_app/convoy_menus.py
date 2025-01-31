@@ -11,7 +11,7 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE
+from discord_app               import api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji, get_cargo_emoji
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
@@ -346,17 +346,6 @@ class ConvoyVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
-        vehicle_emojis = {shape: emoji for emoji, shapes in {
-            '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
-            '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
-            '🏎️': {'2_door_sedan', 'convertible'},
-            '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
-            '🚐': {'cargo_van', 'van'},
-            '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
-            '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
-            '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'}
-        }.items() for shape in shapes}  # Flattens the mapping
-
         placeholder = 'Select vehicle to inspect'
         disabled = False
 
@@ -364,7 +353,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
             discord.SelectOption(
                 label=vehicle['name'],
                 value=vehicle['vehicle_id'],
-                emoji=vehicle_emojis.get(vehicle['shape'], None)  # Direct dictionary lookup
+                emoji=get_vehicle_emoji(vehicle['shape'])
             )
             for vehicle in self.df_state.convoy_obj['vehicles']
         ]
@@ -396,16 +385,6 @@ class ConvoyVehicleSelect(discord.ui.Select):
 class ConvoyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
-        emoji = None
-
-
-        cargo_emoji = {
-            'recipient': '📦',
-            'part': '⚙️',
-            'fuel': '🛢️',
-            'water': '💧',
-            'food': '🥪'
-        }
 
         placeholder = 'Select cargo to inspect'
         disabled = False
@@ -414,27 +393,14 @@ class ConvoyCargoSelect(discord.ui.Select):
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if (
-                    not cargo['intrinsic']
-                    and not cargo['pending_deletion']
-                    and cargo['quantity'] > 0
+                    not cargo['intrinsic']             # Exclude intrinsic cargo
+                    and not cargo['pending_deletion']  # Exclude cargo pending deletion
+                    and cargo['quantity'] > 0          # Exclude 0-quantity cargo
                 ):
-                    # Determine the emoji based on the cargo fields
-                    emoji = ''
-                    if cargo.get('recipient'):
-                        emoji = cargo_emoji['recipient']
-                    elif cargo.get('part'):
-                        emoji = cargo_emoji['part']
-                    elif cargo.get('fuel'):
-                        emoji = cargo_emoji['fuel']
-                    elif cargo.get('water'):
-                        emoji = cargo_emoji['water']
-                    elif cargo.get('food', None):
-                        emoji = cargo_emoji['food']
-
                     options.append(discord.SelectOption(
-                        label=f'{cargo["quantity"]} {cargo["name"]} ({vehicle["name"]})',
+                        label=f'{cargo['quantity']} {cargo['name']} ({vehicle['name']})',
                         value=cargo['cargo_id'],
-                        emoji=emoji  # Set emoji directly
+                        emoji=get_cargo_emoji(cargo)
                     ))
         if not options:
             placeholder = 'No cargo in convoy'
@@ -515,21 +481,8 @@ class DestinationSelect(discord.ui.Select):
             if recipient:
                 recipient_to_cargo_names.setdefault(recipient, []).append(cargo['name'])
 
-        warehouse_names = [
-            s['name']
-            for row in self.df_state.map_obj['tiles']
-            for t in row
-            for s in t['settlements']
-            if any(warehouse['sett_id'] == s['sett_id'] for warehouse in self.df_state.user_obj['warehouses'])
-        ]
-        
-        settlement_emojis = {
-            'dome': '🏙️',
-            'city': '🏢',
-            'city-state': '🏢',
-            'military_base': '🪖',
-            'town': '🏘️'
-        }
+        # Create a set of warehouse settlement IDs for quick lookup
+        warehouse_sett_ids = [warehouse['sett_id'] for warehouse in self.df_state.user_obj['warehouses']]
 
         settlements = [    # Flatten settlements list from map tiles, calculate distances, and filter out same-tile settlements
             (
@@ -537,9 +490,11 @@ class DestinationSelect(discord.ui.Select):
                 sett['x'],
                 sett['y'],
                 math.sqrt((sett['x'] - convoy_x) ** 2 + (sett['y'] - convoy_y) ** 2),
-                [cargo_name for vendor in sett['vendors'] if vendor['vendor_id'] in recipient_to_cargo_names
-                 for cargo_name in recipient_to_cargo_names[vendor['vendor_id']]],  # List of cargo names
-                '🏭' if sett['name'] in warehouse_names else settlement_emojis.get(sett['sett_type'], None)
+                [  # List of cargo names
+                    cargo_name for vendor in sett['vendors'] if vendor['vendor_id'] in recipient_to_cargo_names
+                    for cargo_name in recipient_to_cargo_names[vendor['vendor_id']]
+                ],
+                '🏭' if sett['sett_id'] in warehouse_sett_ids else get_settlement_emoji(sett['sett_type'])
             )
             for row in self.df_map['tiles']
             for tile in row

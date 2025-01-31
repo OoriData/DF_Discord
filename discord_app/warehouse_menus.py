@@ -960,7 +960,7 @@ class StoreVehicleSelect(discord.ui.Select):
                         )
                     )
         else:
-            placeholder = 'No vehicle available'
+            placeholder = 'No vehicle available (Vehicles must be empty)'
 
         # If there are no options, you can set a default message
         if not options:

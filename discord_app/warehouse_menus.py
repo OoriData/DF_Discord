@@ -401,16 +401,44 @@ class StoreCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be stored'
         disabled = False
-        options=[]
+        emoji = None
+
+        cargo_emoji = {
+            'recipient': '📦',
+            'part': '⚙️',
+            'fuel': '🛢️',
+            'water': '💧',
+            'food': '🥪'
+        }
+
+        options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
-                    options.append(discord.SelectOption(label=f'{cargo['name']} | {vehicle['name']}', value=cargo['cargo_id']))
+                    # Determine the emoji based on cargo type
+                    emoji = None
+                    if cargo.get('recipient'):
+                        emoji = cargo_emoji['recipient']
+                    elif cargo.get('part'):
+                        emoji = cargo_emoji['part']
+                    elif cargo.get('fuel'):
+                        emoji = cargo_emoji['fuel']
+                    elif cargo.get('water'):
+                        emoji = cargo_emoji['water']
+                    elif cargo.get('food', None):
+                        emoji = cargo_emoji['food']
+
+                    options.append(discord.SelectOption(
+                        label=f'{cargo["name"]} | {vehicle["name"]}',
+                        value=cargo['cargo_id'],
+                        emoji=emoji  # Set emoji for each cargo
+                    ))
+
         if not options:
             placeholder = 'Convoy has no cargo which can be stored'
             disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
-        
+            options = [discord.SelectOption(label='None', value='None')]
+
         super().__init__(
             placeholder=placeholder,
             options=options[:25],
@@ -607,14 +635,41 @@ class RetrieveCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be retrieved'
         disabled = False
-        options=[]
+        emoji = None
+        cargo_emoji = {
+            'recipient': '📦',
+            'part': '⚙️',
+            'fuel': '🛢️',
+            'water': '💧',
+            'food': '🥪'
+        }
+
+        options = []
         for cargo in df_state.warehouse_obj['cargo_storage']:
-            options.append(discord.SelectOption(label=f'{cargo['name']}', value=cargo['cargo_id']))
+            # Determine the emoji based on cargo type
+            emoji = None
+            if cargo.get('recipient'):
+                emoji = cargo_emoji['recipient']
+            elif cargo.get('part'):
+                emoji = cargo_emoji['part']
+            elif cargo.get('fuel'):
+                emoji = cargo_emoji['fuel']
+            elif cargo.get('water'):
+                emoji = cargo_emoji['water']
+            elif cargo.get('food', None):
+                emoji = cargo_emoji['food']
+
+            options.append(discord.SelectOption(
+                label=f'{cargo["name"]}',
+                value=cargo['cargo_id'],
+                emoji=emoji  # Set emoji for each cargo
+            ))
+
         if not options:
             placeholder = 'Warehouse has no cargo which can be retrieved'
             disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
-        
+            options = [discord.SelectOption(label='None', value='None')]
+
         super().__init__(
             placeholder=placeholder,
             options=options[:25],
@@ -622,6 +677,7 @@ class RetrieveCargoSelect(discord.ui.Select):
             custom_id='retrieve_cargo_select',
             row=row
         )
+
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
@@ -890,25 +946,31 @@ class StoreVehicleSelect(discord.ui.Select):
         }.items() for shape in shapes}  # Flattens the mapping
 
         placeholder = 'Select vehicle to move cargo into'
-        options = [
-            discord.SelectOption(
-                label=vehicle['name'],
-                value=vehicle['vehicle_id'],
-                emoji=vehicle_emojis.get(vehicle['shape'], '')  # Direct dictionary lookup
-            )
-            for vehicle in self.df_state.convoy_obj['vehicles']
-            if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']
-        ]
+        options = []
+
+        # Ensure self.df_state.cargo_obj is not None before checking vehicle_id
+        if self.df_state.cargo_obj is not None:
+            for vehicle in self.df_state.convoy_obj['vehicles']:
+                if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']:
+                    options.append(
+                        discord.SelectOption(
+                            label=vehicle['name'],
+                            value=vehicle['vehicle_id'],
+                            emoji=vehicle_emojis.get(vehicle['shape'], '')  # Direct dictionary lookup
+                        )
+                    )
+        else:
+            placeholder = 'No vehicle available'
+
+        # If there are no options, you can set a default message
         if not options:
-            placeholder = 'No vehicles in convoy'
-            disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
-        
+            options = [discord.SelectOption(label='None', value='None')]
+
         super().__init__(
             placeholder=placeholder,
-            options=options,
-            custom_id='store_vehicle_select',
-            disabled=disabled,
+            options=options[:25],
+            disabled=False,
+            custom_id='move_cargo_select',
             row=row
         )
 

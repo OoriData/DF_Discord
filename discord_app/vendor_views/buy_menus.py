@@ -166,14 +166,24 @@ class BuyCargoSelect(discord.ui.Select):
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')
 
         options = []
+        emoji = None
+        cargo_emoji = {
+            'recipient': '📦',
+            'part': '⚙️',
+            'fuel': '🛢️',
+            'water': '💧',
+            'food': '🥪'
+        }
+
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
-            label = f'{cargo['name']} | ${cargo['price']:,.0f}'
+            label = f'{cargo["name"]} | ${cargo["price"]:,.0f}'
             if cargo.get('recipient_vendor'):
-                label += f' | {cargo['recipient_location']}'
+                label += f' | {cargo["recipient_location"]}'
 
             emoji = None
 
-            if tutorial_stage == 2:  # Determine emoji based on tutorial stage
+            # Emoji based on tutorial stage
+            if tutorial_stage == 2:
                 if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'}:
                     emoji = DF_LOGO_EMOJI
             elif tutorial_stage == 4:
@@ -186,15 +196,27 @@ class BuyCargoSelect(discord.ui.Select):
                     emoji = DF_LOGO_EMOJI
 
             if (
-                len(self.df_state.user_obj['convoys']) == 1
-                and cargo['name'] == 'Mail'
+                len(self.df_state.user_obj['convoys']) == 1 and
+                cargo['name'] == 'Mail'
             ):
                 emoji = DF_LOGO_EMOJI
 
+            # Determine the emoji based on cargo type
+            if cargo.get('recipient'):
+                emoji = cargo_emoji['recipient']
+            elif cargo.get('part'):
+                emoji = cargo_emoji['part']
+            elif cargo.get('fuel'):
+                emoji = cargo_emoji['fuel']
+            elif cargo.get('water'):
+                emoji = cargo_emoji['water']
+            elif cargo.get('food'):
+                emoji = cargo_emoji['food']
+
             options.append(discord.SelectOption(
-                label=label,
+                label=label,  # No emoji in label
                 value=cargo['cargo_id'],
-                emoji=emoji
+                emoji=emoji  # Emoji added here
             ))
 
         if not options:

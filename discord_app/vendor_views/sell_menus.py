@@ -160,16 +160,44 @@ class SellCargoSelect(discord.ui.Select):
 
         placeholder = 'Cargo which can be sold'
         disabled = False
-        options=[]
+        emoji = None
+        cargo_emoji = {
+            'recipient': '📦',
+            'part': '⚙️',
+            'fuel': '🛢️',
+            'water': '💧',
+            'food': '🥪'
+        }
+
+        options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
-                    options.append(discord.SelectOption(label=f'{cargo['name']} | {vehicle['name']} | ${cargo['price']:,}', value=cargo['cargo_id']))
+                    # Determine the emoji based on cargo type
+                    emoji = None
+                    if cargo.get('recipient'):
+                        emoji = cargo_emoji['recipient']
+                    elif cargo.get('part'):
+                        emoji = cargo_emoji['part']
+                    elif cargo.get('fuel'):
+                        emoji = cargo_emoji['fuel']
+                    elif cargo.get('water'):
+                        emoji = cargo_emoji['water']
+                    elif cargo.get('food'):
+                        emoji = cargo_emoji['food']
+
+                    # Append the cargo option with the emoji
+                    options.append(discord.SelectOption(
+                        label=f'{cargo["name"]} | {vehicle["name"]} | ${cargo["price"]:,}',
+                        value=cargo['cargo_id'],
+                        emoji=emoji  # Set emoji for each cargo
+                    ))
+
         if not options:
             placeholder = 'Convoy has no sellable cargo'
             disabled = True
-            options=[discord.SelectOption(label='None', value='None')]
-        
+            options = [discord.SelectOption(label='None', value='None')]
+
         super().__init__(
             placeholder=placeholder,
             options=options[:25],

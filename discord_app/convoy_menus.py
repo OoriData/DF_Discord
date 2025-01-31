@@ -396,10 +396,21 @@ class ConvoyVehicleSelect(discord.ui.Select):
 class ConvoyCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
+        emoji = None
+
+
+        cargo_emoji = {
+            'recipient': '📦',
+            'part': '⚙️',
+            'fuel': '🛢️',
+            'water': '💧',
+            'food': '🥪'
+        }
 
         placeholder = 'Select cargo to inspect'
         disabled = False
         options = []
+
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if (
@@ -407,9 +418,23 @@ class ConvoyCargoSelect(discord.ui.Select):
                     and not cargo['pending_deletion']
                     and cargo['quantity'] > 0
                 ):
+                    # Determine the emoji based on the cargo fields
+                    emoji = ''
+                    if cargo.get('recipient'):
+                        emoji = cargo_emoji['recipient']
+                    elif cargo.get('part'):
+                        emoji = cargo_emoji['part']
+                    elif cargo.get('fuel'):
+                        emoji = cargo_emoji['fuel']
+                    elif cargo.get('water'):
+                        emoji = cargo_emoji['water']
+                    elif cargo.get('food', None):
+                        emoji = cargo_emoji['food']
+
                     options.append(discord.SelectOption(
-                        label=f'{cargo['quantity']} {cargo['name']} ({vehicle['name']})',
-                        value=cargo['cargo_id']
+                        label=f'{cargo["quantity"]} {cargo["name"]} ({vehicle["name"]})',
+                        value=cargo['cargo_id'],
+                        emoji=emoji  # Set emoji directly
                     ))
         if not options:
             placeholder = 'No cargo in convoy'

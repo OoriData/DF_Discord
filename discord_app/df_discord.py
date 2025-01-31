@@ -85,10 +85,13 @@ class Desolate_Cog(commands.Cog):
             if self.wastelander_role and self.alpha_role and self.beta_role:  # Break early if all roles are found
                 break
 
-    async def mm(self, interaction):
+    async def mm(self, interaction: discord.Interaction):
         if not self.cache_ready.is_set():
             await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
             return
+        
+        user_entitlements = [entitlement async for entitlement in self.bot.entitlements(user=interaction.user)]
+        import pprint;pprint.pprint(user_entitlements)
 
         await main_menu(
             interaction=interaction,

@@ -398,16 +398,26 @@ class StoreCargoView(discord.ui.View):
 class StoreCargoSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
-
         placeholder = 'Cargo which can be stored'
         disabled = False
 
+        vendor_mapping = {}
+
+        # Build vendor mapping
+        for r in self.df_state.map_obj['tiles']:
+            for tile in r:
+                for settlement in tile['settlements']:
+                    for vendor in settlement['vendors']:
+                        vendor_mapping[vendor['vendor_id']] = vendor['name']
         options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
+                    # Get vendor name or fallback if None
+                    vendor_name = f"| {vendor_mapping.get(cargo['recipient'], '')}"
+
                     options.append(discord.SelectOption(
-                        label=f'{cargo['name']} | {vehicle['name']}',
+                        label=f'{cargo["name"]} | {vehicle["name"]} {vendor_name}',
                         value=cargo['cargo_id'],
                         emoji=get_cargo_emoji(cargo)
                     ))
@@ -614,10 +624,21 @@ class RetrieveCargoSelect(discord.ui.Select):
         placeholder = 'Cargo which can be retrieved'
         disabled = False
 
+        vendor_mapping = {}
+
+        # Build vendor mapping
+        for r in self.df_state.map_obj['tiles']:
+            for tile in r:
+                for settlement in tile['settlements']:
+                    for vendor in settlement['vendors']:
+                        vendor_mapping[vendor['vendor_id']] = vendor['name']
+
         options = []
         for cargo in df_state.warehouse_obj['cargo_storage']:
+            vendor_name = f"| {vendor_mapping.get(cargo['recipient'], '')}"
+
             options.append(discord.SelectOption(
-                label=f'{cargo["name"]}',
+                label=f'{cargo["name"]} {vendor_name}',
                 value=cargo['cargo_id'],
                 emoji=get_cargo_emoji(cargo)
             ))

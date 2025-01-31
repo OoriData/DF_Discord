@@ -174,7 +174,7 @@ class BannerView(discord.ui.View):
                     row=1
                 ))
 
-        if df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild
+        if df_state.interaction.guild and df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild and not a DM
             syndicate_allegiance = df_state.user_obj.get('syndicate_allegiance')
 
             if not self.server_banner:  # If the server has no banner

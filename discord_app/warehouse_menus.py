@@ -132,7 +132,7 @@ class ExpandCargoButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label='Expand cargo storage',
             custom_id='expand_cargo_button',
-            emoji='🏗️',
+            emoji='📦',
             row=row
         )
 

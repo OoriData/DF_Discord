@@ -109,7 +109,7 @@ class MechanicButton(discord.ui.Button):
             label='Mechanic',
             disabled=disabled,
             custom_id='mech_button',
-            emoji='🛠️',
+            emoji='🔧',
             row=2
         )
 

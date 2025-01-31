@@ -29,7 +29,7 @@ logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
 
-class Desolate_Cog(commands.Cog):
+class DesolateCog(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.message_history_limit = 1
@@ -251,7 +251,7 @@ def main():
     assert bot.DISCORD_TOKEN
 
     async def startup():
-        await bot.add_cog(Desolate_Cog(bot))
+        await bot.add_cog(DesolateCog(bot))
 
     asyncio.run(startup())
 

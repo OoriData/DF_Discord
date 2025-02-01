@@ -370,6 +370,7 @@ def get_vendor_emoji(vendor: dict) -> str | None:
         'cargo': '📦',
         'vehicle': '🚗',
         'repair_price': '🔧',
+        'mechanic': '🔧',
         'fuel': '⛽',
         'water': '🚰',
         'food': '🍱',

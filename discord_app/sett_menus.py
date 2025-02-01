@@ -212,7 +212,7 @@ class VendorSelect(discord.ui.Select):
                 discord.SelectOption(
                     label=f'{vendor['name']}',
                     value=vendor['vendor_id'],
-                    emoji=get_vendor_emoji(vendor)
+                    emoji= '🔧' if 'Mechanic' in vendor['name'] else get_vendor_emoji(vendor)
                 )
                 for vendor in self.vendors
             ]

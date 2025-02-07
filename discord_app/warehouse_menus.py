@@ -270,9 +270,7 @@ async def expand_cargo_menu(df_state: DFState):
     embed.description += f'Cost to expand: ${df_state.warehouse_obj['expansion_price']:,}'
 
     embeds = [embed]
-
     view = ExpandCargoView(df_state)
-
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class ExpandCargoView(discord.ui.View):
@@ -323,9 +321,7 @@ async def expand_vehicles_menu(df_state: DFState):
     embed.description += f'Cost to expand: ${df_state.warehouse_obj['expansion_price']:,}'
 
     embeds = [embed]
-
     view = ExpandVehiclesView(df_state)
-
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class ExpandVehiclesView(discord.ui.View):
@@ -452,11 +448,8 @@ async def store_cargo_quantity_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=store_cargo_quantity_menu)  # Add this menu to the back stack
 
     embed = StoreCargoQuantityEmbed(df_state)
-
     embeds = [embed]
-
     view = StoreCargoQuantityView(df_state)
-
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class StoreCargoQuantityEmbed(discord.Embed):
@@ -562,7 +555,6 @@ class CargoStoreQuantityButton(discord.ui.Button):  # XXX: Explode this button i
 
         embed = StoreCargoQuantityEmbed(self.df_state, self.store_quantity)
         view = StoreCargoQuantityView(self.df_state, self.store_quantity)
-
         await interaction.response.edit_message(embed=embed, view=view)
 
 class CargoConfirmStoreButton(discord.ui.Button):
@@ -601,7 +593,6 @@ class CargoConfirmStoreButton(discord.ui.Button):
 
 
 async def retrieve_cargo_menu(df_state: DFState):
-
     df_state.append_menu_to_back_stack(func=store_cargo_menu)  # Add this menu to the back stack
 
     embed = discord.Embed()
@@ -612,9 +603,7 @@ async def retrieve_cargo_menu(df_state: DFState):
     embed.description += f'\nCargo Storage 📦: **{cargo_volume:,}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L'
 
     embeds = [embed]
-
     view = RetrieveCargoView(df_state)
-
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class RetrieveCargoSelect(discord.ui.Select):
@@ -625,9 +614,7 @@ class RetrieveCargoSelect(discord.ui.Select):
         disabled = False
 
         vendor_mapping = {}
-
-        # Build vendor mapping
-        for r in self.df_state.map_obj['tiles']:
+        for r in self.df_state.map_obj['tiles']:  # Build vendor mapping
             for tile in r:
                 for settlement in tile['settlements']:
                     for vendor in settlement['vendors']:
@@ -656,7 +643,6 @@ class RetrieveCargoSelect(discord.ui.Select):
             row=row
         )
 
-
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
@@ -682,6 +668,7 @@ class RetrieveCargoView(discord.ui.View):
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
+
 
 async def retrieve_cargo_quantity_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=store_cargo_quantity_menu)  # Add this menu to the back stack
@@ -864,23 +851,9 @@ class CargoConfirmRetrieveButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
-        # embed = discord.Embed()
-        # embed = df_embed_author(embed, self.df_state)
-        # desc = [
-        #     f'## {self.df_state.user_obj['name']}\'s Warehouse',
-        #     f'Retrieved {self.retrieve_quantity} {self.df_state.cargo_obj['name']}(s) from warehouse.'
-        # ]
-        # embed.description = desc[0]  # i dont understand whats going on here tbh
 
-        # # XXX: Probably don't need tutorial embeds
-        # embeds = [embed]
-        # # embeds = add_tutorial_embed(embeds, self.df_state)
-
-        # # view = PostBuyView(self.df_state)
         await warehouse_menu(self.df_state)
 
-        # await interaction.response.edit_message(embeds=embeds, view=view)
 
 async def store_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=store_vehicle_menu)  # Add this menu to the back stack
@@ -891,9 +864,7 @@ async def store_vehicle_menu(df_state: DFState):
     embed.description = vehicles_md(df_state.convoy_obj['vehicles'], verbose=True)
 
     embeds = [embed]
-
     view = StoreVehicleView(df_state)
-
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class StoreVehicleView(discord.ui.View):
@@ -912,32 +883,27 @@ class StoreVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=1):
         self.df_state = df_state
 
-        placeholder = 'Select vehicle to move cargo into'
-        options = []
-
-        # Ensure self.df_state.cargo_obj is not None before checking vehicle_id
-        if self.df_state.cargo_obj is not None:
-            for vehicle in self.df_state.convoy_obj['vehicles']:
-                if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']:
-                    options.append(
-                        discord.SelectOption(
-                            label=vehicle['name'],
-                            value=vehicle['vehicle_id'],
-                            emoji=get_vehicle_emoji(vehicle['shape'])
-                        )
-                    )
-        else:
-            placeholder = 'No vehicle available (Vehicles must be empty)'
-
-        # If there are no options, you can set a default message
+        placeholder = 'Select vehicle to store'
+        disabled = False
+        options = [
+            discord.SelectOption(
+                label=vehicle['name'],
+                value=vehicle['vehicle_id'],
+                emoji=get_vehicle_emoji(vehicle['shape'])
+            )
+            for vehicle in self.df_state.convoy_obj['vehicles']
+            if all(c['intrinsic'] for c in vehicle['cargo'])  # Check if any of the items in the 'cargo' list of the 'vehicle' have the 'intrinsic' key set to False.
+        ]
         if not options:
-            options = [discord.SelectOption(label='None', value='None')]
+            placeholder = 'No vehicle available (Vehicles must be empty)'
+            disabled = True
+            options=[discord.SelectOption(label='None', value='None')]
 
         super().__init__(
             placeholder=placeholder,
             options=options[:25],
-            disabled=False,
-            custom_id='move_cargo_select',
+            disabled=disabled,
+            custom_id='store_vehicle_select',
             row=row
         )
 

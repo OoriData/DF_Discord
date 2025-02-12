@@ -36,6 +36,20 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
 
     cargo_list = []
     for cargo in vendor_obj['cargo_inventory']:
+        if cargo['fuel'] is not None and vendor_obj['fuel_price'] is not None:
+            cargo['price'] = round(cargo['price'] + cargo['fuel'] * vendor_obj['fuel_price'], 2)
+        elif cargo['water'] is not None and vendor_obj['water_price'] is not None:
+            cargo['price'] = round(cargo['price'] + cargo['water'] * vendor_obj['water_price'], 2)
+        elif cargo['food'] is not None and vendor_obj['food_price'] is not None:
+            cargo['price'] = round(cargo['price'] + cargo['food'] * vendor_obj['food_price'], 2)
+
+        if vendor_obj['fuel_price'] is None and cargo['fuel'] is not None:
+            continue
+        if vendor_obj['water_price'] is None and cargo['water'] is not None:
+            continue
+        if vendor_obj['food_price'] is None and cargo['food'] is not None:
+            continue
+
         cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['price']:,} each*'
 
         if verbose:

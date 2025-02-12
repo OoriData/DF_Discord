@@ -167,6 +167,15 @@ class BuyCargoSelect(discord.ui.Select):
 
         options = []
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
+
+            if cargo['fuel']:
+                cargo['price'] = round(cargo['price'] + cargo['fuel'] * df_state.vendor_obj['fuel_price'], 2)
+            elif cargo['water']:
+                cargo['price'] = round(cargo['price'] + cargo['water'] * df_state.vendor_obj['water_price'], 2)
+            elif cargo['food']:
+                cargo['price'] = round(cargo['price'] + cargo['food'] * df_state.vendor_obj['food_price'], 2)
+
+
             label = f'{cargo['name']} | ${cargo['price']:,.0f}'
             if cargo.get('recipient_vendor'):
                 label += f' | {cargo['recipient_location']}'

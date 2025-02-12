@@ -46,6 +46,13 @@ async def sell_menu(df_state: DFState):
         for cargo in vehicle['cargo']:
             if cargo['intrinsic']:
                 continue
+            if cargo['fuel'] is not None and df_state.vendor_obj['fuel_price'] is not None:
+                cargo['price'] = round(cargo['price'] + cargo['fuel'] * df_state.vendor_obj['fuel_price'], 2)
+            elif cargo['water'] is not None and df_state.vendor_obj['water_price'] is not None:
+                cargo['price'] = round(cargo['price'] + cargo['water'] * df_state.vendor_obj['water_price'], 2)
+            elif cargo['food'] is not None and df_state.vendor_obj['food_price'] is not None:
+                cargo['price'] = round(cargo['price'] + cargo['food'] * df_state.vendor_obj['food_price'], 2)
+
 
             cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['price']:,} each*'
 
@@ -165,6 +172,21 @@ class SellCargoSelect(discord.ui.Select):
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if not cargo['intrinsic']:
+                    if cargo['fuel'] is not None and df_state.vendor_obj['fuel_price'] is not None:
+                        cargo['price'] = round(cargo['price'] + cargo['fuel'] * df_state.vendor_obj['fuel_price'], 2)
+                    elif cargo['water'] is not None and df_state.vendor_obj['water_price'] is not None:
+                        cargo['price'] = round(cargo['price'] + cargo['water'] * df_state.vendor_obj['water_price'], 2)
+                    elif cargo['food'] is not None and df_state.vendor_obj['food_price'] is not None:
+                        cargo['price'] = round(cargo['price'] + cargo['food'] * df_state.vendor_obj['food_price'], 2)
+
+                    if df_state.vendor_obj['fuel_price'] is None and cargo['fuel'] is not None:
+                        continue
+                    if df_state.vendor_obj['water_price'] is None and cargo['water'] is not None:
+                        continue
+                    if df_state.vendor_obj['food_price'] is None and cargo['food'] is not None:
+                        continue
+
+
                     options.append(discord.SelectOption(  # Append the cargo option with the emoji
                         label=f'{cargo['name']} | {vehicle['name']} | ${cargo['price']:,}',
                         value=cargo['cargo_id'],

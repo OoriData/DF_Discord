@@ -206,7 +206,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Use the `Cargo Inventory` dropdown to select {DF_LOGO_EMOJI}` Water Jerry Cans`",
                 "- Blurple `+1` button to add an additional jerry can to your cart",
-                "- Green `Buy 2 Water Jerry Cans(s)` button. Note: the cans are sold already full",
+                "- Green `Buy 2 Water Jerry Cans(s)` button. Note: the cans are sold filled, and price will vary based on price of fuel/water,",
                 f"- **Repeat this process, to buy just one of {DF_LOGO_EMOJI}` MRE Boxes`, which contain food, and come full**",
             ])
         case 3:
@@ -247,6 +247,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
+                "- The cost of resources will vary depending on the supply and demands of the settlment"
             ])
         case 7:
             tutorial_embed.description = '\n'.join([
@@ -399,6 +400,7 @@ def get_settlement_emoji(settlement_type: str) -> str | None:
         'city': '🏢',
         'city-state': '🏢',
         'town': '🏘️',
+        'village': '🏠',
         'military_base': '🪖',
     }
 

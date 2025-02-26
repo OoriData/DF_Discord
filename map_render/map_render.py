@@ -40,6 +40,7 @@ SETTLEMENT_COLORS = {
     'town': '#A1662F',
     'city-state': '#581B63',
     'military_base': '#800000',
+    'village': '#613D3D',
     'tutorial': WATER_COLOR
 }
 POLITICAL_COLORS = {
@@ -55,6 +56,8 @@ POLITICAL_COLORS = {
     13: '#D5A6BD',    # Detroit
     14: '#D5A6BD',    # Cleveland
     15: '#D5A6BD',    # Buffalo
+    16: '#D5A6BD',    # Louisville
+    17: '#D5A6BD',    # Mackinaw City
     19: '#D5A6BD',    # The Heartland
     20: '#B4A7D6',    # Kansas City
     21: '#B4A7D6',    # St. Louis
@@ -63,10 +66,14 @@ POLITICAL_COLORS = {
     30: '#B6D7A8',    # Minneapolis
     31: '#B6D7A8',    # Fargo
     32: '#B6D7A8',    # Milwaukee
+    33: '#B6D7A8',    # Madison
+    34: '#B6D7A8',    # Sault Ste. Marie
+    35: '#B6D7A8',    # Green Bay
     39: '#B6D7A8',    # Northern Lights
     40: '#FFE599',    # New York
     41: '#FFE599',    # Boston
     42: '#FFE599',    # Philadelphia
+    43: '#FFE599',    # Portland, NNE
     49: '#FFE599',    # New New England
     50: '#F6B26B',    # Nashville
     51: '#F6B26B',    # Memphis
@@ -78,45 +85,54 @@ POLITICAL_COLORS = {
     63: '#E06666',    # Minot AFB
     64: '#E06666',    # Vandenberg AFB
     69: '#E06666',    # Republic of the South Atlantic
-    70: '#38761E',    # Jacksonville
-    71: '#38761E',    # Tallahassee
-    72: '#38761E',    # Orlando
-    73: '#38761E',    # Miami
-    74: '#38761E',    # New Orleans
-    79: '#38761E',    # Gulf Cities
-    80: '#B45F05',    # Austin
-    81: '#B45F05',    # San Antonio
-    82: '#B45F05',    # Dallas
-    83: '#B45F05',    # Houston
-    85: '#B45F05',    # Oklahoma City
-    89: '#B45F05',    # Republic of Texas
+    70: '#469c22',    # Jacksonville
+    71: '#469c22',    # Tallahassee
+    72: '#469c22',    # Orlando
+    73: '#469c22',    # Miami
+    74: '#469c22',    # New Orleans
+    79: '#469c22',    # Gulf Cities
+    80: '#0d0600',    # Austin
+    81: '#0d0600',    # San Antonio
+    82: '#0d0600',    # Dallas
+    83: '#0d0600',    # Houston
+    85: '#0d0600',    # Oklahoma City
+    86: '#0d0600',    # Whichita
+    89: '#0d0600',    # Republic of Texas
     90: '#0A5394',    # Denver
     91: '#0A5394',    # Cheyenne
     92: '#0A5394',    # Colorado Springs
+    93: '#0A5394',    # Ft. Colins
     99: '#0A5394',    # Front Range Collective
     100: '#A61C00',   # Los Angeles
     101: '#A61C00',   # San Diego
     102: '#A61C00',   # Phoenix
     103: '#A61C00',   # Tucson
+    104: '#A61C00',   # Flagstaff
     109: '#A61C00',   # States of Solara
     110: '#674EA7',   # San Francisco
     111: '#674EA7',   # Fresno
     112: '#674EA7',   # Sacramento
+    113: '#674EA7',   # Reno
     119: '#674EA7',   # The Golden Bay
     120: '#BF9000',   # Seattle
     121: '#BF9000',   # Portland
     122: '#BF9000',   # Spokane
+    123: '#BF9000',   # Spokane
     129: '#BF9000',   # Cascadia
-    130: '#783F04',   # Be'eldííl Dah Sinil
-    131: '#783F04',   # Ysleta
-    139: '#783F04',   # Desert Twins
-    140: '#FFF3CC',   # Las Vegas
-    141: '#FFF3CC',   # Boise Mountain Commune
-    142: '#FFF3CC',   # Salt Lake City
+    130: '#6e1901',   # Be'eldííl Dah Sinil
+    131: '#6e1901',   # Ysleta
+    139: '#6e1901',   # Desert Twins
+    140: '#391240',   # Las Vegas
+    141: '#391240',   # Boise Mountain Commune
+    142: '#391240',   # Salt Lake City
     143: '#FFF3CC',   # Little Rock
     144: '#FFF3CC',   # Birmingham
     145: '#FFF3CC',   # Atlanta
     146: '#FFF3CC',   # Charleston
+    147: '#FFF3CC',   # Billings
+    148: '#FFF3CC',   # Lincoln
+    149: '#FFF3CC',   # Jackson Hole
+    150: '#FFF3CC',   # Missoula
     170: '#FF0000',   # Badlanders
     171: '#FF0000',   # Badland Outposts
     172: '#FF0000'    # Appalacian Wastelanders

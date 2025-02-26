@@ -46,12 +46,6 @@ async def sell_menu(df_state: DFState):
         for cargo in vehicle['cargo']:
             if cargo['intrinsic']:
                 continue
-            if cargo['fuel'] is not None and df_state.vendor_obj['fuel_price'] is not None:
-                cargo['price'] = round(cargo['price'] + cargo['fuel'] * df_state.vendor_obj['fuel_price'], 2)
-            elif cargo['water'] is not None and df_state.vendor_obj['water_price'] is not None:
-                cargo['price'] = round(cargo['price'] + cargo['water'] * df_state.vendor_obj['water_price'], 2)
-            elif cargo['food'] is not None and df_state.vendor_obj['food_price'] is not None:
-                cargo['price'] = round(cargo['price'] + cargo['food'] * df_state.vendor_obj['food_price'], 2)
 
 
             cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['price']:,} each*'

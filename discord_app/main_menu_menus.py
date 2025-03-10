@@ -410,7 +410,15 @@ async def options_menu(df_state: DFState, edit: bool=True):
     options_embed.description = '# Options'
 
     user_metadata = df_state.user_obj['metadata']
-    options_embed.description += f'\n 📱🖥️ App Mode: **{user_metadata['mobile']}**\n*Reformats certain menus to be easier to read on mobile devices.*'
+    user_metadata.setdefault('mobile', False)
+
+    referral_code_text = ''
+
+    df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
+    if df_exp >= datetime.now().date():
+        referral_code_text = f'\n\nInvite your friends to subscribe to DF+ to get 14 days for free!\n\nYour referral code:\n**{df_state.user_obj['referral_code']}**'
+
+    options_embed.description += f'\n 📱🖥️ App Mode: **{user_metadata['mobile']}**\n*Reformats certain menus to be easier to read on mobile devices.*{referral_code_text}'
 
     view = OptionsView(df_state)
 
@@ -418,21 +426,52 @@ async def options_menu(df_state: DFState, edit: bool=True):
 
 class OptionsView(discord.ui.View):
     def __init__(self, df_state: DFState):
-        self.df_state = df_state
         super().__init__(timeout=600)
+        self.df_state = df_state
 
-        self.add_item(AppModeButton(df_state))
+        # Check if the button should be disabled (disable if expired)
+        df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
+
+        is_disabled = df_exp < datetime.now().date()
+
+        # Add the referral button dynamically
+        self.add_item(
+            ReferralButton(df_state, disabled=is_disabled)
+        )
+
+        self.add_item(
+            AppModeButton(df_state)
+        )
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
-    
+class ReferralButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, disabled: bool, row=2):
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Redeem a Friend\'s code',
+            custom_id='referral_button',
+            emoji='🫵',
+            row=row,
+            disabled=disabled  # Correctly setting the disabled state
+        )
+        self.df_state = df_state  # Store df_state so it can be used in callback
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        # Check the expiration date again just to be sure
+        df_exp = df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()
+
+        if df_exp > datetime.now().date():
+            await interaction.response.send_modal(ReferralCodeModal(self.df_state))
+
+
 class AppModeButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row=1):
         self.df_state = df_state
@@ -463,3 +502,36 @@ class AppModeButton(discord.ui.Button):
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
         
         await options_menu(self.df_state)
+
+
+
+class ReferralCodeModal(discord.ui.Modal):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        
+        super().__init__(title='Use a Friend\'s code')
+
+        self.referral_modal = discord.ui.TextInput(
+            label='Redeem a Friend\'s code to gift 14 Days',
+            style=discord.TextStyle.short,
+            required=False,
+            default=f'XXXXXX',
+            max_length=48,
+            custom_id='referral_code',
+        )
+        self.add_item(self.referral_modal)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        success = await api_calls.redeem_referral(self.df_state.user_obj['user_id'], str(self.referral_modal.value).upper())
+
+        refer_embed = discord.Embed()
+        refer_embed = df_embed_author(refer_embed, self.df_state)
+
+        refer_embed.description = success[1]
+        view = OptionsView(self.df_state)
+
+        await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
+
+
+

@@ -156,6 +156,19 @@ async def new_convoy(user_id: UUID, new_convoy_name: str) -> dict:
     return response.json()
 
 
+async def redeem_referral(user_id: UUID, referral_code: str) -> dict:
+
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/user/redeem_referral',
+            params={  # Send as query params
+                'user_id': user_id,
+                'referral_code': referral_code
+            }
+        )
+        return response.json()
+
 async def get_convoy(convoy_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(

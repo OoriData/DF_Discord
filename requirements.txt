@@ -1,4 +1,5 @@
 httpx
 discord
+audioop-lts
 utiloori
 df_lib

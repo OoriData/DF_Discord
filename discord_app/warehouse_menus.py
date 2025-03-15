@@ -408,7 +408,7 @@ class StoreCargoSelect(discord.ui.Select):
         options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
-                if not cargo['intrinsic']:
+                if not cargo['intrinsic_part_id']:
                     # Get vendor name or fallback if None
                     vendor_name = f"| {vendor_mapping.get(cargo['recipient'], '')}"
 
@@ -892,7 +892,7 @@ class StoreVehicleSelect(discord.ui.Select):
                 emoji=get_vehicle_emoji(vehicle['shape'])
             )
             for vehicle in self.df_state.convoy_obj['vehicles']
-            if all(c['intrinsic'] for c in vehicle['cargo'])  # Check if any of the items in the 'cargo' list of the 'vehicle' have the 'intrinsic' key set to False.
+            if all(c['intrinsic_part_id'] for c in vehicle['cargo'])  # Check if any of the cargo aren't intrinsic
         ]
         if not options:
             placeholder = 'No vehicle available (Vehicles must be empty)'

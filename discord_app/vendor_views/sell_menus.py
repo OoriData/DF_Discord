@@ -36,7 +36,7 @@ async def sell_menu(df_state: DFState):
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
         vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
-        if not all(c['intrinsic'] for c in vehicle['cargo']):
+        if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
             vehicle_str += '\n  - *contains cargo, cannot be sold*'
         vehicle_list.append(vehicle_str)
     displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
@@ -44,9 +44,8 @@ async def sell_menu(df_state: DFState):
     cargo_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
         for cargo in vehicle['cargo']:
-            if cargo['intrinsic']:
+            if cargo['intrinsic_part_id']:
                 continue
-
 
             cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['price']:,} each*'
 
@@ -125,7 +124,7 @@ class SellVehicleSelect(discord.ui.Select):
         disabled = False
         options=[]
         for vehicle in self.df_state.convoy_obj['vehicles']:
-            if all(c['intrinsic'] for c in vehicle['cargo']):  # Check if any of the items in the 'cargo' list of the 'vehicle' have the 'intrinsic' key set to False.
+            if all(c['intrinsic_part_id'] for c in vehicle['cargo']):  # Check if any of the cargo aren't intrinsic
                 options.append(discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,}', value=vehicle['vehicle_id']))
         if not options:
             placeholder = 'Convoy has no sellable vehicles'
@@ -165,7 +164,7 @@ class SellCargoSelect(discord.ui.Select):
         options = []
         for vehicle in df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
-                if not cargo['intrinsic']:
+                if not cargo['intrinsic_part_id']:
                     if cargo['fuel'] is not None and df_state.vendor_obj['fuel_price'] is not None:
                         cargo['price'] = round(cargo['price'] + cargo['fuel'] * df_state.vendor_obj['fuel_price'], 2)
                     elif cargo['water'] is not None and df_state.vendor_obj['water_price'] is not None:

@@ -45,7 +45,7 @@ async def cargo_menu(df_state: DFState):
         f'  - Delivery Reward: **${df_state.cargo_obj['delivery_reward']}**',
         '- misc',
         f'  - Carrier Vehicle: **{carrier_vehicle['name']}**',
-        f'  - Intrinsic: **{df_state.cargo_obj['intrinsic']}**',
+        f'  - Intrinsic_part_id: **{df_state.cargo_obj['intrinsic_part_id']}**',
         f'  - Capacity: **{df_state.cargo_obj['capacity']} L**',
         f'  - Quantity: **{df_state.cargo_obj['quantity']}**',
         f'  - Volume: **{df_state.cargo_obj['volume']}** L',
@@ -79,7 +79,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):
         self.df_state = df_state
 
-        if self.df_state.cargo_obj['intrinsic']:
+        if self.df_state.cargo_obj['intrinsic_part_id']:
             disabled = True
         else:
             disabled = False

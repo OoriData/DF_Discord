@@ -393,7 +393,7 @@ class ConvoyCargoSelect(discord.ui.Select):
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if (
-                    not cargo['intrinsic']             # Exclude intrinsic cargo
+                    not cargo['intrinsic_part_id']     # Exclude intrinsic cargo
                     and not cargo['pending_deletion']  # Exclude cargo pending deletion
                     and cargo['quantity'] > 0          # Exclude 0-quantity cargo
                 ):

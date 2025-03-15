@@ -65,7 +65,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
         if verbose:
             vehicle_str += '\n' + '\n'.join([
                 f'  - Top Speed: **{vehicle['top_speed']}** / 100',
-                f'  - Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
+                f'  - Efficiency: **{vehicle['efficiency']}** / 100',
                 f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100',
                 f'  - Volume Capacity: **{vehicle['cargo_capacity']}**L',
                 f'  - Weight Capacity: **{vehicle['weight_capacity']}**kg'

@@ -612,9 +612,9 @@ async def buy_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=buy_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []
-    for category, part in df_state.vehicle_obj['parts'].items():
+    for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
-            part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+            part_list.append(f'- {part['slot'].replace('_', ' ').capitalize()}\n  - None')
             continue
 
         part_list.append(discord_app.cargo_menus.format_part(part))

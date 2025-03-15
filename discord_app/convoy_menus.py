@@ -68,7 +68,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
             f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
             f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
-            f'Fuel Efficiency 🌿: **{df_state.convoy_obj['fuel_efficiency']:.0f}** / 100',
+            f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
             f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
         ])
@@ -77,7 +77,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
         convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
 
-        convoy_embed.add_field(name='Fuel Efficiency 🌿', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
+        convoy_embed.add_field(name='Efficiency 🌿', value=f'**{df_state.convoy_obj['efficiency']:.0f}**\n/100')
         convoy_embed.add_field(name='Top Speed 🚀', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
         convoy_embed.add_field(name='Offroad Capability 🏔️', value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100')
 
@@ -175,12 +175,12 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     if vehicles:
         for vehicle in vehicles:
             vehicle_str = f'**{vehicle['name']}**'
-            # vehicle_str += f' | 🌿 {vehicle['fuel_efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
+            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
             vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
                     f'- AP: **{vehicle['ap']}** / {vehicle['max_ap']}',
-                    f'- Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
+                    f'- Efficiency: **{vehicle['efficiency']}** / 100',
                     f'- Top Speed: **{vehicle['top_speed']}** / 100',
                     f'- Offroad Capability: **{vehicle['offroad_capability']}** / 100',
                     ''

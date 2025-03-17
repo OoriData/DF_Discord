@@ -43,7 +43,7 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
         await df_state.interaction.followup.send(embeds=embeds, view=vendor_view)
 
 class VendorView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """Overarching vendor button menu"""
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)

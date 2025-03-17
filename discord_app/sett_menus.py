@@ -96,7 +96,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         await df_state.interaction.followup.send(embed=embed, view=view)
 
 class SettView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """Overarching settlement button menu"""
     def __init__(self, df_state: DFState, vendors):
         self.df_state = df_state
         super().__init__(timeout=600)

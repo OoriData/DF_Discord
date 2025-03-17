@@ -3,13 +3,8 @@
 import                                  os
 import                                  asyncio
 import                                  logging
-import                                  textwrap
-from typing                      import Optional
-from datetime                    import datetime, timezone, timedelta
-from io                          import BytesIO
 
 import                                  discord
-import                                  httpx
 from discord                     import app_commands, HTTPException
 from discord.ext                 import commands, tasks
 
@@ -38,7 +33,7 @@ class DesolateCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        'Called when the bot is ready to start taking commands'
+        """Called when the bot is ready to start taking commands"""
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
@@ -69,7 +64,7 @@ class DesolateCog(commands.Cog):
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
     def find_roles(self):
-        '''Cache player roles'''
+        """Cache player roles"""
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
         self.wastelander_role, self.beta_role, self.alpha_role = None, None, None
         for role in guild.roles:

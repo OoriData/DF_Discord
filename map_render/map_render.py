@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 # map_render/map_render.py
-'''
-Map image rendering functionality
-'''
+"""Map image rendering functionality"""
 import                  os
 # import                  logging
 
@@ -158,7 +156,7 @@ def render_map(
         highlight_color=DEFAULT_HIGHLIGHT_OUTLINE_COLOR,
         lowlight_color=DEFAULT_LOWLIGHT_INLINE_COLOR
 ) -> Image:
-    '''
+    """
     Renders the game map as an image using Pillow and overlays symbols on specified tiles.
     Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
     
@@ -168,7 +166,7 @@ def render_map(
         lowlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be lowlighted.
         highlight_color (str, optional): Color for the highlights. Defaults to yellow.
         lowlight_color (str, optional): Color for the lowlights. Defaults to cyan.
-    '''
+    """
     if not highlight_color:
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
@@ -280,7 +278,7 @@ def render_map(
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):
-    'just a "zoom" function for testing with'
+    """just a "zoom" function for testing with"""
     x1, y1 = top_left
     x2, y2 = bottom_right
 

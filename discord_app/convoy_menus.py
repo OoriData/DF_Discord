@@ -211,7 +211,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     return vehicles_str
 
 class ConvoyView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """Overarching convoy button menu"""
     def __init__(
             self,
             df_state: DFState
@@ -602,7 +602,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
 
 
 class SendConvoyConfirmView(discord.ui.View):
-    '''Confirm button before sending convoy somewhere'''
+    """Confirm button before sending convoy somewhere"""
     def __init__(
             self,
             df_state: DFState,
@@ -642,7 +642,7 @@ class SendConvoyConfirmView(discord.ui.View):
                     )
 
 class NextJourneyButton(discord.ui.Button):
-    ''' Loads alternative journey '''
+    """Loads alternative journey"""
     def __init__(self, df_state: DFState, routes: list, index: int, row: int=1):
         self.df_state = df_state
         self.routes = routes

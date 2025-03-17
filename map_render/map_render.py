@@ -13,10 +13,10 @@ API_SUCCESS_CODE = 200
 API_UNPROCESSABLE_ENTITY_CODE = 422
 DF_API_HOST = os.environ.get('DF_API_HOST')
 
-TILE_SIZE = 32         # Pixels
-GRID_SIZE = 2          # Number of pixels to reduce each side of the tile
-FONT_SIZE = 12         # Pixels
-FONT_OUTLINE_SIZE = 2  # Pixels
+TILE_SIZE = 48         # Pixels
+GRID_SIZE = 1          # Number of pixels to reduce each side of the tile
+FONT_SIZE = 32         # Pixels
+FONT_OUTLINE_SIZE = 4  # Pixels
 FONT = ImageFont.load_default(size=FONT_SIZE)  # Load a default font
 
 GRID_COLOR = '#202020'   # Background grid color

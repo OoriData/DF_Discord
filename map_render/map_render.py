@@ -103,12 +103,12 @@ POLITICAL_COLORS = {
     92: '#0A5394',    # Colorado Springs
     93: '#0A5394',    # Ft. Colins
     99: '#0A5394',    # Front Range Collective
-    100: '#A61C00',   # Los Angeles
-    101: '#A61C00',   # San Diego
-    102: '#A61C00',   # Phoenix
-    103: '#A61C00',   # Tucson
-    104: '#A61C00',   # Flagstaff
-    109: '#A61C00',   # States of Solara
+    100: '#cf2a08',   # Los Angeles
+    101: '#cf2a08',   # San Diego
+    102: '#cf2a08',   # Phoenix
+    103: '#cf2a08',   # Tucson
+    104: '#cf2a08',   # Flagstaff
+    109: '#cf2a08',   # States of Solara
     110: '#674EA7',   # San Francisco
     111: '#674EA7',   # Fresno
     112: '#674EA7',   # Sacramento
@@ -139,8 +139,8 @@ POLITICAL_COLORS = {
 }
 ERROR_COLOR = '#FF00FF'  # Error/default color
 
-POLITICAL_INLINE_OFFSET = 2                  # Number of pixels to offset the political inline
-POLITICAL_INLINE_WIDTH = 2                   # Thickness of the political inline
+POLITICAL_INLINE_OFFSET = 1                  # Number of pixels to offset the political inline
+POLITICAL_INLINE_WIDTH = 3                   # Thickness of the political inline
 
 DEFAULT_HIGHLIGHT_OUTLINE_COLOR = '#FFFF00'  # color for the highlight outline
 HIGHLIGHT_OUTLINE_OFFSET = -1                # Number of pixels to offset the highlight outline

@@ -300,12 +300,15 @@ class ExpandCargoButtonConfirm(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-
-        self.df_state.warehouse_obj = await api_calls.expand_warehouse(
-            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
-            user_id=self.df_state.user_obj['user_id'],
-            cargo_capacity_upgrade=1
-        )
+        try:
+            self.df_state.warehouse_obj = await api_calls.expand_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id'],
+                cargo_capacity_upgrade=1
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         await warehouse_menu(self.df_state)
 
@@ -351,13 +354,15 @@ class ExpandVehiclesButtonConfirm(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-
-        self.df_state.warehouse_obj = await api_calls.expand_warehouse(
-            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
-            user_id=self.df_state.user_obj['user_id'],
-            vehicle_capacity_upgrade=1
-        )
-
+        try:
+            self.df_state.warehouse_obj = await api_calls.expand_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id'],
+                vehicle_capacity_upgrade=1
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         await warehouse_menu(self.df_state)
 
 
@@ -916,13 +921,17 @@ class StoreVehicleSelect(discord.ui.Select):
             v for v in self.df_state.convoy_obj['vehicles']
             if v['vehicle_id'] == self.values[0]
         ), None)
-
-        self.df_state.convoy_obj = await api_calls.store_vehicle_in_warehouse(
-            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
-            convoy_id=self.df_state.convoy_obj['convoy_id'],
-            vehicle_id=vehicle_to_store['vehicle_id']
-        )
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+#test
+        try:
+            self.df_state.convoy_obj = await api_calls.store_vehicle_in_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=vehicle_to_store['vehicle_id']
+            )
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         if self.df_state.convoy_obj:
             await warehouse_menu(self.df_state)
@@ -996,12 +1005,15 @@ class RetrieveVehicleSelect(discord.ui.Select):
             v for v in self.df_state.warehouse_obj['vehicle_storage']
             if v['vehicle_id'] == self.values[0]
         ), None)
-
-        self.df_state.convoy_obj = await api_calls.retrieve_vehicle_in_warehouse(
-            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
-            convoy_id=self.df_state.convoy_obj['convoy_id'],
-            vehicle_id=vehicle_to_retrieve['vehicle_id']
-        )
+        try:
+            self.df_state.convoy_obj = await api_calls.retrieve_vehicle_in_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=vehicle_to_retrieve['vehicle_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
 
         await warehouse_menu(self.df_state)
@@ -1083,13 +1095,15 @@ class SpawnConvoyNameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        self.df_state.convoy_obj = await api_calls.spawn_convoy_from_warehouse(
-            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
-            vehicle_id=self.vehicle_id,
-            new_convoy_name=self.convoy_name_input.value
-        )
-
+        try:
+            self.df_state.convoy_obj = await api_calls.spawn_convoy_from_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                vehicle_id=self.vehicle_id,
+                new_convoy_name=self.convoy_name_input.value
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 
@@ -1137,9 +1151,12 @@ class BuyWarehouseButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         
         self.df_state.interaction = interaction
-
-        warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
-        new_warehouse = await api_calls.get_warehouse(warehouse_id)
+        try:
+            warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
+            new_warehouse = await api_calls.get_warehouse(warehouse_id)
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         self.df_state.user_obj['warehouses'].append(new_warehouse)
         self.df_state.warehouse_obj = new_warehouse
 

@@ -116,13 +116,16 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             v for v in self.df_state.convoy_obj['vehicles']
             if v['vehicle_id'] == self.values[0]
         ), None)
-
-        self.df_state.convoy_obj = await api_calls.move_cargo(
-            self.df_state.convoy_obj['convoy_id'],
-            self.df_state.cargo_obj['cargo_id'],
-            dest_vehicle['vehicle_id']
-        )
-
+        try:
+            self.df_state.convoy_obj = await api_calls.move_cargo(
+                self.df_state.convoy_obj['convoy_id'],
+                self.df_state.cargo_obj['cargo_id'],
+                dest_vehicle['vehicle_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+        
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 class MapButton(discord.ui.Button):

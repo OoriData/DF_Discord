@@ -230,7 +230,7 @@ class MainMenuUsernameModal(discord.ui.Modal):
             style=discord.TextStyle.short,
             required=True,
             default=self.df_state.interaction.user.display_name,
-            max_length=32,
+            max_length=15,
             custom_id='new_username'
         )
         self.add_item(self.username_input)
@@ -446,11 +446,178 @@ class OptionsView(discord.ui.View):
             AppModeButton(df_state)
         )
 
+        self.add_item(
+            ChangeUsernameButton(df_state, disabled=is_disabled)
+        )
+
+        self.add_item(
+            ChangeConvoyNameButton(df_state, disabled=is_disabled)
+        )
+
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
+
+
+
+
+class ChangeUsernameButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, disabled: bool, row=2):
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Change Your Username',
+            custom_id='change_username',
+            emoji='🖊️',
+            row=row,
+            disabled=disabled  # Correctly setting the disabled state
+        )
+        self.df_state = df_state  # Store df_state so it can be used in callback
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        # Check the expiration date again just to be sure
+        df_exp = df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()
+
+        if df_exp > datetime.now().date():
+            await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
+
+
+class ChangeUsernameModal(discord.ui.Modal):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        
+        super().__init__(title='Change your Username')
+
+        self.username_modal = discord.ui.TextInput(
+            label='Change Username',
+            style=discord.TextStyle.short,
+            required=False,
+            default=f'Wastelander',
+            max_length=15,
+            custom_id='change_username',
+        )
+        self.add_item(self.username_modal)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+        
+        # ✅ Get value directly from the TextInput instance
+        new_username = self.username_modal.value
+        
+        self.df_state.user_obj['username'] = new_username
+        
+        success = await api_calls.change_username(
+            self.df_state.user_obj['user_id'],
+            new_username
+        )
+
+        refer_embed = discord.Embed()
+        refer_embed = df_embed_author(refer_embed, self.df_state)
+
+        refer_embed.description = success
+        view = OptionsView(self.df_state)
+
+        await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
+
+
+class ConvoySelectBeforeRename(discord.ui.Select):
+    def __init__(self, df_state: DFState, row=0):
+        self.df_state = df_state
+
+        options = [
+            discord.SelectOption(
+                label=convoy['name'],
+                value=convoy['convoy_id'],
+                emoji='🛣️' if convoy['journey'] else '🅿️'
+            )
+            for convoy in df_state.user_obj['convoys']
+        ]
+        
+        super().__init__(
+            placeholder='Select a convoy to rename',
+            options=options,
+            custom_id='select_convoy_to_rename',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+
+        # Store the selected convoy in df_state
+        selected_convoy = next(
+            (convoy for convoy in self.df_state.user_obj['convoys']
+             if convoy['convoy_id'] == self.values[0]),
+            None
+        )
+        if selected_convoy:
+            self.df_state.convoy_obj = selected_convoy
+            await interaction.response.send_modal(ChangeConvoyNameModal(self.df_state))
+
+class ChangeConvoyNameButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, disabled: bool, row=2):
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label='Change Your Convoy\'s Name',
+            custom_id='change_convoy_name',
+            emoji='🖊️',
+            row=row,
+            disabled=disabled
+        )
+        self.df_state = df_state
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+
+        view = discord.ui.View()
+        view.add_item(ConvoySelectBeforeRename(self.df_state))
+
+        await interaction.response.send_message(
+            content='Select a convoy to rename:',
+            view=view,
+            ephemeral=True
+        )
+
+
+class ChangeConvoyNameModal(discord.ui.Modal):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        
+        super().__init__(title='Rename Your Convoy')
+
+        # Pre-fill the name with the selected convoy’s current name
+        self.convoy_name_modal = discord.ui.TextInput(
+            label='New convoy name',
+            style=discord.TextStyle.short,
+            required=True,
+            default=self.df_state.convoy_obj['name'],
+            max_length=15,
+            custom_id='new_convoy_name',
+        )
+        self.add_item(self.convoy_name_modal)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_name = self.convoy_name_modal.value
+
+        # Call the backend to update the name
+        success = await api_calls.change_convoy_name(
+            convoy_id=self.df_state.convoy_obj['convoy_id'],
+            new_name=new_name
+        )
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+
+        embed.description = success
+        view = OptionsView(self.df_state)
+
+        await interaction.response.edit_message(embeds=[embed], view=view, attachments=[])
+
+
+
 
 class ReferralButton(discord.ui.Button):
     def __init__(self, df_state: DFState, disabled: bool, row=2):

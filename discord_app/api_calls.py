@@ -655,3 +655,29 @@ async def form_allegiance(user_id: UUID, banner_id: UUID) -> dict:
 
     _check_code(response)
     return response.json()
+
+async def change_username(user_id, new_name) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/user/update_username',
+            params={
+                'user_id': user_id,
+                'new_name': new_name
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+async def change_convoy_name(convoy_id: UUID, new_name: str) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/convoy/update_convoy_name',
+            params={
+                'convoy_id': convoy_id,
+                'new_name': new_name
+            }
+        )
+
+    _check_code(response)
+    return response.json()

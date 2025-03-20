@@ -307,16 +307,18 @@ class NewBannerModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        self.df_state.user_obj = await api_calls.new_banner(
-            user_id=self.df_state.user_obj['user_id'],
-            name=self.new_banner_name_input.value,
-            description=self.new_banner_description_input.value,
-            banner_desc=self.new_banner_physical_description_input.value,
-            public=True,
-            discord_id=self.df_state.interaction.guild_id
-        )
-
+        try:
+            self.df_state.user_obj = await api_calls.new_banner(
+                user_id=self.df_state.user_obj['user_id'],
+                name=self.new_banner_name_input.value,
+                description=self.new_banner_description_input.value,
+                banner_desc=self.new_banner_physical_description_input.value,
+                public=True,
+                discord_id=self.df_state.interaction.guild_id
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         await banner_menu(self.df_state)
 
 

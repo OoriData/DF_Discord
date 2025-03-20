@@ -128,6 +128,9 @@ class SendMessageModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        await api_calls.send_message(self.char_a_id, self.char_b_id, self.convoy_name_input.value)
+        try:
+            await api_calls.send_message(self.char_a_id, self.char_b_id, self.convoy_name_input.value)
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         await dialogue_menu(self.df_state, self.char_a_id, self.char_b_id)

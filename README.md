@@ -64,6 +64,7 @@ pip install -U -r requirements.txt -c constraints.txt
 ```
 For ease of development, you can install the libraries for the map renderer to the same venv:
 ```sh
+pip install -U pip
 pip install -U -r map_render/requirements.txt -c map_render/constraints.txt
 ```
 

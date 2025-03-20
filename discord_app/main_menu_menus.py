@@ -260,8 +260,11 @@ class MainMenuConvoyNameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-
-        convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
+        try:
+            convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
         self.df_state.convoy_obj = await api_calls.get_convoy(convoy_id)
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0]

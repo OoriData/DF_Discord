@@ -732,7 +732,7 @@ class RedeemFreeDaysButton(discord.ui.Button):
         if self.df_state.user_obj['free_days'] > 0:
             # Send the confirmation view instead of a modal
             await interaction.response.send_message(
-                content="Are you sure you want to redeem a free day?",
+                content="Are you sure you want to redeem you free days?",
                 view=RedeemConfirmationView(self.df_state),
                 ephemeral=True
             )
@@ -779,7 +779,8 @@ class ConfirmRedeemButton(discord.ui.Button):
                 color=discord.Color.red()
             )
 
-        await interaction.response.edit_message(embeds=[embed])
+        # ✅ Set `view=None` to remove the buttons
+        await interaction.response.edit_message(embeds=[embed], view=None)
 
 
 class CancelButton(discord.ui.Button):

@@ -36,7 +36,7 @@ from df_lib.map_struct import deserialize_map
 # Context manager for the FastAPI app's lifespan: https://fastapi.tiangolo.com/advanced/events/
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
-#     """Inner bracketing of the FastAPI event loop"""
+#     """ Inner bracketing of the FastAPI event loop """
 #     # Startup async code here, in order to share app's correct event loop
 #     logger.info('Startup…')
 #     yield
@@ -154,6 +154,6 @@ time curl -X POST "http://localhost:9100/render-map-json" \
 
 @app.get('/health-check', status_code=status.HTTP_200_OK, tags=['healthcheck'])
 async def health_check():
-    """Health check for Docker, etc."""
+    """ Health check for Docker, etc. """
     # Feel free to test any dependent resources (e.g. working DB connections) here
     return {'status': 'OK'}

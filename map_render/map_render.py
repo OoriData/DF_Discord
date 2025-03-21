@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
 # map_render/map_render.py
-"""Map image rendering functionality"""
+""" Map image rendering functionality """
 import                  os
 # import                  logging
 
@@ -278,7 +278,7 @@ def render_map(
 
 
 def truncate_2d_list(matrix, top_left, bottom_right):
-    """just a "zoom" function for testing with"""
+    """ just a "zoom" function for testing with """
     x1, y1 = top_left
     x2, y2 = bottom_right
 

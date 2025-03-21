@@ -60,7 +60,7 @@ async def cargo_menu(df_state: DFState):
     await df_state.interaction.response.edit_message(embed=cargo_embed, view=cargo_view, attachments=[])
 
 class ConvoyCargoView(discord.ui.View):
-    """Overarching convoy button menu"""
+    """ Overarching convoy button menu """
     def __init__(self, df_state: DFState, recipient_vendor_obj: dict = None):
         self.df_state = df_state
         super().__init__(timeout=600)

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-"""Discord Frontend"""
+""" Discord Frontend """
 from __future__             import annotations
 from datetime               import datetime
 import                             io

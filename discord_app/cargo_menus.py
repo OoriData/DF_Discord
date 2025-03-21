@@ -174,7 +174,7 @@ class MapButton(discord.ui.Button):
 
 def format_part(part_cargo: dict):
     if part_cargo.get('cargo_id'):
-        part = part_cargo['part']
+        part = part_cargo['parts']
         name = part_cargo['name']
     else:
         part = part_cargo

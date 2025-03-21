@@ -185,9 +185,15 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
                     f'- Offroad Capability: **{vehicle['offroad_capability']}** / 100',
                     ''
                 ])
+
+            if vehicle['electric']:
+                battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+                battery_emoji = '🔋' if battery['kwh'] > (battery['capacity'] * 0.2) else '🪫'
+                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.2f}** / {battery['capacity']} kWh\n'
             
             vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters'
             vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
+
             # more verbose option, can we find a way to have this as well, without being as wordy?
             # vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters ({vehicle['cargo_capacity'] - vehicle['total_cargo_volume']} available)'
             # vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg ({vehicle['weight_capacity'] - vehicle['']} available)'

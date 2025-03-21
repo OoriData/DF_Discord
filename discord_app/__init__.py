@@ -342,7 +342,7 @@ def get_cargo_emoji(cargo: dict) -> str | None:
     """
     cargo_emoji = {
         'recipient': '📦',
-        'part': '⚙️',
+        'parts': '⚙️',
         'fuel': '🛢️',
         'water': '💧',
         'food': '🥪',

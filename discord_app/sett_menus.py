@@ -67,7 +67,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if vendor['repair_price']:
             displayable_services.append('- Mechanic services')
 
-        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['part']]
+        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['parts']]
         if part_cargo:
             displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 

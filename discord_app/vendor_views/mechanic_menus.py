@@ -184,12 +184,12 @@ class UpgradeVehicleView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
-        # Disable the Convoy button if there's no cargo with a 'part' value
-        if not any(cargo.get('part') for cargo in self.df_state.convoy_obj['all_cargo']):
+        # Disable the Convoy button if there's no cargo with a 'parts' value
+        if not any(cargo.get('parts') for cargo in self.df_state.convoy_obj['all_cargo']):
             self.install_part_from_convoy_button.disabled = True
 
-        # Disable the Vendor button if there's no cargo with a 'part' value
-        if not any(cargo.get('part') for cargo in self.df_state.vendor_obj['cargo_inventory']):
+        # Disable the Vendor button if there's no cargo with a 'parts' value
+        if not any(cargo.get('parts') for cargo in self.df_state.vendor_obj['cargo_inventory']):
             self.install_part_from_vendor_button.disabled = True
 
     @discord.ui.button(label='Install part from Convoy inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_convoy', row=1)
@@ -217,14 +217,14 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
 
     part_cargos_to_display = []
     for cargo in cargo_source:
-        if cargo.get('part'):
+        if cargo.get('parts'):
             try:
                 check_dict = await api_calls.check_part_compatibility(df_state.vehicle_obj['vehicle_id'], cargo['cargo_id'])
-                cargo['part'] = check_dict['part']
-                cargo['part']['installation_price'] = check_dict['installation_price']
+                cargo['parts'] = check_dict['parts']
+                cargo['parts']['installation_price'] = check_dict['installation_price']
                 
                 if is_vendor:  # Only assign kit_price if the cargo is from a vendor
-                    cargo['part']['kit_price'] = cargo['price']
+                    cargo['parts']['kit_price'] = cargo['price']
                 
                 part_cargos_to_display.append(cargo)
             except RuntimeError as e:
@@ -272,7 +272,7 @@ class PartSelect(discord.ui.Select):
         options=[
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
             for cargo in part_cargos_to_display
-            if cargo.get('part')
+            if cargo.get('parts')
         ]
         
         super().__init__(
@@ -300,7 +300,7 @@ async def part_install_confirm_menu(df_state: DFState):
 
     current_part = None
     for part in df_state.vehicle_obj['parts']:
-        if part['slot'] == df_state.cargo_obj['part']['slot']:
+        if part['slot'] == df_state.cargo_obj['parts']['slot']:
             current_part = part
     if not current_part:
         current_part = None

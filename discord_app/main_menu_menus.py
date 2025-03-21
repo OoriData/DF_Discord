@@ -417,9 +417,15 @@ async def options_menu(df_state: DFState, edit: bool=True):
 
     referral_code_text = ''
 
+    
+
     df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
     if df_exp >= datetime.now().date():
-        referral_code_text = f'\n\nInvite your friends to subscribe to DF+ to get 14 days for free!\n\nYour referral code:\n**{df_state.user_obj['referral_code']}**'
+        referral_code_text = f'\n\nInvite your friends to subscribe to DF+ to get 14 days for free!\n'
+    referral_code_text += f'\nYou currently have **{df_state.user_obj['free_days']}** free day(s) of DF+\n'
+    if df_exp >= datetime.now().date():
+            referral_code_text += f'\nYour referral code:\n**{df_state.user_obj['referral_code']}**'
+
 
     options_embed.description += f'\n 📱🖥️ App Mode: **{user_metadata['mobile']}**\n*Reformats certain menus to be easier to read on mobile devices.*{referral_code_text}'
 
@@ -453,6 +459,11 @@ class OptionsView(discord.ui.View):
         self.add_item(
             ChangeConvoyNameButton(df_state, disabled=is_disabled)
         )
+        df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
+        if df_state.user_obj['free_days'] > 0:
+            self.add_item(
+                RedeemFreeDaysButton(df_state)
+                )
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -702,6 +713,82 @@ class ReferralCodeModal(discord.ui.Modal):
         view = OptionsView(self.df_state)
 
         await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
+class RedeemFreeDaysButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row=2):
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label='Redeem Free Days',
+            custom_id='redeem_free_days',
+            emoji='🎁',
+            row=row,
+            disabled=df_state.user_obj['free_days'] <= 0
+        )
+        self.df_state = df_state
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        if self.df_state.user_obj['free_days'] > 0:
+            # Send the confirmation view instead of a modal
+            await interaction.response.send_message(
+                content="Are you sure you want to redeem a free day?",
+                view=RedeemConfirmationView(self.df_state),
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "You don't have any free days to redeem.", 
+                ephemeral=True
+            )
 
 
+class RedeemConfirmationView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        super().__init__()
+        self.df_state = df_state
 
+        # Add confirm and cancel buttons
+        self.add_item(ConfirmRedeemButton(df_state))
+        self.add_item(CancelButton())
+
+        
+class ConfirmRedeemButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label='Confirm',
+            custom_id='confirm_redeem'
+        )
+        self.df_state = df_state
+
+    async def callback(self, interaction: discord.Interaction):
+        self.df_state.interaction = interaction
+
+        success = await api_calls.redeem_free_days(self.df_state.user_obj['user_id'])
+        if success:
+            embed = discord.Embed(
+                title="Free Days Redeemed",
+                description=f"You have successfully redeemed your free days!",
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description=f"Failed to redeem free day: {success[1]}",
+                color=discord.Color.red()
+            )
+
+        await interaction.response.edit_message(embeds=[embed])
+
+
+class CancelButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(
+            style=discord.ButtonStyle.grey,
+            label='Cancel',
+            custom_id='cancel'
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(content="Action cancelled.", view=None)

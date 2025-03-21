@@ -681,3 +681,15 @@ async def change_convoy_name(convoy_id: UUID, new_name: str) -> dict:
 
     _check_code(response)
     return response.json()
+
+async def redeem_free_days(user_id) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/user/redeem_free_days',
+            params={
+                'user_id': user_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()

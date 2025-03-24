@@ -76,7 +76,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
 
     cargo_list = []
     for cargo in warehouse_obj['cargo_storage']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -86,8 +86,8 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
 
             if cargo['recipient']:
                 cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
-                cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = min(round(cargo['delivery_reward'] / cargo['price']), 24)  # limit emojis to 24
+                cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each*'
+                margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)  # limit emojis to 24
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
 
         cargo_list.append(cargo_str)
@@ -472,13 +472,13 @@ class StoreCargoQuantityEmbed(discord.Embed):
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
                 f'- Convoy inventory: {self.df_state.cargo_obj['quantity']}',
-                f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
-                f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
+                f'- Volume (per unit): {self.df_state.cargo_obj['unit_volume']}L',
+                f'- Dry Weight (per unit): {self.df_state.cargo_obj['unit_dry_weight']}kg'
             ])
         else:
             self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
-            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
-            self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
+            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['unit_volume']} liter(s)')
+            self.add_field(name='Dry Weight (per unit)', value=f'{self.df_state.cargo_obj['unit_dry_weight']} kilogram(s)')
 
 class StoreCargoQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, store_quantity: int=1):
@@ -701,13 +701,13 @@ class CargoRetrieveQuantityEmbed(discord.Embed):
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
                 f'- Convoy inventory: {self.df_state.cargo_obj['quantity']}',
-                f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
-                f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
+                f'- Volume (per unit): {self.df_state.cargo_obj['unit_volume']}L',
+                f'- Dry Weight (per unit): {self.df_state.cargo_obj['unit_dry_weight']}kg'
             ])
         else:
             self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])
-            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
-            self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
+            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['unit_volume']} liter(s)')
+            self.add_field(name='Dry Weight (per unit)', value=f'{self.df_state.cargo_obj['unit_dry_weight']} kilogram(s)')
 
 class CargoRetrieveQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, retrieve_quantity: int=1):
@@ -744,11 +744,11 @@ class CargoRetrieveQuantityButton(discord.ui.Button):  # XXX: Explode this butto
         for vehicle in self.df_state.convoy_obj['vehicles']:
             # Determine max quantity by volume
             free_space = vehicle['free_space']
-            max_by_volume = free_space / cargo_obj['volume']
+            max_by_volume = free_space / cargo_obj['unit_volume']
             
             # Determine max quantity by weight
             weight_capacity = vehicle['remaining_capacity']
-            max_by_weight = weight_capacity / cargo_obj['weight']
+            max_by_weight = weight_capacity / cargo_obj['unit_weight']
 
             quantity += int(min(max_by_volume, max_by_weight))
 
@@ -788,8 +788,8 @@ class CargoRetrieveQuantityButton(discord.ui.Button):  # XXX: Explode this butto
         if resultant_quantity > inventory_quantity:
             return True
         
-        max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['volume']
-        max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['weight']
+        max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['unit_volume']
+        max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['unit_weight']
         if resultant_quantity > max_by_volume or resultant_quantity > max_by_weight:
             return True
         

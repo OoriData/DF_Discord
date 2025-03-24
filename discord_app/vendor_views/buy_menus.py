@@ -168,7 +168,7 @@ class BuyCargoSelect(discord.ui.Select):
         options = []
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
 
-            label = f'{cargo['name']} | ${cargo['price']:,.0f}'
+            label = f'{cargo['name']} | ${cargo['unit_price']:,.0f}'
             if cargo.get('recipient_vendor'):
                 label += f' | {cargo['recipient_location']}'
 
@@ -186,9 +186,9 @@ class BuyCargoSelect(discord.ui.Select):
                     emoji = DF_LOGO_EMOJI
             elif tutorial_stage == 4:
                 if (
-                    cargo['volume'] < self.df_state.convoy_obj['total_free_space'] and
-                    cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
-                    cargo['price'] < self.df_state.convoy_obj['money'] and
+                    cargo['unit_volume'] < self.df_state.convoy_obj['total_free_space'] and
+                    cargo['unit_dry_weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
+                    cargo['unit_price'] < self.df_state.convoy_obj['money'] and
                     cargo['capacity'] is None
                 ):
                     emoji = DF_LOGO_EMOJI
@@ -341,21 +341,14 @@ class CargoBuyQuantityEmbed(discord.Embed):
         
         self = df_embed_author(self, self.df_state)
         
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
-        cart_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['unit_price']
+        cart_volume = self.cart_quantity * self.df_state.cargo_obj['unit_volume']
         
-        resource_weights = {'fuel': 0.79, 'water': 1, 'food': 0.75}
-        resource_weight = next(  # Check if cargo has any resources in it
-            (weight for key, weight in resource_weights.items() if self.df_state.cargo_obj.get(key)),
-            None  # Default to None, in case that cargo contains no resource
-        )
-        cart_weight = self.cart_quantity * self.df_state.cargo_obj['weight']  # Calc (empty) weight
-        if resource_weight:  # Calc resource weight
-            cart_weight += self.cart_quantity * self.df_state.cargo_obj['capacity'] * resource_weight
+        cart_weight = self.cart_quantity * self.df_state.cargo_obj['unit_weight']
 
         desc = [
             f'## {self.df_state.vendor_obj['name']}',
-            f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['price']:,.0f} per item',
+            f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['unit_price']:,.0f} per item',
             f'*{self.df_state.cargo_obj['base_desc']}*',
             '',
             f'- Cart volume: **{cart_volume:,.1f}L**',
@@ -378,13 +371,13 @@ class CargoBuyQuantityEmbed(discord.Embed):
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
                 f'- Vendor Inventory: {self.df_state.cargo_obj['quantity']}',
-                f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
-                f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
+                f'- Volume (per unit): {self.df_state.cargo_obj['unit_volume']}L',
+                f'- Dry Weight (per unit): {self.df_state.cargo_obj['unit_dry_weight']}kg'
             ])
         else:
             self.add_field(name='Vendor Inventory', value=self.df_state.cargo_obj['quantity'])
-            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
-            self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
+            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['unit_volume']} liter(s)')
+            self.add_field(name='Dry Weight (per unit)', value=f'{self.df_state.cargo_obj['unit_dry_weight']} kilogram(s)')
 
 class CargoBuyQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, cart_quantity: int=1):
@@ -442,7 +435,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
 
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['unit_price']
 
         label = f'Buy {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}'
         disabled = False
@@ -476,7 +469,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
             await interaction.response.send_message(content=e, ephemeral=True)
             return
         
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
+        cart_price = self.cart_quantity * self.df_state.cargo_obj['unit_price']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
@@ -485,7 +478,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
             f'Purchased {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${cart_price:,.0f}'
         ]
         if self.df_state.cargo_obj['recipient']:
-            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['unit_delivery_reward']
             desc.append(f'Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of $**{delivery_reward:,.0f}**')
         embed.description = '\n'.join(desc)
 
@@ -518,15 +511,15 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             for vehicle in self.df_state.convoy_obj['vehicles']:
                 # Determine max quantity by volume
                 free_space = vehicle['free_space']
-                max_by_volume = free_space / cargo_obj['volume']
+                max_by_volume = free_space / cargo_obj['unit_volume']
                 
                 # Determine max quantity by weight
                 weight_capacity = vehicle['remaining_capacity']
-                max_by_weight = weight_capacity / cargo_obj['weight']
+                max_by_weight = weight_capacity / cargo_obj['unit_weight']
 
                 # Determine max quantity by price
                 convoy_money = self.df_state.convoy_obj['money']
-                max_by_price = convoy_money / cargo_obj['price']
+                max_by_price = convoy_money / cargo_obj['unit_price']
 
                 quantity += int(min(max_by_volume, max_by_weight, max_by_price))
 
@@ -570,12 +563,12 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             return True
         
         if self.cargo_for_sale:
-            max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['volume']
-            max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['weight']
+            max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['unit_volume']
+            max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['unit_weight']
             if resultant_quantity > max_by_volume or resultant_quantity > max_by_weight:
                 return True
 
-            cart_price = resultant_quantity * self.df_state.cargo_obj['price']
+            cart_price = resultant_quantity * self.df_state.cargo_obj['unit_price']
             
         else:
             if resultant_quantity > max_convoy_capacity:

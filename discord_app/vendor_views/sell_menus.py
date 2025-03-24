@@ -47,7 +47,7 @@ async def sell_menu(df_state: DFState):
             if cargo['intrinsic_part_id']:
                 continue
 
-            cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['price']:,} each*'
+            cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *{vehicle['name']}* | *${cargo['unit_price']:,} each*'
 
             if cargo['recipient']:
                 cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
@@ -179,9 +179,8 @@ class SellCargoSelect(discord.ui.Select):
                     if df_state.vendor_obj['food_price'] is None and cargo['food'] is not None:
                         continue
 
-
                     options.append(discord.SelectOption(  # Append the cargo option with the emoji
-                        label=f'{cargo['name']} | {vehicle['name']} | ${cargo['price']:,}',
+                        label=f'{cargo['name']} | {vehicle['name']} | ${cargo['unit_price']:,}',
                         value=cargo['cargo_id'],
                         emoji=get_cargo_emoji(cargo)
                     ))
@@ -329,11 +328,11 @@ class CargoSellQuantityEmbed(discord.Embed):
 
         desc = [f'## {self.df_state.vendor_obj['name']}']
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
-            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${self.df_state.cargo_obj['delivery_reward']:,} per item')
-            sale_price = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
+            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${self.df_state.cargo_obj['unit_delivery_reward']:,} per item')
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_delivery_reward']
         else:
-            desc.append(f'### Selling {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['price']:,} per item')
-            sale_price = self.sale_quantity * self.df_state.cargo_obj['price']
+            desc.append(f'### Selling {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['unit_price']:,} per item')
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_price']
         desc.extend([
             f'*{self.df_state.cargo_obj['base_desc']}*',
             f'- Sale volume: {sale_volume:,}L',
@@ -386,7 +385,7 @@ class CargoConfirmSellButton(discord.ui.Button):
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
             sale_price = self.sale_quantity * self.df_state.cargo_obj['delivery_reward']
         else:
-            sale_price = self.sale_quantity * self.df_state.cargo_obj['price']
+            sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_price']
 
         super().__init__(
             style=discord.ButtonStyle.green,
@@ -410,7 +409,7 @@ class CargoConfirmSellButton(discord.ui.Button):
             await interaction.response.send_message(content=e, ephemeral=True)
             return
         
-        sale_price = self.sale_quantity * self.df_state.cargo_obj['price']
+        sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_price']
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)

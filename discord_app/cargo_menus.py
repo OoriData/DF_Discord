@@ -40,7 +40,7 @@ async def cargo_menu(df_state: DFState):
     cargo_embed.description = '\n'.join([
         f'## {df_state.cargo_obj['name']}',
         '- $$$',
-        f'  - Price: **${df_state.cargo_obj['price']}**',
+        f'  - Unit Price: **${df_state.cargo_obj['unit_price']}**',
         f'  - Recipient: **{recipient_vendor_obj.get('name')}**',
         f'  - Delivery Reward: **${df_state.cargo_obj['delivery_reward']}**',
         '- misc',
@@ -48,8 +48,8 @@ async def cargo_menu(df_state: DFState):
         f'  - Intrinsic_part_id: **{df_state.cargo_obj['intrinsic_part_id']}**',
         f'  - Capacity: **{df_state.cargo_obj['capacity']} L**',
         f'  - Quantity: **{df_state.cargo_obj['quantity']}**',
-        f'  - Volume: **{df_state.cargo_obj['volume']}** L',
-        f'  - Weight: **{df_state.cargo_obj['weight']}** kg',
+        f'  - Total Volume: **{df_state.cargo_obj['volume']}** L',
+        f'  - Total Weight: **{df_state.cargo_obj['weight']}** kg',
     ])
 
     cargo_view = ConvoyCargoView(

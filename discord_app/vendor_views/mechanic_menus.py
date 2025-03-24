@@ -224,7 +224,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
                 cargo['parts']['installation_price'] = check_dict['installation_price']
                 
                 if is_vendor:  # Only assign kit_price if the cargo is from a vendor
-                    cargo['parts']['kit_price'] = cargo['price']
+                    cargo['parts']['kit_price'] = cargo['unit_price']
                 
                 part_cargos_to_display.append(cargo)
             except RuntimeError as e:

@@ -51,7 +51,7 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, pag
         await df_state.interaction.followup.send(embed=embed, view=view, files=[])
 
 class DialogueView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching dialogue button menu """
     def __init__(
             self,
             df_state: DFState,

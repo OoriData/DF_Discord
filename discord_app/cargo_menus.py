@@ -40,16 +40,16 @@ async def cargo_menu(df_state: DFState):
     cargo_embed.description = '\n'.join([
         f'## {df_state.cargo_obj['name']}',
         '- $$$',
-        f'  - Price: **${df_state.cargo_obj['price']}**',
+        f'  - Unit Price: **${df_state.cargo_obj['unit_price']}**',
         f'  - Recipient: **{recipient_vendor_obj.get('name')}**',
         f'  - Delivery Reward: **${df_state.cargo_obj['delivery_reward']}**',
         '- misc',
         f'  - Carrier Vehicle: **{carrier_vehicle['name']}**',
-        f'  - Intrinsic: **{df_state.cargo_obj['intrinsic']}**',
+        f'  - Intrinsic_part_id: **{df_state.cargo_obj['intrinsic_part_id']}**',
         f'  - Capacity: **{df_state.cargo_obj['capacity']} L**',
         f'  - Quantity: **{df_state.cargo_obj['quantity']}**',
-        f'  - Volume: **{df_state.cargo_obj['volume']}** L',
-        f'  - Weight: **{df_state.cargo_obj['weight']}** kg',
+        f'  - Total Volume: **{df_state.cargo_obj['volume']}** L',
+        f'  - Total Weight: **{df_state.cargo_obj['weight']}** kg',
     ])
 
     cargo_view = ConvoyCargoView(
@@ -60,7 +60,7 @@ async def cargo_menu(df_state: DFState):
     await df_state.interaction.response.edit_message(embed=cargo_embed, view=cargo_view, attachments=[])
 
 class ConvoyCargoView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching convoy button menu """
     def __init__(self, df_state: DFState, recipient_vendor_obj: dict = None):
         self.df_state = df_state
         super().__init__(timeout=600)
@@ -79,7 +79,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):
         self.df_state = df_state
 
-        if self.df_state.cargo_obj['intrinsic']:
+        if self.df_state.cargo_obj['intrinsic_part_id']:
             disabled = True
         else:
             disabled = False
@@ -177,46 +177,47 @@ class MapButton(discord.ui.Button):
 
 def format_part(part_cargo: dict):
     if part_cargo.get('cargo_id'):
-        part = part_cargo['part']
-        name = part_cargo['name']
+        parts = part_cargo['parts']
     else:
-        part = part_cargo
-        name = part['name'] if part.get('name') else None
+        parts = [part_cargo]
 
-    fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
-    lbft = round(part['Nm'] * 0.7376) if part.get('Nm') else None
-    horsepower = round(part['kW'] * 1.34102) if part.get('kW') else None
-    displacement_cubic_inches = round(part['displacement'] * 61.0237) if part.get('displacement') else None
-    cargo_cubic_feet = round(part['cargo_capacity_mod'] * 0.0353147) if part.get('cargo_capacity_mod') else None
-    weight_lbs = round(part['weight_capacity_mod'] * 2.20462) if part.get('weight_capacity_mod') else None
-    towing_lbs = round(part['towing_capacity_mod'] * 2.20462) if part.get('towing_capacity_mod') else None
-    diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
+    part_strs = []
+    for part in parts:
+        fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
+        lbft = round(part['Nm'] * 0.7376) if part.get('Nm') else None
+        horsepower = round(part['kW'] * 1.34102) if part.get('kW') else None
+        displacement_cubic_inches = round(part['displacement'] * 61.0237) if part.get('displacement') else None
+        cargo_cubic_feet = round(part['cargo_capacity_add'] * 0.0353147) if part.get('cargo_capacity_add') else None
+        weight_lbs = round(part['weight_capacity_add'] * 2.20462) if part.get('weight_capacity_add') else None
+        diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
 
-    part_bits = [
-        f'- {part['category'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['category'].replace('_', ' ').capitalize()}',
-        f'  - **{name}**' if part.get('name') else None,
+        part_attrs = [
+            f'- {part['slot'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['slot'].replace('_', ' ').capitalize()}',
+            f'  - **{part['name']}**',
 
-        f'  - **{part['capacity']}** L (**{fuel_gal}** gal)' if part.get('capacity') else None,
+            f'  - **{part['capacity']}** L (**{fuel_gal}** gal)' if part.get('capacity') else None,
 
-        f'  - **{part['Nm']}** N·m (**{lbft}** lb·ft)' if part.get('Nm') else None,
-        f'  - **{part['kW']}** kW (**{horsepower}** hp)' if part.get('kW') else None,
-        f'  - **{part['displacement']}** L (**{displacement_cubic_inches}** in³)' if part.get('displacement') else None,
+            f'  - **{part['Nm']}** N·m (**{lbft}** lb·ft)' if part.get('Nm') else None,
+            f'  - **{part['kW']}** kW (**{horsepower}** hp)' if part.get('kW') else None,
+            f'  - **{part['displacement']}** L (**{displacement_cubic_inches}** in³)' if part.get('displacement') else None,
 
-        f'  - Max AP: **{part['max_ap_mod']:+}**' if part.get('max_ap_mod') else None,
-        f'  - Fuel efficiency: **{part['fuel_efficiency_mod']:+}**' if part.get('fuel_efficiency_mod') else None,
-        f'  - Top speed: **{part['top_speed_mod']:+}**' if part.get('top_speed_mod') else None,
-        f'  - Offroad capability: **{part['offroad_capability_mod']:+}**' if part.get('offroad_capability_mod') else None,
-        f'  - Cargo capacity: **{part['cargo_capacity_mod']:+}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_mod') else None,
-        f'  - Weight capacity: **{part['weight_capacity_mod']:+}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_mod') else None,
-        f'  - Towing capacity: **{part['towing_capacity_mod']:+}** kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
+        f'  - Max AP: **{part['ac_add']:+.0f}**' if part.get('ac_add') else None,
+        f'  - Efficiency: **{part['fuel_efficiency_add']:+.0f}**' if part.get('fuel_efficiency_add') else None,
+        f'  - Top speed: **{part['top_speed_add']:+.0f}**' if part.get('top_speed_add') else None,
+        f'  - Offroad capability: **{part['offroad_capability_add']:+.0f}**' if part.get('offroad_capability_add') else None,
+        f'  - Cargo capacity: **{part['cargo_capacity_add']:+.0f}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_add') else None,
+        f'  - Weight capacity: **{part['weight_capacity_add']:+.0f}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_add') else None,
+        # f'  - Towing capacity: **{part['towing_capacity_mod']:+}** kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
 
-        f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
+            f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 
-        f'  - *{part['description']}*' if part.get('description') else None,
-        # f'  - ${part['part_value']}' if part.get('part_value') else None,
-        f'    - Part price: **${part['kit_price']}**' if part.get('kit_price') else None,
-        f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') else None,
-        f'    - Total price: **${part['kit_price'] + part['installation_price']}**' if part.get('kit_price') and part.get('installation_price') else None,
-    ]
+            f'  - *{part['description']}*' if part.get('description') else None,
+            # f'  - ${part['part_value']}' if part.get('part_value') else None,
+            f'    - Part price: **${part['kit_price']}**' if part.get('kit_price') else None,
+            f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') else None,
+            f'    - Total price: **${part['kit_price'] + part['installation_price']}**' if part.get('kit_price') and part.get('installation_price') else None,
+        ]
 
-    return '\n'.join(bit for bit in part_bits if bit)
+        part_strs.append('\n'.join(attr for attr in part_attrs if attr))
+
+    return '\n'.join(part_strs)

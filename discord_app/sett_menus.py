@@ -67,7 +67,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if vendor['repair_price']:
             displayable_services.append('- Mechanic services')
 
-        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['part']]
+        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['parts']]
         if part_cargo:
             displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 
@@ -96,7 +96,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         await df_state.interaction.followup.send(embed=embed, view=view)
 
 class SettView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching settlement button menu """
     def __init__(self, df_state: DFState, vendors):
         self.df_state = df_state
         super().__init__(timeout=600)

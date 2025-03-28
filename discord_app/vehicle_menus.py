@@ -27,9 +27,9 @@ async def vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=vehicle_menu)  # Add this menu to the back stack
 
     part_list = []
-    for category, part in df_state.vehicle_obj['parts'].items():
+    for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
-            part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+            part_list.append(f'- {part['slot'].replace('_', ' ').capitalize()}\n  - None')
             continue
 
         part_list.append(discord_app.cargo_menus.format_part(part))
@@ -53,7 +53,7 @@ async def vehicle_menu(df_state: DFState):
     await df_state.interaction.response.edit_message(embed=vehicle_embed, view=vehicle_view, attachments=[])
 
 class VehicleView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching vehicle button menu """
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)
@@ -70,17 +70,17 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
     fields = {
         '💵 Value': ('value', '**${:,}**', '', 'part_value', ' (${:+})'),
         '🔧 Wear': ('wear', '**{}**', ' / 100', None, ''),
-        '🛡️ AP': ('ap', '**{}**', f' / {vehicle['max_ap']}', 'max_ap_mod', ' ({:+})'),
-        '⛽️ Fuel Efficiency': ('fuel_efficiency', '**{}**', ' / 100', 'fuel_efficiency_mod', ' ({:+})'),
-        '🏎️ Top Speed': ('top_speed', '**{}**', ' / 100', 'top_speed_mod', ' ({:+})'),
-        '🏔️ Off-road Capability': ('offroad_capability', '**{}**', ' / 100', 'offroad_capability_mod', ' ({:+})'),
-        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_mod', ' ({:+} L)'),
-        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_mod', ' ({:+} kg)'),
-        '🚛 Towing Capacity': ('towing_capacity', '**{:,}**', ' kg', 'towing_capacity_mod', ' ({:+} kg)')
+        '🛡️ AC': ('ap', '**{}**', f' / {vehicle['ac']}', 'ac_add', ' ({:+})'),
+        '⛽️ Efficiency': ('efficiency', '**{}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '**{}**', ' / 100', 'top_speed_add', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '**{}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
+        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
+        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
+        # '🚛 Towing Capacity': ('towing_capacity', '**{:,}**', ' kg', 'towing_capacity_mod', ' ({:+} kg)')
     }
 
     raw_stats = {  # Stats that should show raw values
-        'fuel_efficiency': 'raw_fuel_efficiency',
+        'efficiency': 'raw_efficiency',
         'top_speed': 'raw_top_speed',
         'offroad_capability': 'raw_offroad_capability'
     }

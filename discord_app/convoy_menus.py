@@ -68,7 +68,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
             f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
             f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
-            f'Fuel Efficiency 🌿: **{df_state.convoy_obj['fuel_efficiency']:.0f}** / 100',
+            f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
             f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
         ])
@@ -77,7 +77,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
         convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
 
-        convoy_embed.add_field(name='Fuel Efficiency 🌿', value=f'**{df_state.convoy_obj['fuel_efficiency']:.0f}**\n/100')
+        convoy_embed.add_field(name='Efficiency 🌿', value=f'**{df_state.convoy_obj['efficiency']:.0f}**\n/100')
         convoy_embed.add_field(name='Top Speed 🚀', value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100')
         convoy_embed.add_field(name='Offroad Capability 🏔️', value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100')
 
@@ -175,19 +175,25 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     if vehicles:
         for vehicle in vehicles:
             vehicle_str = f'**{vehicle['name']}**'
-            # vehicle_str += f' | 🌿 {vehicle['fuel_efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
+            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
             vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
-                    f'- AP: **{vehicle['ap']}** / {vehicle['max_ap']}',
-                    f'- Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
-                    f'- Top Speed: **{vehicle['top_speed']}** / 100',
-                    f'- Offroad Capability: **{vehicle['offroad_capability']}** / 100',
+                    f'- AP: **{vehicle['ap']:.0f}** / {vehicle['max_ap']}',
+                    f'- Efficiency: **{vehicle['efficiency']:.0f}** / 100',
+                    f'- Top Speed: **{vehicle['top_speed']:.0f}** / 100',
+                    f'- Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
                     ''
                 ])
+
+            if vehicle['electric']:
+                battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+                battery_emoji = '🔋' if battery['kwh'] > (battery['capacity'] * 0.2) else '🪫'
+                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.2f}** / {battery['capacity']} kWh\n'
             
-            vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters'
-            vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg'
+            vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']:,.2f}** / {vehicle['cargo_capacity']} liters'
+            vehicle_str += f' & **{vehicle['total_cargo_weight']:,.2f}** / {vehicle['weight_capacity']} kg'
+
             # more verbose option, can we find a way to have this as well, without being as wordy?
             # vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters ({vehicle['cargo_capacity'] - vehicle['total_cargo_volume']} available)'
             # vehicle_str += f' & **{vehicle['total_cargo_weight']}** / {vehicle['weight_capacity']} kg ({vehicle['weight_capacity'] - vehicle['']} available)'
@@ -203,7 +209,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
         total_weight_capacity = sum(vehicle['weight_capacity'] for vehicle in vehicles)
 
         vehicles_str += f'\n**Total space across convoy**: **{total_cargo_volume}** / {total_volume_capacity} liters'
-        vehicles_str += f' & **{total_cargo_weight}** / {total_weight_capacity} kg'
+        vehicles_str += f' & **{total_cargo_weight:,.2f}** / {total_weight_capacity} kg'
         
     else:
         vehicles_str = '*No vehicles in convoy. Buy one at the dealership.*'
@@ -211,7 +217,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     return vehicles_str
 
 class ConvoyView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching convoy button menu """
     def __init__(
             self,
             df_state: DFState
@@ -393,7 +399,7 @@ class ConvoyCargoSelect(discord.ui.Select):
         for vehicle in self.df_state.convoy_obj['vehicles']:
             for cargo in vehicle['cargo']:
                 if (
-                    not cargo['intrinsic']             # Exclude intrinsic cargo
+                    not cargo['intrinsic_part_id']     # Exclude intrinsic cargo
                     and not cargo['pending_deletion']  # Exclude cargo pending deletion
                     and cargo['quantity'] > 0          # Exclude 0-quantity cargo
                 ):
@@ -602,7 +608,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
 
 
 class SendConvoyConfirmView(discord.ui.View):
-    '''Confirm button before sending convoy somewhere'''
+    """ Confirm button before sending convoy somewhere """
     def __init__(
             self,
             df_state: DFState,
@@ -642,7 +648,7 @@ class SendConvoyConfirmView(discord.ui.View):
                     )
 
 class NextJourneyButton(discord.ui.Button):
-    ''' Loads alternative journey '''
+    """ Loads alternative journey """
     def __init__(self, df_state: DFState, routes: list, index: int, row: int=1):
         self.df_state = df_state
         self.routes = routes

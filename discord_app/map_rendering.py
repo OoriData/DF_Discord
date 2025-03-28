@@ -21,7 +21,7 @@ async def add_map_to_embed(
         lowlight_color: str | None = None,
         map_obj = None
 ) -> tuple[discord.Embed, discord.File]:
-    '''
+    """
     Renders map as an image and formats it into a Discord embed object,
     and also returns an image file.
     
@@ -34,7 +34,7 @@ async def add_map_to_embed(
     
     Returns:
     - A tuple containing the updated embed and the image file for the map.
-    '''
+    """
     # Create a new embed if one is not provided
     if embed is None:
         embed = discord.Embed()

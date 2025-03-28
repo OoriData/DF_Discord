@@ -17,6 +17,7 @@ You'll also need to have the map renderer running, which is a seperate program (
 source $HOME/.local/venv/df_discord/bin/activate
 cd map_render
 hypercorn server:app --workers=2 --bind=0.0.0.0:9100
+cd ..
 ```
 
 ### environment (internal version, remove before open-source)

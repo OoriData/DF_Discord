@@ -154,9 +154,9 @@ async def upgrade_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []
-    for category, part in df_state.vehicle_obj['parts'].items():
+    for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
-            part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+            part_list.append(f'- {part['slot'].replace('_', ' ').capitalize()}\n  - None')
             continue
 
         part_list.append(discord_app.cargo_menus.format_part(part))
@@ -184,12 +184,12 @@ class UpgradeVehicleView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
-        # Disable the Convoy button if there's no cargo with a 'part' value
-        if not any(cargo.get('part') for cargo in self.df_state.convoy_obj['all_cargo']):
+        # Disable the Convoy button if there's no cargo with a 'parts' value
+        if not any(cargo.get('parts') for cargo in self.df_state.convoy_obj['all_cargo']):
             self.install_part_from_convoy_button.disabled = True
 
-        # Disable the Vendor button if there's no cargo with a 'part' value
-        if not any(cargo.get('part') for cargo in self.df_state.vendor_obj['cargo_inventory']):
+        # Disable the Vendor button if there's no cargo with a 'parts' value
+        if not any(cargo.get('parts') for cargo in self.df_state.vendor_obj['cargo_inventory']):
             self.install_part_from_vendor_button.disabled = True
 
     @discord.ui.button(label='Install part from Convoy inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_convoy', row=1)
@@ -217,24 +217,19 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
 
     part_cargos_to_display = []
     for cargo in cargo_source:
-        if cargo.get('part'):
+        if cargo.get('parts'):
             try:
-                check_dict = await api_calls.check_part_compatibility(df_state.vehicle_obj['vehicle_id'], cargo['cargo_id'])
-                cargo['part'] = check_dict['part']
-                cargo['part']['installation_price'] = check_dict['installation_price']
-                
-                if is_vendor:  # Only assign kit_price if the cargo is from a vendor
-                    cargo['part']['kit_price'] = cargo['price']
+                cargo['parts'] = await api_calls.check_part_compatibility(df_state.vehicle_obj['vehicle_id'], cargo['cargo_id'])
                 
                 part_cargos_to_display.append(cargo)
             except RuntimeError as e:
                 # print(f'part does not fit: {e}')
                 continue
-    
-    part_list = []
+
+    part_str_list = []
     for cargo in part_cargos_to_display:
-        part_list.append(discord_app.cargo_menus.format_part(cargo))
-    displayable_vehicle_parts = '\n'.join(part_list)
+        part_str_list.append(discord_app.cargo_menus.format_part(cargo))
+    displayable_vehicle_parts = '\n'.join(part_str_list)
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
@@ -269,16 +264,24 @@ class PartSelect(discord.ui.Select):
         self.df_state = df_state
         self.part_cargos_to_display = part_cargos_to_display
 
-        options=[
+        placeholder = 'Which part?'
+        disabled = False
+        options = [
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
-            for cargo in part_cargos_to_display
-            if cargo.get('part')
+            for cargo in self.part_cargos_to_display
+            if cargo.get('parts')
         ]
+
+        if not options:
+            placeholder = 'No compatible parts to install'
+            disabled = True
+            options = [discord.SelectOption(label='none', value='none')]
         
         super().__init__(
-            placeholder='Which part?',
+            placeholder=placeholder,
             options=options,
             custom_id='select_part',
+            disabled=disabled
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -298,12 +301,10 @@ class PartSelect(discord.ui.Select):
 async def part_install_confirm_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=part_install_confirm_menu)  # Add this menu to the back stack
 
-    current_part = None
-    for category, part in df_state.vehicle_obj['parts'].items():
-        if category == df_state.cargo_obj['part']['category']:
-            current_part = part
-    if not current_part:
-        current_part = None
+    current_parts = []
+    for part in df_state.vehicle_obj['parts']:
+        if part['slot'] in [cargo_part['slot'] for cargo_part in df_state.cargo_obj['parts']]:
+            current_parts.append(part)
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
@@ -312,8 +313,8 @@ async def part_install_confirm_menu(df_state: DFState):
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
         '### Current Part',
-        f'{discord_app.cargo_menus.format_part(current_part) if current_part else '- None'}',
-        '### New Part',
+        f'{discord_app.cargo_menus.format_part(current_parts) if current_parts else '- None'}',
+        '### New Parts',
         f'{discord_app.cargo_menus.format_part(df_state.cargo_obj)}',
         '## Stats'
     ])

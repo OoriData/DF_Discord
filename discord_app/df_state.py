@@ -15,7 +15,7 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 class DFState:
-    ''' A class to hold the state of the DF Discord menus. '''
+    """ A class to hold the state of the DF Discord menus. """
     def __init__(
             self,
             user_discord_id=None,

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-'Discord Frontend'
+""" Discord Frontend """
 from __future__             import annotations
 from datetime               import datetime
 import                             io
@@ -126,7 +126,7 @@ def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
 
 
 def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str:
-    '''
+    """
     Generate a Discord timestamp string for a given datetime or ISO format string and format letter.
 
     Args:
@@ -145,7 +145,7 @@ def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str
 
     Returns:
         str: The Discord-formatted timestamp string.
-    '''
+    """
     # Convert ISO format string to datetime object if necessary
     if isinstance(formatted_time, str):
         formatted_time = datetime.fromisoformat(formatted_time)
@@ -307,7 +307,7 @@ Happy trails! The game will be updated frequently, and we will be listening clos
 
 
 def get_vehicle_emoji(vehicle_shape: str) -> str | None:
-    '''
+    """
     Returns the corresponding emoji for a given vehicle shape.
 
     Args:
@@ -315,7 +315,7 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
 
     Returns:
         str | None: The emoji corresponding to the vehicle shape, or None if no emoji is found.
-    '''
+    """
     vehicle_emojis = {shape: emoji for emoji, shapes in {
         '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
         '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
@@ -331,7 +331,7 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
 
 
 def get_cargo_emoji(cargo: dict) -> str | None:
-    '''
+    """
     Returns the corresponding emoji for a given cargo type.
 
     Args:
@@ -339,10 +339,10 @@ def get_cargo_emoji(cargo: dict) -> str | None:
 
     Returns:
         str | None: The emoji corresponding to the cargo type, or None if no match is found.
-    '''
+    """
     cargo_emoji = {
         'recipient': '📦',
-        'part': '⚙️',
+        'parts': '⚙️',
         'fuel': '🛢️',
         'water': '💧',
         'food': '🥪',
@@ -356,7 +356,7 @@ def get_cargo_emoji(cargo: dict) -> str | None:
 
 
 def get_vendor_emoji(vendor: dict) -> str | None:
-    '''
+    """
     Returns the appropriate emoji for a vendor based on their supply request.
 
     Args:
@@ -364,7 +364,7 @@ def get_vendor_emoji(vendor: dict) -> str | None:
 
     Returns:
         str | None: The corresponding emoji, or None if no match is found.
-    '''
+    """
     supply_request = vendor.get('supply_request', {})
 
     emoji_mapping = {
@@ -386,7 +386,7 @@ def get_vendor_emoji(vendor: dict) -> str | None:
 
 
 def get_settlement_emoji(settlement_type: str) -> str | None:
-    '''
+    """
     Returns the appropriate emoji for a settlement based on its type.
 
     Args:
@@ -394,7 +394,7 @@ def get_settlement_emoji(settlement_type: str) -> str | None:
 
     Returns:
         str | None: The corresponding emoji, or None if no match is found.
-    '''
+    """
     settlement_emojis = {
         'dome': '🏙️',
         'city': '🏢',

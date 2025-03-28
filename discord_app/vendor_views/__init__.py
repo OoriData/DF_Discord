@@ -13,11 +13,11 @@ def vehicles_md(vehicles, verbose: bool = False):
         if verbose:
             vehicle_str += '\n' + '\n'.join([
                 f'  - *{vehicle['make_model']}*',
-                f'  - Top Speed: **{vehicle['top_speed']}** / 100',
-                f'  - Fuel Efficiency: **{vehicle['fuel_efficiency']}** / 100',
-                f'  - Offroad Capability: **{vehicle['offroad_capability']}** / 100',
-                f'  - Volume Capacity: **{vehicle['cargo_capacity']}**L',
-                f'  - Weight Capacity: **{vehicle['weight_capacity']}**kg'
+                f'  - Top Speed: **{vehicle['top_speed']:.0f}** / 100',
+                f'  - Efficiency: **{vehicle['efficiency']:.0f}** / 100',
+                f'  - Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
+                f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L',
+                f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg'
             ])
 
         vehicle_list.append(vehicle_str)
@@ -50,7 +50,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
         if vendor_obj['food_price'] is None and cargo['food'] is not None:
             continue
 
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -59,8 +59,8 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
                     cargo_str += f'\n  - {resource.capitalize()}: {cargo[resource]:,.0f}{unit}'
 
             if cargo.get('recipient_vendor'):
-                cargo_str += f'\n  - Deliver to *{cargo['recipient_location']}* | ***${cargo['delivery_reward']:,.0f}*** *each*'
-                margin = min(round(cargo['delivery_reward'] / cargo['price']), 24)  # limit emojis to 24
+                cargo_str += f'\n  - Deliver to *{cargo['recipient_location']}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each*'
+                margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)  # limit emojis to 24
                 cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
                 tile_distance = math.sqrt(
                     (cargo['recipient_vendor']['x'] - vendor_obj['x']) ** 2
@@ -69,7 +69,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
                 distance_km = 50 * tile_distance
                 distance_miles = 30 * tile_distance
                 cargo_str += f'\n  - Distance: {distance_km:,.0f} km ({distance_miles:,.0f} miles)'
-                cargo_str += f'\n  - Volume/Weight: {cargo['volume']:,}L / {cargo['weight']:,}kg *each*'
+                cargo_str += f'\n  - Volume/Weight: {cargo['unit_volume']:,}L / {cargo['unit_weight']:,}kg *each*'
 
         cargo_list.append(cargo_str)
     displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'

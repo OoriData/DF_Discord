@@ -179,10 +179,10 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
             vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
-                    f'- AP: **{vehicle['ap']}** / {vehicle['max_ap']}',
-                    f'- Efficiency: **{vehicle['efficiency']}** / 100',
-                    f'- Top Speed: **{vehicle['top_speed']}** / 100',
-                    f'- Offroad Capability: **{vehicle['offroad_capability']}** / 100',
+                    f'- AP: **{vehicle['ap']:.0f}** / {vehicle['max_ap']}',
+                    f'- Efficiency: **{vehicle['efficiency']:.0f}** / 100',
+                    f'- Top Speed: **{vehicle['top_speed']:.0f}** / 100',
+                    f'- Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
                     ''
                 ])
 

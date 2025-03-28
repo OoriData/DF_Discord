@@ -199,12 +199,12 @@ def format_part(part_cargo: dict):
         f'  - **{part['kW']}** kW (**{horsepower}** hp)' if part.get('kW') else None,
         f'  - **{part['displacement']}** L (**{displacement_cubic_inches}** in³)' if part.get('displacement') else None,
 
-        f'  - Max AP: **{part['ac_add']:+}**' if part.get('ac_add') else None,
-        f'  - Efficiency: **{part['fuel_efficiency_add']:+}**' if part.get('fuel_efficiency_add') else None,
-        f'  - Top speed: **{part['top_speed_add']:+}**' if part.get('top_speed_add') else None,
-        f'  - Offroad capability: **{part['offroad_capability_add']:+}**' if part.get('offroad_capability_add') else None,
-        f'  - Cargo capacity: **{part['cargo_capacity_add']:+}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_add') else None,
-        f'  - Weight capacity: **{part['weight_capacity_add']:+}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_add') else None,
+        f'  - Max AP: **{part['ac_add']:+.0f}**' if part.get('ac_add') else None,
+        f'  - Efficiency: **{part['fuel_efficiency_add']:+.0f}**' if part.get('fuel_efficiency_add') else None,
+        f'  - Top speed: **{part['top_speed_add']:+.0f}**' if part.get('top_speed_add') else None,
+        f'  - Offroad capability: **{part['offroad_capability_add']:+.0f}**' if part.get('offroad_capability_add') else None,
+        f'  - Cargo capacity: **{part['cargo_capacity_add']:+.0f}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_add') else None,
+        f'  - Weight capacity: **{part['weight_capacity_add']:+.0f}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_add') else None,
         # f'  - Towing capacity: **{part['towing_capacity_mod']:+}** kg ({towing_lbs:+} lbs)' if part.get('towing_capacity_mod') else None,
 
         f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,

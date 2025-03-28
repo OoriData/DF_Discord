@@ -357,10 +357,10 @@ class CargoBuyQuantityEmbed(discord.Embed):
             f'  - {self.df_state.convoy_obj['total_remaining_capacity']:,.0f}kg weight capacity in convoy',
         ]
         if self.df_state.cargo_obj['recipient']:
-            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+            cart_delivery_reward = self.cart_quantity * self.df_state.cargo_obj['unit_delivery_reward']
             desc.extend([
                 '',
-                f'💰 **Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of ${delivery_reward:,.0f}**'
+                f'💰 **Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of ${cart_delivery_reward:,.0f}**'
             ])
         desc.append(
             f'### Cart: {self.cart_quantity:,} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}'

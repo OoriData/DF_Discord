@@ -44,7 +44,7 @@ async def render_map(
                 'lowlight_color': lowlight_color
             }
         )
-    
+
     # Check response status
     _check_code(response)
 
@@ -158,7 +158,7 @@ async def new_convoy(user_id: UUID, new_convoy_name: str) -> dict:
 
 async def redeem_referral(user_id: UUID, referral_code: str) -> dict:
 
-    
+
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.post(
             url=f'{DF_API_HOST}/user/redeem_referral',
@@ -395,7 +395,7 @@ async def send_message(sender_id: UUID, recipient_id: UUID, message: str) -> dic
                 'message': message
             }
         )
-    
+
     _check_code(response)
     return response.json()
 

@@ -108,7 +108,7 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
             raw_value = vehicle.get(raw_stats[stat_key])
             if raw_value is not None:
                 value_str += f' (*raw: {raw_value}*)'
-        
+
         # Add the formatted field to the embed
         if get_user_metadata(df_state, 'mobile'):
             embed.description += f'\n- {name}: {value_str}'

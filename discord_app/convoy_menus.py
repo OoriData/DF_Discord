@@ -46,7 +46,7 @@ async def convoy_menu(df_state: DFState, edit: bool=True):
     if tutorial_stage in {1, 2, 3, 4}:  # If we are in the early tutorial, and therefor on tutorial island:
         og_message = await df_state.interaction.original_response()
         await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
-    
+
     else:  # Not in the tutorial
         og_message = await df_state.interaction.original_response()
         await df_state.interaction.followup.edit_message(
@@ -190,7 +190,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
                 battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                 battery_emoji = '🔋' if battery['kwh'] > (battery['capacity'] * 0.2) else '🪫'
                 vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.2f}** / {battery['capacity']} kWh\n'
-            
+
             vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']:,.2f}** / {vehicle['cargo_capacity']} liters'
             vehicle_str += f' & **{vehicle['total_cargo_weight']:,.2f}** / {vehicle['weight_capacity']} kg'
 
@@ -210,7 +210,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
 
         vehicles_str += f'\n**Total space across convoy**: **{total_cargo_volume}** / {total_volume_capacity} liters'
         vehicles_str += f' & **{total_cargo_weight:,.2f}** / {total_weight_capacity} kg'
-        
+
     else:
         vehicles_str = '*No vehicles in convoy. Buy one at the dealership.*'
 
@@ -239,7 +239,7 @@ class ConvoyView(discord.ui.View):
                 if cargo_tuple not in recipients:
                     # add vendor id and cargo name as a tuple
                     recipients.append(cargo_tuple)
-        
+
         if not recipients:
             self.all_cargo_destinations_button.disabled = True
 
@@ -261,7 +261,7 @@ class ConvoyView(discord.ui.View):
     @discord.ui.button(label='All Cargo Destinations', style=discord.ButtonStyle.blurple, custom_id='all_cargo_destinations_button', emoji='🗺️', row=4)
     async def all_cargo_destinations_button(self, interaction: discord.Interaction, button: discord.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await interaction.response.defer()
 
@@ -277,7 +277,7 @@ class ConvoyView(discord.ui.View):
 
             # And recipient_coords for map rendering
             recipient_coords.append((recipient_vendor['x'], recipient_vendor['y']))
-        
+
         dest_string = '\n'.join(deliveries)
 
         convoy_coords = [(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])]
@@ -293,7 +293,7 @@ class ConvoyView(discord.ui.View):
             lowlights=recipient_coords,
             map_obj=self.df_state.map_obj
         )
-        
+
         map_embed.set_footer(text='Your menu is still up above, just scroll up or dismiss this message to return to it.')
 
         await interaction.followup.send(embed=map_embed, file=image_file, ephemeral=True)
@@ -301,7 +301,7 @@ class ConvoyView(discord.ui.View):
     @discord.ui.button(label='Dialogue', style=discord.ButtonStyle.blurple, custom_id='dialogue_button', emoji='🗣️', row=4)
     async def dialogue_button(self, interaction: discord.Interaction, button: discord.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await dialogue_menus.dialogue_menu(self.df_state, self.df_state.user_obj['user_id'], self.df_state.convoy_obj['convoy_id'])
 
@@ -321,7 +321,7 @@ class JourneyButton(discord.ui.Button):
             style = discord.ButtonStyle.red
             label = 'Cancel current Journey'
             emoji = None
-            
+
         if not self.df_state.convoy_obj['vehicles']:  # If the convoy has vehicle(s)
             disabled = True
 
@@ -336,7 +336,7 @@ class JourneyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         if not self.df_state.convoy_obj['journey']:  # If the convoy is not in transit
@@ -367,7 +367,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
             placeholder = 'No vehicles in convoy'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
-        
+
         super().__init__(
             placeholder=placeholder,
             options=options,
@@ -378,7 +378,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -412,7 +412,7 @@ class ConvoyCargoSelect(discord.ui.Select):
             placeholder = 'No cargo in convoy'
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
-        
+
         super().__init__(
             placeholder=placeholder,
             options=options[:25],
@@ -423,7 +423,7 @@ class ConvoyCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -479,7 +479,7 @@ class DestinationSelect(discord.ui.Select):
         self.page = page
 
         convoy_x, convoy_y = self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y']
-        
+
         # Gather recipient vendor IDs from the convoy's cargo, mapping them to cargo names
         recipient_to_cargo_names = {}
         for cargo in self.df_state.convoy_obj['all_cargo']:
@@ -522,7 +522,7 @@ class DestinationSelect(discord.ui.Select):
 
         # Create the SelectOption list with pagination controls
         options = self._create_pagination_options(sorted_settlements[page_start:page_end], self.page, max_pages)
-        
+
         super().__init__(
             placeholder=f'Where to? (page {self.page + 1})',
             options=options,
@@ -531,10 +531,10 @@ class DestinationSelect(discord.ui.Select):
 
     def _create_pagination_options(self, settlements, current_page, max_pages):
         options = []
-        
+
         if current_page > 0:  # Add 'previous page' option if not on the first page
             options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
-        
+
         for sett_name, x, y, _, cargo_names, emoji in settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
             # Label includes settlement name and unique cargo names if this is a cargo destination
@@ -544,7 +544,7 @@ class DestinationSelect(discord.ui.Select):
                 value=f'{x},{y}',
                 emoji=DF_LOGO_EMOJI if cargo_names else emoji  # Add the tutorial emoji if cargo destination, else use city based emoji
             ))
-        
+
         if current_page < max_pages:  # Add 'next page' option if not on the last page
             options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
 
@@ -552,14 +552,14 @@ class DestinationSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         if self.values[0] in {'prev_page', 'next_page'}:  # If the choice is a page change
             self.page += -1 if self.values[0] == 'prev_page' else 1
             view = DestinationView(df_state=self.df_state, df_map=self.df_map, page=self.page)
             await self.df_state.interaction.response.edit_message(view=view)
-        
+
         else:  # If the choice is a destination
             dest_x, dest_y = map(int, self.values[0].split(','))  # Extract destination coordinates
 
@@ -663,20 +663,20 @@ class NextJourneyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await self.df_state.interaction.response.defer()
 
         self.index += 1  # ensures that route index will route
         self.index = self.index % len(self.routes)
-        
+
         await route_menu(self.df_state, self.routes, self.index)
 
 class ConfirmJourneyButton(discord.ui.Button):
     def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict, row: int=1):
         self.df_state = df_state
         self.prospective_journey_plus_misc = prospective_journey_plus_misc
-        
+
         label = 'Embark upon Journey'
         disabled = False
 
@@ -684,7 +684,7 @@ class ConfirmJourneyButton(discord.ui.Button):
         for resource in ['fuel', 'water', 'food']:
             if self.df_state.convoy_obj[resource] < self.prospective_journey_plus_misc[f'{resource}_expense']:
                 resource_constraints.append(resource)
-        
+
         if resource_constraints:
             label = f'Not enough {', '.join(resource_constraints)}'
             disabled = True
@@ -700,7 +700,7 @@ class ConfirmJourneyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         try:
@@ -713,6 +713,6 @@ class ConfirmJourneyButton(discord.ui.Button):
             return
 
         await convoy_menu(self.df_state)
-    
+
     async def on_timeout(self):
         await handle_timeout(self.df_state)

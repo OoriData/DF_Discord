@@ -37,11 +37,16 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
     cargo_list = []
     for cargo in vendor_obj['cargo_inventory']:
         if cargo['fuel'] is not None and vendor_obj['fuel_price'] is not None:
-            cargo['price'] = round(cargo['price'] + cargo['fuel'] * vendor_obj['fuel_price'], 2)
+            unit_fuel = cargo['fuel'] / cargo['quantity']
+            cargo['wet_unit_price'] = round(cargo['unit_price'] + unit_fuel * vendor_obj['fuel_price'], 2)
         elif cargo['water'] is not None and vendor_obj['water_price'] is not None:
-            cargo['price'] = round(cargo['price'] + cargo['water'] * vendor_obj['water_price'], 2)
+            unit_water = cargo['water'] / cargo['quantity']
+            cargo['wet_unit_price'] = round(cargo['unit_price'] + unit_water * vendor_obj['water_price'], 2)
         elif cargo['food'] is not None and vendor_obj['food_price'] is not None:
-            cargo['price'] = round(cargo['price'] + cargo['food'] * vendor_obj['food_price'], 2)
+            unit_food = cargo['food'] / cargo['quantity']
+            cargo['wet_unit_price'] = round(cargo['unit_price'] + unit_food * vendor_obj['food_price'], 2)
+        else:
+            cargo['wet_unit_price'] = cargo['unit_price']
 
         if vendor_obj['fuel_price'] is None and cargo['fuel'] is not None:
             continue
@@ -50,7 +55,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
         if vendor_obj['food_price'] is None and cargo['food'] is not None:
             continue
 
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['wet_unit_price']:,.0f} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -86,3 +91,13 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
         '**Cargo:**',
         f'{displayable_cargo}'
     ])
+
+def wet_price(cargo: dict, vendor: dict, quantity: int = 1) -> int:
+    resource_price = 0
+    for resource, price_key in [('fuel', 'fuel_price'), ('water', 'water_price'), ('food', 'food_price')]:
+        resource_amount = cargo.get(resource)
+        if resource_amount:
+            unit_proportion = quantity / cargo['quantity']
+            resource_price += resource_amount * unit_proportion * vendor[price_key]
+
+    return cargo['unit_price'] + resource_price

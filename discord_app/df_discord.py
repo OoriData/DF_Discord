@@ -57,7 +57,7 @@ class DesolateCog(commands.Cog):
         logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
         df_notification_channel = self.bot.get_channel(DF_CHANNEL_ID)
         logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
-        
+
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
         self.notifier.start()
 
@@ -103,7 +103,7 @@ class DesolateCog(commands.Cog):
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def df_main_menu(self, interaction: discord.Interaction):
         await self.mm(interaction)
-        
+
     @app_commands.command(name='df-map', description='Show the full game map')
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -165,7 +165,7 @@ class DesolateCog(commands.Cog):
             if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call
                 await add_discord_roles(member)  # Add Alpha/Beta roles
                 continue
-            
+
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 self.df_users_cache[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value

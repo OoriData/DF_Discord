@@ -98,7 +98,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             placeholder = 'No valid vehicles to move cargo into'
             disabled = True
             options = [discord.SelectOption(label='none', value='none')]
-        
+
         super().__init__(
             placeholder=placeholder,
             options=options,
@@ -109,7 +109,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         dest_vehicle = next((
@@ -125,7 +125,7 @@ class MoveCargoVehicleSelect(discord.ui.Select):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 class MapButton(discord.ui.Button):
@@ -139,10 +139,10 @@ class MapButton(discord.ui.Button):
         )
         self.df_state = df_state
         self.recipient_obj = recipient_obj
-    
+
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         await interaction.response.defer()
 
         convoy_x = self.df_state.convoy_obj['x']

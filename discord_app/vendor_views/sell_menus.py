@@ -133,7 +133,7 @@ class SellVehicleSelect(discord.ui.Select):
         if not self.df_state.vendor_obj['vehicle_inventory']:
             placeholder = 'Vendor does not buy vehicles'
             disabled = True
-        
+
         super().__init__(
             placeholder=placeholder,
             options=options,
@@ -200,7 +200,7 @@ class SellCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -225,11 +225,11 @@ class ResourceSellQuantityEmbed(discord.Embed):
         self.resource_type = resource_type
         self.sale_quantity = sale_quantity
         super().__init__()
-        
+
         self = df_embed_author(self, self.df_state)
 
         sale_price = self.sale_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
-        
+
         self.description = '\n'.join([
             f'## {df_state.vendor_obj['name']}',
             f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/meals',
@@ -279,7 +279,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         try:
@@ -292,9 +292,9 @@ class ResourceConfirmSellButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+
         sale_price = self.sale_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
-        
+
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
@@ -320,11 +320,11 @@ class CargoSellQuantityEmbed(discord.Embed):
         self.df_state = df_state
         self.sale_quantity = sale_quantity
         super().__init__()
-        
+
         self = df_embed_author(self, self.df_state)
-        
-        sale_volume = self.sale_quantity * self.df_state.cargo_obj['volume']
-        sale_weight = self.sale_quantity * self.df_state.cargo_obj['weight']
+
+        sale_volume = self.sale_quantity * self.df_state.cargo_obj['unit_volume']
+        sale_weight = self.sale_quantity * self.df_state.cargo_obj['unit_weight']
 
         desc = [f'## {self.df_state.vendor_obj['name']}']
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
@@ -395,9 +395,9 @@ class CargoConfirmSellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
-        
+
         try:
             self.df_state.convoy_obj = await api_calls.sell_cargo(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
@@ -408,9 +408,9 @@ class CargoConfirmSellButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+
         sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_price']
-        
+
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         desc = [f'## {self.df_state.vendor_obj['name']}']
@@ -478,7 +478,7 @@ class SellVehicleButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         try:
@@ -551,7 +551,7 @@ class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into li
         # Disable if the resulting quantity is out of valid bounds
         if resultant_quantity <= 0:
             return True
-        
+
         if resultant_quantity > inventory_quantity:
             return True
 
@@ -559,7 +559,7 @@ class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into li
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.sale_quantity += self.button_quantity  # Update sale quantity

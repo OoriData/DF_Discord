@@ -24,21 +24,21 @@ async def add_map_to_embed(
     """
     Renders map as an image and formats it into a Discord embed object,
     and also returns an image file.
-    
+
     Arguments:
     - embed: Optional discord.Embed object (can be None, in which case a new one is created).
     - highlights: Optional list of (x, y) tuples for highlighting coordinates.
     - lowlights: Optional list of (x, y) tuples for lowlighting coordinates.
     - highlight_color: Optional color to use for highlighting.
     - lowlight_color: Optional color to use for lowlighting.
-    
+
     Returns:
     - A tuple containing the updated embed and the image file for the map.
     """
     # Create a new embed if one is not provided
     if embed is None:
         embed = discord.Embed()
-    
+
     # Initialize the boundaries for the API call and padding
     map_edges = {'x_min': None, 'x_max': None, 'y_min': None, 'y_max': None}
     x_padding = y_padding = 0  # Defaults, will adjust based on coordinates
@@ -87,7 +87,7 @@ async def add_map_to_embed(
     else:
         # No highlights or lowlights provided, don't compute boundaries
         map_edges = None  # Pass nothing for boundaries to the API
-    
+
     try:
         # Fetch tiles for the map (map_edges will be None if no boundaries are needed)
         if map_edges:
@@ -113,7 +113,7 @@ async def add_map_to_embed(
 
         # Attach the image file to the embed
         embed.set_image(url=f'attachment://{file_name}')
-        
+
         return embed, img_file
 
     except Exception as e:

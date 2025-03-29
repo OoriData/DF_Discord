@@ -159,7 +159,7 @@ def render_map(
     """
     Renders the game map as an image using Pillow and overlays symbols on specified tiles.
     Colors can be specified any way that PILlow can interpret; common color name, hex string, RGB tuple, etc
-    
+
     Parameters:
         tiles (list[list[dict]]): The 2D list representing the game map.
         highlights (list[tuple[int, int]], optional): A list of (x, y) coordinates of the tiles to be highlighted.
@@ -171,7 +171,7 @@ def render_map(
         highlight_color = DEFAULT_HIGHLIGHT_OUTLINE_COLOR
     if not lowlight_color:
         lowlight_color = DEFAULT_LOWLIGHT_INLINE_COLOR
-    
+
     def draw_tile_bg(x, y, tile):
         if tile['settlements']:
             color = SETTLEMENT_COLORS.get(tile['settlements'][0]['sett_type'], ERROR_COLOR)

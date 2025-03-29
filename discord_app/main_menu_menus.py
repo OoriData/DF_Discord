@@ -70,7 +70,7 @@ async def main_menu(
             )
 
         return
-    
+
     if interaction:
         await interaction.response.defer()
 
@@ -191,28 +191,28 @@ class MainMenuView(discord.ui.View):
 
             else:  # If the user has no convoys and no warehoused vehicles (presumably fresh user)
                 self.add_item(self.create_convoy_button)
-        
+
         else:  # If no user
             self.add_item(self.register_user_button)
 
     @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple, emoji = '🖊️')
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await interaction.response.send_modal(MainMenuUsernameModal(self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple, emoji='➕')
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await interaction.response.send_modal(MainMenuConvoyNameModal(self.df_state))
 
     @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', row=0)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await options_menu(self.df_state)
 
@@ -245,7 +245,7 @@ class MainMenuUsernameModal(discord.ui.Modal):
 class MainMenuConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        
+
         super().__init__(title='Name your new convoy')
 
         self.convoy_name_input = discord.ui.TextInput(
@@ -307,7 +307,7 @@ class MainMenuWarehouseSelect(discord.ui.Select):
                 ),
                 None
             )
-            
+
             if warehouse_sett:  # Ensure the settlement exists
                 options.append(discord.SelectOption(
                     label=warehouse_sett['name'],
@@ -318,7 +318,7 @@ class MainMenuWarehouseSelect(discord.ui.Select):
             placeholder = 'No Warehouses'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
-        
+
 
 
         super().__init__(
@@ -364,7 +364,7 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
 
         tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
         self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
-        
+
         await convoy_menus.convoy_menu(self.df_state)
 
 class MainMenuConvoySelect(discord.ui.Select):
@@ -379,7 +379,7 @@ class MainMenuConvoySelect(discord.ui.Select):
             )
             for convoy in df_state.user_obj['convoys']
         ]
-        
+
         super().__init__(
             placeholder='Which convoy?',
             options=options,
@@ -389,7 +389,7 @@ class MainMenuConvoySelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = next((
@@ -417,7 +417,7 @@ async def options_menu(df_state: DFState, edit: bool=True):
 
     referral_code_text = ''
 
-    
+
 
     df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
     if df_exp >= datetime.now().date():
@@ -500,7 +500,7 @@ class ChangeUsernameButton(discord.ui.Button):
 class ChangeUsernameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        
+
         super().__init__(title='Change your Username')
 
         self.username_modal = discord.ui.TextInput(
@@ -515,12 +515,12 @@ class ChangeUsernameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-        
+
         # ✅ Get value directly from the TextInput instance
         new_username = self.username_modal.value
-        
+
         self.df_state.user_obj['username'] = new_username
-        
+
         success = await api_calls.change_username(
             self.df_state.user_obj['user_id'],
             new_username
@@ -547,7 +547,7 @@ class ConvoySelectBeforeRename(discord.ui.Select):
             )
             for convoy in df_state.user_obj['convoys']
         ]
-        
+
         super().__init__(
             placeholder='Select a convoy to rename',
             options=options,
@@ -596,7 +596,7 @@ class ChangeConvoyNameButton(discord.ui.Button):
 class ChangeConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        
+
         super().__init__(title='Rename Your Convoy')
 
         # Pre-fill the name with the selected convoy’s current name
@@ -674,14 +674,14 @@ class AppModeButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
         if self.df_state.convoy_obj:
             self.df_state.convoy_obj['user_metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
-        
+
         await options_menu(self.df_state)
 
 
@@ -689,7 +689,7 @@ class AppModeButton(discord.ui.Button):
 class ReferralCodeModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
-        
+
         super().__init__(title='Use a Friend\'s code')
 
         self.referral_modal = discord.ui.TextInput(
@@ -752,7 +752,7 @@ class RedeemConfirmationView(discord.ui.View):
         self.add_item(ConfirmRedeemButton(df_state))
         self.add_item(CancelButton())
 
-        
+
 class ConfirmRedeemButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         super().__init__(

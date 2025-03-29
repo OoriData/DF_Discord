@@ -22,7 +22,7 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         df_state.append_menu_to_back_stack(func=banner_menu)  # Add this menu to the back stack
     if df_state.sett_obj:  # If there is a settlement's civic banner to join
         df_state.sett_obj['banner'] = await api_calls.get_settlement_banner(df_state.sett_obj['sett_id'])
-    
+
     server_banner = None
     if df_state.interaction.guild_id != DF_GUILD_ID:  # If in a different guild
         try:
@@ -195,7 +195,7 @@ class BannerView(discord.ui.View):
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
         await discord_app.main_menu_menus.main_menu(
             interaction=interaction,
@@ -203,7 +203,7 @@ class BannerView(discord.ui.View):
             user_cache=self.df_state.user_cache,
             edit=False
         )
-    
+
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
@@ -220,7 +220,7 @@ class BannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         await banner_inspect_menu(self.df_state, self.banner_obj)
@@ -263,7 +263,7 @@ class NewSyndicateBannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         await self.df_state.interaction.response.send_modal(NewBannerModal(self.df_state))
@@ -486,7 +486,7 @@ class BannerInspectView(discord.ui.View):
         self.df_state.interaction = interaction
 
         await banner_menu(self.df_state)
-    
+
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
@@ -494,7 +494,7 @@ class BannerInspectView(discord.ui.View):
 async def leaderboard_inspect_menu(df_state: DFState, banner: dict):
     if df_state.convoy_obj:
         df_state.append_menu_to_back_stack(func=leaderboard_inspect_menu)  # Add this menu to the back stack
-    
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
@@ -544,6 +544,6 @@ class LeaderboardInspectView(discord.ui.View):
         self.df_state.interaction = interaction
 
         await banner_inspect_menu(self.df_state, self.banner)
-    
+
     async def on_timeout(self):
         await handle_timeout(self.df_state)

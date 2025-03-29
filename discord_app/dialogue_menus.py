@@ -65,16 +65,16 @@ class DialogueView(discord.ui.View):
         self.char_b_id = char_b_id
 
         super().__init__(timeout=600)
-        
+
         add_nav_buttons(self, df_state)
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='◀', custom_id='prev_dialogue', row=1)
     async def dialogue_prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         page = self.page - 1
         self.df_state.interaction = interaction
-        
+
         await dialogue_menu(
             df_state=self.df_state,
             char_a_id=self.df_state.user_obj['user_id'],
@@ -85,7 +85,7 @@ class DialogueView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='▶', custom_id='next_dialogue', row=1)
     async def dialogue_next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         page = self.page + 1
         self.df_state.interaction = interaction
 
@@ -100,9 +100,9 @@ class DialogueView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', emoji='💬', row=2)
     async def send_message_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
-        
+
         await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))
 
     async def on_timeout(self):
@@ -113,7 +113,7 @@ class SendMessageModal(discord.ui.Modal):
         self.df_state = df_state
         self.char_a_id = char_a_id
         self.char_b_id = char_b_id
-        
+
         super().__init__(title='Send a message to your convoy captain')
 
         self.convoy_name_input = discord.ui.TextInput(

@@ -43,7 +43,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             f'# {df_state.sett_obj['name']} Warehouse',
             await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
         ])
-    
+
     vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
         displayable_services = []
@@ -75,7 +75,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             f'## {vendor['name']}',
             '\n'.join(displayable_services)
         ]))
-    
+
     embed.description += '\n' + '\n'.join([
         f'# {df_state.sett_obj['name']} vendors',
         '\n'.join(vendor_displayables)
@@ -136,7 +136,7 @@ class WarehouseButton(discord.ui.Button):
             emoji = '🏭'
         else:
             emoji = '📦'
-        
+
         label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
@@ -148,7 +148,7 @@ class WarehouseButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         local_warehouse = next((
@@ -175,7 +175,7 @@ class SettBannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         await discord_app.banner_menus.banner_menu(self.df_state)
@@ -216,7 +216,7 @@ class VendorSelect(discord.ui.Select):
                 )
                 for vendor in self.vendors
             ]
-        
+
         super().__init__(
             placeholder='Select vendor to visit',
             options=options,
@@ -226,7 +226,7 @@ class VendorSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         self.df_state.interaction = interaction
 
         self.df_state.vendor_obj = next((

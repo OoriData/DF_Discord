@@ -93,6 +93,7 @@ async def vendor_inv_md(vendor_obj, *, verbose: bool = False) -> str:
     ])
 
 def wet_price(cargo: dict, vendor: dict, quantity: int = 1) -> int:
+    """ Get the wet price of a quantity of cargo based on a vendor's current resource pricing """
     resource_price = 0
     for resource, price_key in [('fuel', 'fuel_price'), ('water', 'water_price'), ('food', 'food_price')]:
         resource_amount = cargo.get(resource)

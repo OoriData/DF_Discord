@@ -71,9 +71,9 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
         '💵 Value': ('value', '**${:,}**', '', 'part_value', ' (${:+})'),
         '🔧 Wear': ('wear', '**{}**', ' / 100', None, ''),
         '🛡️ AC': ('ap', '**{}**', f' / {vehicle['ac']}', 'ac_add', ' ({:+})'),
-        '⛽️ Efficiency': ('efficiency', '**{}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
-        '🏎️ Top Speed': ('top_speed', '**{}**', ' / 100', 'top_speed_add', ' ({:+})'),
-        '🏔️ Off-road Capability': ('offroad_capability', '**{}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
+        '⛽️ Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / 100', 'top_speed_add', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
         '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
         '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
         # '🚛 Towing Capacity': ('towing_capacity', '**{:,}**', ' kg', 'towing_capacity_mod', ' ({:+} kg)')

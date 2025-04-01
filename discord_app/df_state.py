@@ -27,6 +27,7 @@ class DFState:
             convoy_obj=None,
             vehicle_obj=None,
             cargo_obj=None,
+            part_obj=None,
             interaction=None,
             back_stack=None,
             user_cache=None
@@ -40,6 +41,7 @@ class DFState:
         self.convoy_obj = convoy_obj
         self.vehicle_obj = vehicle_obj
         self.cargo_obj = cargo_obj
+        self.part_obj = part_obj
         self.user_cache = user_cache
 
         self.interaction: discord.Interaction = interaction

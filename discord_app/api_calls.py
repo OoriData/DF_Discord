@@ -360,6 +360,22 @@ async def add_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_carg
     return response.json()
 
 
+async def remove_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/vendor/vehicle/part/remove',
+            params={
+                'vendor_id': vendor_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id,
+                'part_id': part_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
 async def get_vehicle(vehicle_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(

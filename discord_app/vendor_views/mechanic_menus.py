@@ -504,24 +504,102 @@ class RemoveConfirmView(discord.ui.View):
 async def scrap_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=scrap_vehicle_menu)  # Add this menu to the back stack
 
-    displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part) for part in df_state.vehicle_obj['parts']
-    )
+    prospective_scrap_part_cargo = await api_calls.check_scrap(df_state.vehicle_obj['vehicle_id'])
+
+    displayable_scrap_part_cargo = []
+    for cargo in prospective_scrap_part_cargo:
+        part_strs = [discord_app.cargo_menus.format_part(part) for part in cargo['parts']]
+        displayable_scrap_part_cargo.append('\n'.join([
+            f'### {cargo['base_name']}',
+            f'*{cargo['base_desc']}*',
+            '\n'.join(part_strs)
+        ]))
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
-        f'## {df_state.vehicle_obj['name']}',
+        f'## Scrapping {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '## Parts',
-        displayable_vehicle_parts,
+        '## Cargo that will be gained from scrapping this vehicle',
+        '\n'.join(displayable_scrap_part_cargo),
         '## Stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
-    view = UpgradeVehicleView(df_state)
+    view = ScrapVehicleView(df_state)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
+
+class ScrapVehicleView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        discord_app.nav_menus.add_nav_buttons(self, df_state)
+
+        self.add_item(ScrapVehicleButton(self.df_state))
+
+class ScrapVehicleButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        if (  # the convoy needs to have enough money and the vehicle must be empty (not counting intrinsic cargo ofc)
+            self.df_state.vendor_obj['fuel']
+            or self.df_state.vendor_obj['water']
+            or self.df_state.vendor_obj['food']
+            or self.df_state.vendor_obj['cargo_inventory']
+            or self.df_state.vendor_obj['vehicle_inventory']
+        ):
+            disabled = False
+        else:
+            disabled = True
+
+        super().__init__(
+            style=discord.ButtonStyle.red,
+            label=f'Scrap {self.df_state.vehicle_obj['name']}',
+            disabled=disabled,
+            custom_id='confirm_scrap_vehicle',
+            row=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        self.df_state.convoy_obj = await api_calls.add_part(
+            vendor_id=self.df_state.vendor_obj['vendor_id'],
+            convoy_id=self.df_state.convoy_obj['convoy_id'],
+            vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+            part_cargo_id=self.df_state.cargo_obj['cargo_id']
+        )
+
+        self.df_state.vehicle_obj = next((  # Get the updated vehicle from the returned convoy obj
+            v for v in self.df_state.convoy_obj['vehicles']
+            if v['vehicle_id'] == self.df_state.vehicle_obj['vehicle_id']
+        ), None)
+
+        displayable_vehicle_parts = '\n'.join(
+            discord_app.cargo_menus.format_part(part) for part in self.df_state.vehicle_obj['parts']
+        )
+
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        embed.description = '\n'.join([
+            f'# {self.df_state.vendor_obj['name']}',
+            f'## {self.df_state.vehicle_obj['name']}',
+            f'*{self.df_state.vehicle_obj['description']}*',
+            '## Parts',
+            displayable_vehicle_parts,
+            '## Stats'
+        ])
+        embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
+
+        view = PostMechView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def on_timeout(self):
+        await handle_timeout(self.df_state)
 
 
 class PostMechView(discord.ui.View):

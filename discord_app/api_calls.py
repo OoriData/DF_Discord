@@ -390,11 +390,22 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
 async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
-            url=f'{DF_API_HOST}/vehicle/part_compatibility',
+            url=f'{DF_API_HOST}/vehicle/part/check_compatibility',
             params={
                 'vehicle_id': vehicle_id,
                 'part_cargo_id': part_cargo_id
             }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def check_scrap(vehicle_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/vehicle/check_scrap',
+            params={'vehicle_id': vehicle_id}
         )
 
     _check_code(response)

@@ -91,6 +91,9 @@ class DesolateCog(commands.Cog):
             user_cache=self.df_users_cache,
             edit=False
         )
+    @app_commands.command(name='redeem_free_days', description="Redeem available free days")
+    async def redeem_free_days(self, interaction: discord.Interaction):
+        return  # Ignore commands
 
     @app_commands.command(name='desolate-frontiers', description='Show the Desolate Frontiers main menu')
     @app_commands.allowed_installs(guilds=True, users=True)

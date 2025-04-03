@@ -417,13 +417,21 @@ async def options_menu(df_state: DFState, edit: bool=True):
 
     referral_code_text = ''
 
+    df_plus_str = df_state.user_obj.get('df_plus')  # Safely get the value (or None)
 
+    if df_plus_str:
+        df_exp = datetime.strptime(df_plus_str, "%Y-%m-%d").date()
+    else:
+        df_exp = None  # Assign None if df_plus_str is None
 
-    df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
-    if df_exp >= datetime.now().date():
+    if df_exp and df_exp >= datetime.now().date():
         referral_code_text = f'\n\nInvite your friends to subscribe to DF+ to get 14 days for free!\n'
-    referral_code_text += f'\nYou currently have **{df_state.user_obj['free_days']}** free day(s) of DF+\n'
-    if df_exp >= datetime.now().date():
+    if df_state.user_obj['free_days']:
+        free_days = df_state.user_obj['free_days']
+    else: 
+        free_days = 0
+    referral_code_text += f'\nYou currently have **{free_days}** free day(s) of DF+\nUse /redeem_free_days on Oori ledger to Claim '
+    if df_exp and df_exp >= datetime.now().date():
             referral_code_text += f'\nYour referral code:\n**{df_state.user_obj['referral_code']}**'
 
 
@@ -437,16 +445,17 @@ class OptionsView(discord.ui.View):
     def __init__(self, df_state: DFState):
         super().__init__(timeout=600)
         self.df_state = df_state
-
+        is_disabled  = False
         # Check if the button should be disabled (disable if expired)
-        df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
+        df_plus_str = df_state.user_obj.get('df_plus')  # Safely get the value (or None)
 
-        is_disabled = df_exp < datetime.now().date()
+        if df_plus_str is None:
+            is_disabled = True
+        elif df_plus_str < datetime.now().date():
+            is_disabled = True
 
         # Add the referral button dynamically
-        self.add_item(
-            ReferralButton(df_state, disabled=is_disabled)
-        )
+        self.add_item(ReferralButton(df_state, disabled=is_disabled))
 
         self.add_item(
             AppModeButton(df_state)
@@ -459,11 +468,6 @@ class OptionsView(discord.ui.View):
         self.add_item(
             ChangeConvoyNameButton(df_state, disabled=is_disabled)
         )
-        df_exp = datetime.strptime(df_state.user_obj['df_plus'], "%Y-%m-%d").date()
-        if df_state.user_obj['free_days'] > 0:
-            self.add_item(
-                RedeemFreeDaysButton(df_state)
-                )
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -647,11 +651,13 @@ class ReferralButton(discord.ui.Button):
         self.df_state.interaction = interaction
 
         # Check the expiration date again just to be sure
-        df_exp = df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()
+        df_plus_str = self.df_state.user_obj.get('df_plus')  # Safely get the value
 
-        if df_exp > datetime.now().date():
-            await interaction.response.send_modal(ReferralCodeModal(self.df_state))
+        if df_plus_str:  # Ensure it's not None or empty
+            df_exp = datetime.strptime(df_plus_str.strip(), "%Y-%m-%d").date()
 
+            if df_exp > datetime.now().date():
+                await interaction.response.send_modal(ReferralCodeModal(self.df_state))
 
 class AppModeButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row=1):
@@ -713,75 +719,16 @@ class ReferralCodeModal(discord.ui.Modal):
         view = OptionsView(self.df_state)
 
         await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
-class RedeemFreeDaysButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row=2):
-        super().__init__(
-            style=discord.ButtonStyle.green,
-            label='Redeem Free Days',
-            custom_id='redeem_free_days',
-            emoji='🎁',
-            row=row,
-            disabled=df_state.user_obj['free_days'] <= 0
-        )
-        self.df_state = df_state
-
-    async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
-        self.df_state.interaction = interaction
-
-        if self.df_state.user_obj['free_days'] > 0:
-            # Send the confirmation view instead of a modal
-            await interaction.response.send_message(
-                content="Are you sure you want to redeem you free days?",
-                view=RedeemConfirmationView(self.df_state),
-                ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                "You don't have any free days to redeem.", 
-                ephemeral=True
-            )
 
 
-class RedeemConfirmationView(discord.ui.View):
-    def __init__(self, df_state: DFState):
-        super().__init__()
-        self.df_state = df_state
+# class RedeemConfirmationView(discord.ui.View):
+#     def __init__(self, df_state: DFState):
+#         super().__init__()
+#         self.df_state = df_state
 
-        # Add confirm and cancel buttons
-        self.add_item(ConfirmRedeemButton(df_state))
-        self.add_item(CancelButton())
-
-
-class ConfirmRedeemButton(discord.ui.Button):
-    def __init__(self, df_state: DFState):
-        super().__init__(
-            style=discord.ButtonStyle.green,
-            label='Confirm',
-            custom_id='confirm_redeem'
-        )
-        self.df_state = df_state
-
-    async def callback(self, interaction: discord.Interaction):
-        self.df_state.interaction = interaction
-
-        success = await api_calls.redeem_free_days(self.df_state.user_obj['user_id'])
-        if success:
-            embed = discord.Embed(
-                title="Free Days Redeemed",
-                description=f"You have successfully redeemed your free days!",
-                color=discord.Color.green()
-            )
-        else:
-            embed = discord.Embed(
-                title="Error",
-                description=f"Failed to redeem free day: {success[1]}",
-                color=discord.Color.red()
-            )
-
-        # ✅ Set `view=None` to remove the buttons
-        await interaction.response.edit_message(embeds=[embed], view=None)
-
+#         # Add confirm and cancel buttons
+#         self.add_item(ConfirmRedeemButton(df_state))
+#         self.add_item(CancelButton())
 
 class CancelButton(discord.ui.Button):
     def __init__(self):

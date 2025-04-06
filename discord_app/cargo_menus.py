@@ -176,7 +176,9 @@ class MapButton(discord.ui.Button):
 
 
 def format_part(part_cargo: dict):
-    if part_cargo.get('cargo_id'):
+    if isinstance(part_cargo, list):
+        parts = part_cargo
+    elif part_cargo.get('cargo_id'):
         parts = part_cargo['parts']
     else:
         parts = [part_cargo]

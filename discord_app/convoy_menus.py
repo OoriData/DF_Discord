@@ -678,38 +678,38 @@ class ConfirmJourneyButton(discord.ui.Button):
         self.df_state = df_state
         self.prospective_journey_plus_misc = prospective_journey_plus_misc
 
-        label = "Embark upon Journey"
-        emoji = "🛣️"
+        label = 'Embark upon Journey'
+        emoji = '🛣️'
         disabled = False
-        journey_msg = ""
+        journey_msg = ''
 
         resource_constraints = []
         resource_limit = []
 
-        for resource in ["fuel", "water", "food", "kwh"]:
-            if resource == "fuel":
+        for resource in ['fuel', 'water', 'food', 'kwh']:
+            if resource == 'fuel':
                 available = sum(self.df_state.convoy_obj.get(resource, {}).values()) if isinstance(self.df_state.convoy_obj.get(resource), dict) else self.df_state.convoy_obj.get(resource, 0)
-            elif resource == "kwh":
-                for v in df_state.convoy_obj["vehicles"]:
-                    vehicle_id = v["vehicle_id"]
-                    vehicle_name = v["name"]
+            elif resource == 'kwh':
+                for v in df_state.convoy_obj['vehicles']:
+                    vehicle_id = v['vehicle_id']
+                    vehicle_name = v['name']
                     
-                    if vehicle_id in prospective_journey_plus_misc["kwh_expenses"] and not v["internal_combustion"]:
-                        available_kwh = self.df_state.convoy_obj.get("kwh", {}).get(vehicle_id, 0)
-                        required_kwh = prospective_journey_plus_misc["kwh_expenses"].get(vehicle_id, 0)
+                    if vehicle_id in prospective_journey_plus_misc['kwh_expenses'] and not v['internal_combustion']:
+                        available_kwh = self.df_state.convoy_obj.get('kwh', {}).get(vehicle_id, 0)
+                        required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
 
                         if available_kwh < required_kwh:
-                            resource_limit.append((f"{vehicle_name} (kWh)", available_kwh, required_kwh))
+                            resource_limit.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
                         elif available_kwh < 2 * required_kwh:
-                            resource_constraints.append((f"{vehicle_name} (kWh)", available_kwh, 2 * required_kwh))
+                            resource_constraints.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
                 
                 continue
 
             else:
                 available = self.df_state.convoy_obj.get(resource, 0)
 
-            required = self.prospective_journey_plus_misc.get(f"{resource}_expense", 0)
-            recommended = 2 * required  
+            required = self.prospective_journey_plus_misc.get(f'{resource}_expense', 0)
+            recommended = 2 * required
 
             if available < required:
                 resource_limit.append((resource, available, required))
@@ -717,30 +717,30 @@ class ConfirmJourneyButton(discord.ui.Button):
                 resource_constraints.append((resource, available, recommended))
 
         style = discord.ButtonStyle.green
-        journey_msg = ""
+        journey_msg = ''
 
         if resource_limit:
             style = discord.ButtonStyle.red
-            emoji = "🫫"
-            journey_msg += "**🚨 Not enough resources:**\n"
-            journey_msg += "\nResource       | Current  | Minimum Needed\n"
-            journey_msg += "------------------------------------------\n"
-            journey_msg += "\n".join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limit])
+            emoji = '⛔️'
+            journey_msg += '**🚨 Not enough resources:**\n'
+            journey_msg += '\nResource       | Current  | Minimum Needed\n'
+            journey_msg += '------------------------------------------\n'
+            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limit])
 
         elif resource_constraints:
             style = discord.ButtonStyle.green
-            emoji = "⚠️"
-            journey_msg += "**⚠️ Limited reserves:**\n"
-            journey_msg += "\nResource       | Current  | Recommended\n"
-            journey_msg += "--------------------------------------\n"
-            journey_msg += "\n".join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_constraints])
-            journey_msg += "\n"
+            emoji = '⚠️'
+            journey_msg += '**⚠️ Limited reserves:**\n'
+            journey_msg += '\nResource       | Current  | Recommended\n'
+            journey_msg += '--------------------------------------\n'
+            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_constraints])
+            journey_msg += '\n'
 
         super().__init__(
             style=style,
             label=label,
             disabled=disabled,
-            custom_id="confirm_journey_button",
+            custom_id='confirm_journey_button',
             emoji=emoji,
             row=row,
         )
@@ -751,7 +751,7 @@ class ConfirmJourneyButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        confirmation_message = "Are you sure you want to embark on this journey?"
+        confirmation_message = 'Are you sure you want to embark on this journey?'
         if self.journey_msg:
             confirmation_message += f"\n\n{self.journey_msg}"
 
@@ -788,8 +788,8 @@ class ConfirmJourneyActionButton(discord.ui.Button):
 
             # Create success embed
             embed = discord.Embed(
-                title="Journey Started",
-                description="Your convoy has embarked on the journey!",
+                title='Journey Started',
+                description='Your convoy has embarked on the journey!',
                 color=discord.Color.green()
             )
             
@@ -859,4 +859,3 @@ class CancelButton(discord.ui.Button):
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
-

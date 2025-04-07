@@ -627,7 +627,7 @@ class SendConvoyConfirmView(discord.ui.View):
         add_nav_buttons(self, self.df_state)
 
         if len(route_choices) > 1:
-            self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index = self.route_index))
+            self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index=self.route_index))
         self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(
             df_state=self.df_state,
@@ -721,14 +721,13 @@ class ConfirmJourneyButton(discord.ui.Button):
 
         if resource_limit:
             style = discord.ButtonStyle.red
-            emoji = '⛔️'
-            journey_msg += '**🚨 Not enough resources:**\n'
+            emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
+            journey_msg += '**🛑 Not enough resources:**\n'
             journey_msg += '\nResource       | Current  | Minimum Needed\n'
             journey_msg += '------------------------------------------\n'
             journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limit])
-
         elif resource_constraints:
-            style = discord.ButtonStyle.green
+            style = discord.ButtonStyle.blurple
             emoji = '⚠️'
             journey_msg += '**⚠️ Limited reserves:**\n'
             journey_msg += '\nResource       | Current  | Recommended\n'
@@ -753,7 +752,7 @@ class ConfirmJourneyButton(discord.ui.Button):
 
         confirmation_message = 'Are you sure you want to embark on this journey?'
         if self.journey_msg:
-            confirmation_message += f"\n\n{self.journey_msg}"
+            confirmation_message += f'\n\n{self.journey_msg}'
 
         await interaction.followup.send(
             content=confirmation_message,
@@ -806,11 +805,11 @@ class ConfirmJourneyActionButton(discord.ui.Button):
         except RuntimeError as e:
             # Create error embed
             embed = discord.Embed(
-                title="Error",
+                title='Error',
                 description=str(e),
                 color=discord.Color.red()
             )
-            
+
             # Show error but keep the buttons to let them try again
             if interaction.response.is_done():
                 await interaction.followup.send(embed=embed, ephemeral=True)
@@ -819,11 +818,9 @@ class ConfirmJourneyActionButton(discord.ui.Button):
                 await interaction.edit_original_response(embed=embed)
 
         # Send the updated response with no buttons (empty view)
-        
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
-
 
 
 class JourneyConfirmationView(discord.ui.View):
@@ -851,11 +848,11 @@ class CancelButton(discord.ui.Button):
 
         try:
             original_message = await interaction.original_response()
-            await interaction.followup.edit_message(original_message.id, content="Cancelled Planned Journey", view=None)
+            await interaction.followup.edit_message(original_message.id, content='Cancelled Planned Journey', view=None)
 
         except discord.errors.NotFound:
             # ✅ If the original message no longer exists, send a new ephemeral message instead
-            await interaction.followup.send("Cancelled Planned Journey", ephemeral=True)
+            await interaction.followup.send('Cancelled Planned Journey', ephemeral=True)
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)

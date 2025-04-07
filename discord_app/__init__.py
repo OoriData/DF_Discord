@@ -317,14 +317,43 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
         str | None: The emoji corresponding to the vehicle shape, or None if no emoji is found.
     """
     vehicle_emojis = {shape: emoji for emoji, shapes in {
-        '🚗': {'compact_hatchback', 'hatchback', 'kammback', 'sedan', 'wagon'},
-        '🚙': {'CUV', 'long_SUV', 'minivan', 'short_SUV'},
-        '🏎️': {'2_door_sedan', 'convertible'},
-        '🛻': {'cabover_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'single_cab_pickup', 'SUT', 'ute'},
-        '🚐': {'cargo_van', 'van'},
-        '🚌': {'coach', 'cabover_bus', 'bus', 'short_cabover_bus'},
-        '🚚': {'10x10_cabover', '6x6', '6x6_cabover', '8x8_cabover', 'straight_truck'},
-        '🚛': {'8x8_tractor', 'boxy_cab_tractor', 'day_cab_tractor', 'sleeper_cab_tractor'},
+        '🚗': {
+            'sedan', '4-door_coupe', 'wagon', 'kammback',
+            'hatchback', 'compact_hatchback',
+            '2-door_SxS', '4-door_SxS',
+        },
+        '🚙': {
+            'SUV', 'long_SUV', 'CUV',
+            '4x4', '4x4_APC',
+            'minivan', 'cabover_minivan',
+        },
+        '🏎️': {'2-door_sedan', 'convertible', 'dune_buggy', 'tracked_vehicle'},
+        '🛻': {
+            'single_cab_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'cabover_pickup',
+            'SUT',
+            'ute',
+            '4x4_APC_pickup',
+            '2-door_UTV', '4-door_UTV',
+        },
+        '🚐': {
+            'van', 'cargo_van',
+            'cabover_minivan',
+        },
+        '🚌': {'bus', 'coach',},
+        '🚚': {
+            '6x6', '6x6_cabover',
+            '8x8_cabover',
+            '10x10_cabover',
+            '6x6_APC', '8x8_APC',
+            'straight_truck',
+        },
+        '🚛': {
+            'square_cab_4_axle_tractor',
+            'day_cab_2_axle_tractor', 'day_cab_3_axle_tractor',
+            'sleeper_cab_3_axle_tractor',
+            '8x8_tractor',
+            '2_section_tracked_vehicle',
+        },
     }.items() for shape in shapes}  # Invert the dictionary to map vehicle shapes to emojis
 
     return vehicle_emojis.get(vehicle_shape)  # Retrieve and return the corresponding emoji (or None if not found)

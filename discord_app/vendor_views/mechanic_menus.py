@@ -8,7 +8,7 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction
+from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -68,7 +68,11 @@ class VehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         options=[
-            discord.SelectOption(label=vehicle['name'], value=vehicle['vehicle_id'])
+            discord.SelectOption(
+                label=vehicle['name'],
+                value=vehicle['vehicle_id'],
+                emoji=get_vehicle_emoji(vehicle['shape'])
+            )
             for vehicle in df_state.convoy_obj['vehicles']
         ]
 

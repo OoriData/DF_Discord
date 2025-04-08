@@ -71,9 +71,9 @@ class DialogueView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='◀', custom_id='prev_dialogue', row=1)
     async def dialogue_prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
 
         page = self.page - 1
-        self.df_state.interaction = interaction
 
         await dialogue_menu(
             df_state=self.df_state,
@@ -85,9 +85,9 @@ class DialogueView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='▶', custom_id='next_dialogue', row=1)
     async def dialogue_next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
 
         page = self.page + 1
-        self.df_state.interaction = interaction
 
         await dialogue_menu(
             df_state=self.df_state,
@@ -100,7 +100,6 @@ class DialogueView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', emoji='💬', row=2)
     async def send_message_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))
@@ -128,9 +127,11 @@ class SendMessageModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
         try:
             await api_calls.send_message(self.char_a_id, self.char_b_id, self.convoy_name_input.value)
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+
         await dialogue_menu(self.df_state, self.char_a_id, self.char_b_id)

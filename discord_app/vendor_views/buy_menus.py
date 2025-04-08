@@ -102,8 +102,8 @@ class BuyResourceButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await buy_resource_menu(self.df_state, self.resource_type)
 
 class BuyVehicleSelect(discord.ui.Select):
@@ -146,7 +146,6 @@ class BuyVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -215,7 +214,6 @@ class BuyCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -294,7 +292,6 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -456,7 +453,6 @@ class CargoConfirmBuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -584,7 +580,6 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.cart_quantity += self.button_quantity  # Update cart quantity
@@ -673,7 +668,6 @@ class BuyVehicleButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -781,10 +775,10 @@ class TopUpButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
         if not interaction.response.is_done():
             await interaction.response.defer()
-
-        self.df_state.interaction = interaction
 
         try:
             # Attempt to top up each resource from its respective vendor

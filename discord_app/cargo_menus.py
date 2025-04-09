@@ -185,8 +185,8 @@ def format_part(part_cargo: dict):
     part_strs = []
     for part in parts:
         fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
-        lbft = round(part['Nm'] * 0.7376) if part.get('Nm') else None
-        horsepower = round(part['kW'] * 1.34102) if part.get('kW') else None
+        lbft = round(part['nm'] * 0.7376) if part.get('nm') else None
+        horsepower = round(part['kw'] * 1.34102) if part.get('kw') else None
         cargo_cubic_feet = round(part['cargo_capacity_add'] * 0.0353147) if part.get('cargo_capacity_add') else None
         weight_lbs = round(part['weight_capacity_add'] * 2.20462) if part.get('weight_capacity_add') else None
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
@@ -202,8 +202,8 @@ def format_part(part_cargo: dict):
             f'  - Cargo capacity: **{part['cargo_capacity_add']:+.0f}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_add') else None,
             f'  - Weight capacity: **{part['weight_capacity_add']:+.0f}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_add') else None,
 
-            f'  - **{part['kW']}** kW (**{horsepower}** hp)' if part.get('kW') else None,
-            f'  - **{part['Nm']}** N·m (**{lbft}** lb·ft)' if part.get('Nm') else None,
+            f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
+            f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,
             f'  - **{part['capacity']}** L (**{fuel_gal}** gal)' if part.get('capacity') else None,
             f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 

@@ -509,11 +509,11 @@ async def scrap_vehicle_menu(df_state: DFState):
 
     displayable_salvage_part_cargo = []
     for cargo in salvage_part_cargo:
-        part_strs = [discord_app.cargo_menus.format_part(part) for part in cargo['parts']]
+        part_strs = '\n'.join([discord_app.cargo_menus.format_part(part) for part in cargo['parts']])
         displayable_salvage_part_cargo.append('\n'.join([
             f'### {cargo['base_name']}',
             f'*{cargo['base_desc']}*',
-            '\n'.join(part_strs)
+            part_strs
         ]))
 
     scrap_check['displayable'] = '\n'.join(displayable_salvage_part_cargo)
@@ -574,11 +574,15 @@ class ScrapVehicleButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        self.df_state.convoy_obj = await api_calls.vendor_scrap_vehicle(
-            vendor_id=self.df_state.vendor_obj['vendor_id'],
-            convoy_id=self.df_state.convoy_obj['convoy_id'],
-            vehicle_id=self.df_state.vehicle_obj['vehicle_id']
-        )
+        try:
+            self.df_state.convoy_obj = await api_calls.vendor_scrap_vehicle(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)

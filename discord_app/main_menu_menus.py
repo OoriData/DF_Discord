@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
-from datetime import                  datetime, timezone, timedelta
+from datetime import                  datetime, timezone, timedelta, date
 from typing                    import Optional
 import                                textwrap
 import                                asyncio
-
+from fastapi                   import HTTPException
 import                                discord
 
 import                                discord_app
@@ -448,11 +448,16 @@ class OptionsView(discord.ui.View):
         is_disabled  = False
         # Check if the button should be disabled (disable if expired)
         df_plus_str = df_state.user_obj.get('df_plus')  # Safely get the value (or None)
-
         if df_plus_str is None:
             is_disabled = True
-        elif df_plus_str < datetime.now().date():
-            is_disabled = True
+        else:
+            try:
+                df_exp = datetime.strptime(df_plus_str.strip(), "%Y-%m-%d").date()
+                if df_exp < datetime.now().date():
+                    is_disabled = True
+            except ValueError:
+                # In case df_plus_str is malformed
+                is_disabled = True
 
         # Add the referral button dynamically
         self.add_item(ReferralButton(df_state, disabled=is_disabled))
@@ -710,15 +715,20 @@ class ReferralCodeModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-        success = await api_calls.redeem_referral(self.df_state.user_obj['user_id'], str(self.referral_modal.value).upper())
+        code = str(self.referral_modal.value).upper()
 
-        refer_embed = discord.Embed()
-        refer_embed = df_embed_author(refer_embed, self.df_state)
-
-        refer_embed.description = success[1]
-        view = OptionsView(self.df_state)
-
-        await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
+        success = await api_calls.redeem_referral(self.df_state.user_obj['user_id'], code)
+        print(success)
+        try:
+            await interaction.response.send_message(
+                            content=f"{success[1]}",  # Message from success[1]
+                            ephemeral=True
+                        )
+        except:
+            await interaction.response.send_message(
+                content=f"⚠️ {success['detail']}",
+                ephemeral=True
+            )
 
 
 # class RedeemConfirmationView(discord.ui.View):

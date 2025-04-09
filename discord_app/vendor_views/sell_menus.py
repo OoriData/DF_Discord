@@ -112,8 +112,8 @@ class SellResourceButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await sell_resource_menu(self.df_state, self.resource_type)
 
 class SellVehicleSelect(discord.ui.Select):
@@ -144,7 +144,6 @@ class SellVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -200,7 +199,6 @@ class SellCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -279,7 +277,6 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -395,7 +392,6 @@ class CargoConfirmSellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -478,7 +474,6 @@ class SellVehicleButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -559,7 +554,6 @@ class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into li
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.sale_quantity += self.button_quantity  # Update sale quantity

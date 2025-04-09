@@ -91,8 +91,8 @@ class BuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.buy_menus.buy_menu(self.df_state)
 
 class MechanicButton(discord.ui.Button):
@@ -115,8 +115,8 @@ class MechanicButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.mechanic_menus.mechanic_menu(self.df_state)
 
 class SellButton(discord.ui.Button):
@@ -133,6 +133,6 @@ class SellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.sell_menus.sell_menu(self.df_state)

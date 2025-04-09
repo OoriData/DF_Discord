@@ -198,22 +198,22 @@ class MainMenuView(discord.ui.View):
     @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple, emoji = '🖊️')
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await interaction.response.send_modal(MainMenuUsernameModal(self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple, emoji='➕')
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await interaction.response.send_modal(MainMenuConvoyNameModal(self.df_state))
 
     @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', row=0)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await options_menu(self.df_state)
 
     async def on_timeout(self):
@@ -260,6 +260,7 @@ class MainMenuConvoyNameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
         try:
             convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
         except RuntimeError as e:
@@ -389,7 +390,6 @@ class MainMenuConvoySelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = next((
@@ -478,6 +478,7 @@ class OptionsView(discord.ui.View):
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
+
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
 
@@ -500,9 +501,9 @@ class ChangeUsernameButton(discord.ui.Button):
         self.df_state.interaction = interaction
 
         # Check the expiration date again just to be sure
-        df_exp = df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()
+        df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()  # XXX: this should prob use a timezone
 
-        if df_exp > datetime.now().date():
+        if df_exp > datetime.now().date():  # XXX: this should prob use a timezone, eg. datetime.now(timezone.utc)
             await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
 
 
@@ -516,8 +517,8 @@ class ChangeUsernameModal(discord.ui.Modal):
             label='Change Username',
             style=discord.TextStyle.short,
             required=False,
-            default=f'Wastelander',
-            max_length=15,
+            default='Wastelander',
+            max_length=16,
             custom_id='change_username',
         )
         self.add_item(self.username_modal)
@@ -525,23 +526,21 @@ class ChangeUsernameModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
 
-        # ✅ Get value directly from the TextInput instance
-        new_username = self.username_modal.value
+        new_username = self.username_modal.value  # Get value directly from the TextInput instance
 
-        self.df_state.user_obj['username'] = new_username
-
-        success = await api_calls.change_username(
+        self.df_state.user_obj = await api_calls.change_username(
             self.df_state.user_obj['user_id'],
             new_username
         )
+        self.df_state.user_obj['username'] = new_username
 
-        refer_embed = discord.Embed()
-        refer_embed = df_embed_author(refer_embed, self.df_state)
+        user_embed = discord.Embed()
+        user_embed = df_embed_author(user_embed, self.df_state)
+        user_embed.description = f'Username changed to "{new_username}"'
 
-        refer_embed.description = success
         view = OptionsView(self.df_state)
 
-        await self.df_state.interaction.response.edit_message(embeds=[refer_embed], view=view, attachments=[])
+        await self.df_state.interaction.response.edit_message(embeds=[user_embed], view=view, attachments=[])
 
 
 class ConvoySelectBeforeRename(discord.ui.Select):
@@ -659,9 +658,9 @@ class ReferralButton(discord.ui.Button):
         df_plus_str = self.df_state.user_obj.get('df_plus')  # Safely get the value
 
         if df_plus_str:  # Ensure it's not None or empty
-            df_exp = datetime.strptime(df_plus_str.strip(), "%Y-%m-%d").date()
+            df_exp = datetime.strptime(df_plus_str.strip(), "%Y-%m-%d").date()  # XXX: this should prob use a timezone
 
-            if df_exp > datetime.now().date():
+            if df_exp > datetime.now().date():  # XXX: this should prob use a timezone, eg. datetime.now(timezone.utc)
                 await interaction.response.send_modal(ReferralCodeModal(self.df_state))
 
 class AppModeButton(discord.ui.Button):
@@ -685,7 +684,6 @@ class AppModeButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']

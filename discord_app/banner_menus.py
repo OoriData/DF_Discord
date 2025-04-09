@@ -195,8 +195,8 @@ class BannerView(discord.ui.View):
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await discord_app.main_menu_menus.main_menu(
             interaction=interaction,
             df_map=self.df_state.map_obj,
@@ -220,7 +220,6 @@ class BannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         await banner_inspect_menu(self.df_state, self.banner_obj)
@@ -263,7 +262,6 @@ class NewSyndicateBannerButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         await self.df_state.interaction.response.send_modal(NewBannerModal(self.df_state))
@@ -307,6 +305,7 @@ class NewBannerModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+        
         try:
             self.df_state.user_obj = await api_calls.new_banner(
                 user_id=self.df_state.user_obj['user_id'],

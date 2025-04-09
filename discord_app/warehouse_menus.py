@@ -138,8 +138,8 @@ class ExpandCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await expand_cargo_menu(self.df_state)
 
 class ExpandVehiclesButton(discord.ui.Button):
@@ -156,8 +156,8 @@ class ExpandVehiclesButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await expand_vehicles_menu(self.df_state)
 
 class StoreCargoButton(discord.ui.Button):
@@ -174,8 +174,8 @@ class StoreCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await store_cargo_menu(self.df_state)
 
 class RetrieveCargoButton(discord.ui.Button):
@@ -192,8 +192,8 @@ class RetrieveCargoButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await retrieve_cargo_menu(self.df_state)
 
 class StoreVehiclesButton(discord.ui.Button):
@@ -217,8 +217,8 @@ class StoreVehiclesButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await store_vehicle_menu(self.df_state)
 
 class RetrieveVehicleButton(discord.ui.Button):
@@ -235,8 +235,8 @@ class RetrieveVehicleButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await retrieve_vehicle_menu(self.df_state)
 
 class SpawnButton(discord.ui.Button):
@@ -254,8 +254,8 @@ class SpawnButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         await spawn_convoy_menu(self.df_state)
 
 
@@ -298,8 +298,8 @@ class ExpandCargoButtonConfirm(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         try:
             self.df_state.warehouse_obj = await api_calls.expand_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
@@ -352,8 +352,8 @@ class ExpandVehiclesButtonConfirm(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         try:
             self.df_state.warehouse_obj = await api_calls.expand_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
@@ -438,7 +438,6 @@ class StoreCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -553,7 +552,6 @@ class CargoStoreQuantityButton(discord.ui.Button):  # XXX: Explode this button i
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.store_quantity += self.button_quantity  # Update sale quantity
@@ -580,7 +578,6 @@ class CargoConfirmStoreButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -650,7 +647,6 @@ class RetrieveCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         # Defaults to none if cargo item selected matches a cargo item in the convoy's inventory
@@ -806,11 +802,9 @@ class CargoRetrieveQuantityButton(discord.ui.Button):  # XXX: Explode this butto
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         self.retrieve_quantity += self.button_quantity  # Update cart quantity
-
 
         embed = CargoRetrieveQuantityEmbed(self.df_state, self.retrieve_quantity)
         view = CargoRetrieveQuantityView(self.df_state, self.retrieve_quantity)
@@ -843,7 +837,6 @@ class CargoConfirmRetrieveButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         try:
@@ -914,7 +907,6 @@ class StoreVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         vehicle_to_store = next((
@@ -998,7 +990,6 @@ class RetrieveVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         vehicle_to_retrieve = next((
@@ -1071,7 +1062,6 @@ class SpawnVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(SpawnConvoyNameModal(self.df_state, self.values[0]))
@@ -1095,6 +1085,7 @@ class SpawnConvoyNameModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
+
         try:
             self.df_state.convoy_obj = await api_calls.spawn_convoy_from_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
@@ -1104,6 +1095,7 @@ class SpawnConvoyNameModal(discord.ui.Modal):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 
@@ -1149,14 +1141,15 @@ class BuyWarehouseButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-
         self.df_state.interaction = interaction
+
         try:
             warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
             new_warehouse = await api_calls.get_warehouse(warehouse_id)
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+
         self.df_state.user_obj['warehouses'].append(new_warehouse)
         self.df_state.warehouse_obj = new_warehouse
 

@@ -6,7 +6,6 @@ from datetime import                  datetime, timezone, timedelta, date
 from typing                    import Optional
 import                                textwrap
 import                                asyncio
-from fastapi                   import HTTPException
 import                                discord
 
 import                                discord_app

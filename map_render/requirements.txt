@@ -1,6 +1,6 @@
 utiloori
 pillow
-fastapi
+FastAPI
 fire
 hypercorn  # Uche has been moving on from uvicorn
 df_lib

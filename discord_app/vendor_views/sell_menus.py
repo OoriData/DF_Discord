@@ -365,6 +365,7 @@ class CargoSellQuantityView(discord.ui.View):
         self.add_item(QuantitySellButton(self.df_state, self.sale_quantity, 'max', cargo_for_sale=self.df_state.cargo_obj))
 
         self.add_item(CargoConfirmSellButton(self.df_state, self.sale_quantity, row=2))
+        self.add_item(SellAllCargoButton(self.df_state, row=2))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
@@ -415,6 +416,77 @@ class CargoConfirmSellButton(discord.ui.Button):
             desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${delivery_reward}')
         else:
             desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${sale_price}')
+        embed.description = '\n'.join(desc)
+
+        view = PostSellView(self.df_state)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class SellAllCargoButton(discord.ui.Button):
+    def __init__(
+            self,
+            df_state: DFState,
+            row: int=1
+    ):
+        self.df_state = df_state
+
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            sell_list = [
+                cargo
+                for cargo in self.df_state.convoy_obj['all_cargo']
+                if cargo['class_id'] == self.df_state.cargo_obj['class_id']
+                and cargo['recipient'] == self.df_state.vendor_obj['vendor_id']
+            ]
+            sale_quantity = sum(cargo['quantity'] for cargo in sell_list)
+            sale_price =  sale_quantity * self.df_state.cargo_obj['delivery_reward']
+        else:
+            sell_list = [
+                cargo
+                for cargo in self.df_state.convoy_obj['all_cargo']
+                if cargo['class_id'] == self.df_state.cargo_obj['class_id']
+            ]
+
+            # sell_list = [cargo for vehicle in self.df_state.convoy_obj['vehicles'] for cargo in vehicle if cargo['class_id'] == self.df_state.cargo_obj['class_id']]
+            sale_quantity = sum(cargo['quantity'] for cargo in sell_list)
+            sale_price = sale_quantity * self.df_state.cargo_obj['price']
+
+        self.sale_quantity = sale_quantity
+        self.sell_list = sell_list
+        self.sale_price = sale_price
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=f'Sell all {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) across convoy | ${sale_price}',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        
+        self.df_state.interaction = interaction
+
+        try:
+            for cargo in self.sell_list:
+                self.df_state.convoy_obj = await api_calls.sell_cargo(
+                    vendor_id=self.df_state.vendor_obj['vendor_id'],
+                    convoy_id=self.df_state.convoy_obj['convoy_id'],
+                    # cargo_id=self.df_state.cargo_obj['cargo_id'],
+                    cargo_id=cargo['cargo_id'],
+                    quantity=cargo['quantity']
+                )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+        
+        
+        embed = discord.Embed()
+        embed = df_embed_author(embed, self.df_state)
+        desc = [f'## {self.df_state.vendor_obj['name']}']
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
+            # delivery_reward = self. * self.df_state.cargo_obj['delivery_reward']
+            desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${self.sale_price}')
+        else:
+            desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${self.sale_price}')
         embed.description = '\n'.join(desc)
 
         view = PostSellView(self.df_state)

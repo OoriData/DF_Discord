@@ -97,7 +97,7 @@ async def resource_weights() -> dict:
     """ Fetch the weight per unit of each resource type from the API. """
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
-            url=f"{DF_API_HOST}/vendor/resource/weights",
+            url=f"{DF_API_HOST}/cargo/resource/weights",
             params={}
         )
 

@@ -76,7 +76,7 @@ class VehicleSelect(discord.ui.Select):
             for vehicle in df_state.convoy_obj['vehicles']
         ]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder='Which vehicle?',
             options=sorted_options,
@@ -273,7 +273,7 @@ class UpgradePartSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='none', value='none')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,
@@ -416,7 +416,7 @@ class RemovePartSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='none', value='none')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,

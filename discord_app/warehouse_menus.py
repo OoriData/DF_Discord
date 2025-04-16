@@ -428,7 +428,7 @@ class StoreCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options[:25],
@@ -638,7 +638,7 @@ class RetrieveCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options[:25],
@@ -899,7 +899,7 @@ class StoreVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options[:25],
@@ -983,7 +983,7 @@ class RetrieveVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,
@@ -1056,7 +1056,7 @@ class SpawnVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,

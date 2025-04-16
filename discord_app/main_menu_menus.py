@@ -115,16 +115,13 @@ async def main_menu(
     if not df_map:  # Get the map, if none was provided
         df_map = await api_calls.get_map()
 
-    misc={}
-    misc['resource_weights'] = await api_calls.resource_weights()
-
     df_state = DFState(  # Prepare the DFState object
         user_discord_id=user_id,
         map_obj=df_map,
         user_obj=user_obj,
         interaction=interaction,
         user_cache=user_cache,
-        misc=misc
+        misc={'resource_weights': await api_calls.resource_weights()}
     )
 
     main_menu_embed = discord.Embed()
@@ -318,12 +315,13 @@ class MainMenuWarehouseSelect(discord.ui.Select):
                     value=warehouse['warehouse_id'],
                     emoji=get_settlement_emoji(warehouse_sett['sett_type'])
                 ))
+
         if not options:
             placeholder = 'No Warehouses'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,
@@ -383,7 +381,7 @@ class MainMenuConvoySelect(discord.ui.Select):
             for convoy in df_state.user_obj['convoys']
         ]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder='Which convoy?',
             options=sorted_options,
@@ -559,7 +557,7 @@ class ConvoySelectBeforeRename(discord.ui.Select):
             for convoy in df_state.user_obj['convoys']
         ]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder='Select a convoy to rename',
             options=sorted_options,

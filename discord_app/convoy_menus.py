@@ -368,7 +368,7 @@ class ConvoyVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options,
@@ -413,7 +413,7 @@ class ConvoyCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
             options=sorted_options[:25],

@@ -55,9 +55,17 @@ class VendorView(discord.ui.View):
         self.add_item(SellButton(df_state))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
-        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+        if tutorial_stage == 1:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
+                    'nav_back_button',
+                    'nav_sett_button',
+                    'buy_button'
+                )
+        if tutorial_stage in {2, 3, 4, 5}:
+            for item in self.children:
+                item.disabled = item.custom_id not in (
+                    'sell_button',
                     'nav_back_button',
                     'nav_sett_button',
                     'buy_button'

@@ -537,6 +537,7 @@ class DestinationSelect(discord.ui.Select):
 
         for sett_name, x, y, _, cargo_names, emoji in settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
+            print(unique_cargo_names)
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
             options.append(discord.SelectOption(

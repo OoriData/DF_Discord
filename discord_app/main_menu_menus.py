@@ -114,9 +114,9 @@ async def main_menu(
 
     if not df_map:  # Get the map, if none was provided
         df_map = await api_calls.get_map()
+
     misc={}
     misc['resource_weights'] = await api_calls.resource_weights()
-
 
     df_state = DFState(  # Prepare the DFState object
         user_discord_id=user_id,

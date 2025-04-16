@@ -742,27 +742,27 @@ class TopUpButton(discord.ui.Button):
                 key=lambda r: (self.df_state.convoy_obj[r] / max(self.df_state.convoy_obj[f'max_{r}'], 1))
             )
             
-            print("sorted resources by demand")
-            print(sorted_resources)
+            # print("sorted resources by demand")
+            # print(sorted_resources)
 
             available_resources = []
             remaining_weight = self.df_state.convoy_obj['total_remaining_capacity']
             weights = self.df_state.misc['resource_weights']
 
-            print(f"remaining weight : {remaining_weight}")
-            print(f"weights: {weights}")
+            # print(f"remaining weight : {remaining_weight}")
+            # print(f"weights: {weights}")
 
             for resource_type in sorted_resources:
                 current = self.df_state.convoy_obj[resource_type]
                 max_allowed = self.df_state.convoy_obj[f'max_{resource_type}']
 
-                print(f"current amout of {resource_type} : {current}")
-                print(f"Maximum Cap of {resource_type} : {max_allowed}")
+                # print(f"current amout of {resource_type} : {current}")
+                # print(f"Maximum Cap of {resource_type} : {max_allowed}")
 
                 convoy_need = max(0, max_allowed - current)
                 
                 if convoy_need <= 0 or remaining_weight <= 0:
-                    print(f"Convoy full of {resource_type}")
+                    # print(f"Convoy full of {resource_type}")
                     continue
                     
                 vendor = min(
@@ -772,7 +772,7 @@ class TopUpButton(discord.ui.Button):
                 )
                 
                 if not vendor:
-                    print("no vendor")
+                    # print("no vendor")
                     #no vendor is found selling given resource
                     continue
                 
@@ -782,9 +782,9 @@ class TopUpButton(discord.ui.Button):
                 max_units_by_weight = int(remaining_weight / weight_per_unit)
                 actual_top_up = min(convoy_need, max_units_by_weight)
                 
-                print(f"Max units to buy based on weight : {max_units_by_weight}")
-                print(f"Convoy need : {convoy_need}")
-                print(f"Actual need : {actual_top_up}")
+                # print(f"Max units to buy based on weight : {max_units_by_weight}")
+                # print(f"Convoy need : {convoy_need}")
+                # print(f"Actual need : {actual_top_up}")
 
                 if actual_top_up <= 0:
                     continue
@@ -792,7 +792,7 @@ class TopUpButton(discord.ui.Button):
                 price = vendor[f'{resource_type}_price']
                 cost = actual_top_up * price
                 
-                print(f"{resource_type} cost for {actual_top_up} amount : {cost}")
+                # print(f"{resource_type} cost for {actual_top_up} amount : {cost}")
 
                 self.resource_vendors[resource_type] = {
                     'vendor_id': vendor['vendor_id'],
@@ -801,12 +801,12 @@ class TopUpButton(discord.ui.Button):
                 }
 
                 self.top_up_price += cost
-                print(f"top up price {self.top_up_price}")
+                # print(f"top up price {self.top_up_price}")
                 available_resources.append(resource_type)
 
                 # ✅ Update remaining weight after purchase
                 remaining_weight -= actual_top_up * weight_per_unit
-                print(f"Remaining weight after buying {resource_type}: {remaining_weight}")
+                # print(f"Remaining weight after buying {resource_type}: {remaining_weight}")
 
             
             # Generate label
@@ -818,7 +818,7 @@ class TopUpButton(discord.ui.Button):
             else:
                 label = 'Convoy is already topped up or lacks weight capacity'
 
-            print(self.resource_vendors)
+            # print(self.resource_vendors)
 
         super().__init__(
             style=discord.ButtonStyle.blurple,

@@ -93,6 +93,19 @@ async def get_tile(x: int, y: int) -> dict:
     _check_code(response)
     return response.json()
 
+async def resource_weights() -> dict:
+    """
+    Fetch the weight per unit of each resource type from the API.
+    """
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f"{DF_API_HOST}/vendor/resource/weights",
+            params={}  
+        )
+
+    _check_code(response)
+    return response.json()
+
 
 async def new_user(username: str, discord_id: int) -> dict:
     async with httpx.AsyncClient(verify=False) as client:

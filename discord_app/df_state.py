@@ -30,7 +30,8 @@ class DFState:
             part_obj=None,
             interaction=None,
             back_stack=None,
-            user_cache=None
+            user_cache=None,
+            misc=None,
     ):
         self.user_discord_id = user_discord_id
         self.map_obj = map_obj
@@ -47,6 +48,7 @@ class DFState:
         self.interaction: discord.Interaction = interaction
 
         self.back_stack = back_stack or []
+        self.misc = misc
 
     def append_menu_to_back_stack(self, func, args: dict | None=None):
         if args is None:

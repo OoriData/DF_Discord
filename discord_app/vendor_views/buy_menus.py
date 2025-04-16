@@ -735,36 +735,92 @@ class TopUpButton(discord.ui.Button):
         label = 'Cannot top up: No vendors'
         disabled = True
 
-        if self.df_state.sett_obj is not None and 'vendors' in self.df_state.sett_obj:  # Only proceed with resource calculations if settlement exists and has vendors
+        if self.df_state.sett_obj and 'vendors' in self.df_state.sett_obj:
             resource_types = ['fuel', 'water', 'food']
+
+            # Sort resources by depletion level (lowest filled % first)
+            sorted_resources = sorted(
+                resource_types,
+                key=lambda r: (self.df_state.convoy_obj[r] / max(self.df_state.convoy_obj[f'max_{r}'], 1))
+            )
+            
+            # print("sorted resources by demand")
+            # print(sorted_resources)
+
             available_resources = []
+            remaining_weight = self.df_state.convoy_obj['total_remaining_capacity']
+            weights = self.df_state.misc['resource_weights']
 
-            for resource_type in resource_types:
-                # Calculate convoy's need for each resource
-                convoy_need = self.df_state.convoy_obj[f'max_{resource_type}'] - self.df_state.convoy_obj[resource_type]
-                if convoy_need > 0:
-                    vendor = min(
-                        (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
-                        key=lambda v: v[f'{resource_type}_price'],
-                        default=None
-                    )
-                    if vendor:
-                        # Calculate top-up cost and track vendor info for each resource
-                        self.top_up_price += convoy_need * vendor[f'{resource_type}_price']
-                        self.resource_vendors[resource_type] = {
-                            'vendor_id': vendor['vendor_id'],
-                            'price': vendor[f'{resource_type}_price'],
-                            'convoy_need': convoy_need
-                        }
-                        available_resources.append(resource_type)
-                else:
-                    label = 'Convoy is already topped up'
+            # print(f"remaining weight : {remaining_weight}")
+            # print(f"weights: {weights}")
 
-            if available_resources:  # Update label and disabled state based on available resources
+            for resource_type in sorted_resources:
+                current = self.df_state.convoy_obj[resource_type]
+                max_allowed = self.df_state.convoy_obj[f'max_{resource_type}']
+
+                # print(f"current amout of {resource_type} : {current}")
+                # print(f"Maximum Cap of {resource_type} : {max_allowed}")
+
+                convoy_need = max(0, max_allowed - current)
+                
+                if convoy_need <= 0 or remaining_weight <= 0:
+                    # print(f"Convoy full of {resource_type}")
+                    continue
+                    
+                vendor = min(
+                    (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
+                    key=lambda v: v[f'{resource_type}_price'],
+                    default=None
+                )
+                
+                if not vendor:
+                    # print("no vendor")
+                    #no vendor is found selling given resource
+                    continue
+                
+                weight_per_unit = weights.get(resource_type, 1.0)
+                
+                # Calculate how many units we can actually fit within remaining weight
+                max_units_by_weight = int(remaining_weight / weight_per_unit)
+                actual_top_up = min(convoy_need, max_units_by_weight)
+                
+                # print(f"Max units to buy based on weight : {max_units_by_weight}")
+                # print(f"Convoy need : {convoy_need}")
+                # print(f"Actual need : {actual_top_up}")
+
+                if actual_top_up <= 0:
+                    continue
+                    
+                price = vendor[f'{resource_type}_price']
+                cost = actual_top_up * price
+                
+                # print(f"{resource_type} cost for {actual_top_up} amount : {cost}")
+
+                self.resource_vendors[resource_type] = {
+                    'vendor_id': vendor['vendor_id'],
+                    'price': price,
+                    'convoy_need': actual_top_up
+                }
+
+                self.top_up_price += cost
+                # print(f"top up price {self.top_up_price}")
+                available_resources.append(resource_type)
+
+                # ✅ Update remaining weight after purchase
+                remaining_weight -= actual_top_up * weight_per_unit
+                # print(f"Remaining weight after buying {resource_type}: {remaining_weight}")
+
+            
+            # Generate label
+            if available_resources:
                 available_resources_str = ', '.join(available_resources)
-                if self.top_up_price != 0:
+                if self.top_up_price > 0:
                     label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
                     disabled = self.top_up_price > self.df_state.convoy_obj['money']
+            else:
+                label = 'Convoy is already topped up or lacks weight capacity'
+
+            # print(self.resource_vendors)
 
         super().__init__(
             style=discord.ButtonStyle.blurple,

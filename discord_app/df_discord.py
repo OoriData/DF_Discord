@@ -36,6 +36,7 @@ class DesolateCog(commands.Cog):
         """ Called when the bot is ready to start taking commands """
         await self.bot.tree.sync()
 
+        logger.info(ansi_color(f'Bot/App: {self.bot.user.name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
@@ -84,6 +85,10 @@ class DesolateCog(commands.Cog):
         if not self.cache_ready.is_set():
             await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
             return
+        
+        # ENTITLEMENTS CHECKER MECHANISM
+        # user_entitlements = [entitlement async for entitlement in self.bot.entitlements(user=interaction.user)]
+        # import pprint;pprint.pprint(user_entitlements)
 
         await main_menu(
             interaction=interaction,
@@ -91,9 +96,6 @@ class DesolateCog(commands.Cog):
             user_cache=self.df_users_cache,
             edit=False
         )
-    @app_commands.command(name='redeem_free_days', description="Redeem available free days")
-    async def redeem_free_days(self, interaction: discord.Interaction):
-        return  # Ignore commands
 
     @app_commands.command(name='desolate-frontiers', description='Show the Desolate Frontiers main menu')
     @app_commands.allowed_installs(guilds=True, users=True)
@@ -139,6 +141,10 @@ class DesolateCog(commands.Cog):
     async def df_help(self, interaction: discord.Interaction):
         help_embed = discord.Embed(description=DF_HELP)
         await interaction.response.send_message(embed=help_embed, ephemeral=True)
+
+    @app_commands.command(name='redeem_free_days', description="Redeem available free days")
+    async def redeem_free_days(self, interaction: discord.Interaction):
+        return  # Ignore commands
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):

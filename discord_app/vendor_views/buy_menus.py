@@ -136,9 +136,10 @@ class BuyVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             disabled=disabled,
             custom_id='select_vehicle',
             row=row
@@ -204,9 +205,10 @@ class BuyCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             disabled=disabled,
             custom_id='select_cargo',
             row=row

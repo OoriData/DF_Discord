@@ -323,11 +323,10 @@ class MainMenuWarehouseSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-
-
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             custom_id='warehouse_select',
             disabled=disabled,
             row=row
@@ -384,9 +383,10 @@ class MainMenuConvoySelect(discord.ui.Select):
             for convoy in df_state.user_obj['convoys']
         ]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder='Which convoy?',
-            options=options,
+            options=sorted_options,
             custom_id='select_convoy',
             row=row
         )
@@ -559,9 +559,10 @@ class ConvoySelectBeforeRename(discord.ui.Select):
             for convoy in df_state.user_obj['convoys']
         ]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder='Select a convoy to rename',
-            options=options,
+            options=sorted_options,
             custom_id='select_convoy_to_rename',
             row=row
         )

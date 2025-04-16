@@ -91,7 +91,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             og_message = await df_state.interaction.original_response()
             await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
         else:
-         await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+            await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
@@ -185,7 +185,8 @@ class VendorSelect(discord.ui.Select):
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
 
-
+        placeholder = 'Select vendor to visit'
+        disabled = False
 
         if tutorial_stage == 1:
             options=[
@@ -215,9 +216,16 @@ class VendorSelect(discord.ui.Select):
                 for vendor in self.vendors
             ]
 
+        if not options:
+            placeholder = f'No vendors in {df_state.sett_obj['name']}'
+            disabled = True
+            options = [discord.SelectOption(label='none', value='none')]
+
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
-            placeholder='Select vendor to visit',
-            options=options,
+            placeholder=placeholder,
+            options=sorted_options,
+            disabled=disabled,
             custom_id='select_vendor',
             row=row
         )

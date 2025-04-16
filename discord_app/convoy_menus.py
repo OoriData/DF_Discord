@@ -368,9 +368,10 @@ class ConvoyVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             custom_id='select_vehicle',
             disabled=disabled,
             row=row
@@ -412,9 +413,10 @@ class ConvoyCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options[:25],
+            options=sorted_options[:25],
             custom_id='select_cargo',
             disabled=disabled,
             row=row
@@ -566,7 +568,7 @@ class DestinationSelect(discord.ui.Select):
 
 
 async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
-    df_state.append_menu_to_back_stack(func=route_menu, args={  # XXX commented out until i can figure out how to if/else defering if nessisary
+    df_state.append_menu_to_back_stack(func=route_menu, args={
         'route_choices': route_choices,
         'route_index': route_index
     })  # Add this menu to the back stack
@@ -602,7 +604,6 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
             view=view,
             attachments=[image_file]
         )
-
 
 class SendConvoyConfirmView(discord.ui.View):
     """ Confirm button before sending convoy somewhere """
@@ -680,7 +681,7 @@ class ConfirmJourneyButton(discord.ui.Button):
         journey_msg = ''
 
         resource_constraints = []
-        resource_limit = []
+        resource_limits = []
 
         for resource in ['fuel', 'water', 'food', 'kwh']:
             if resource == 'fuel':
@@ -695,7 +696,7 @@ class ConfirmJourneyButton(discord.ui.Button):
                         required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
 
                         if available_kwh < required_kwh:
-                            resource_limit.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
+                            resource_limits.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
                         elif available_kwh < 2 * required_kwh:
                             resource_constraints.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
                 
@@ -708,24 +709,24 @@ class ConfirmJourneyButton(discord.ui.Button):
             recommended = 2 * required
 
             if available < required:
-                resource_limit.append((resource, available, required))
+                resource_limits.append((resource, available, required))
             elif available < recommended:
                 resource_constraints.append((resource, available, recommended))
 
         style = discord.ButtonStyle.green
         journey_msg = ''
 
-        if resource_limit:
+        if resource_limits:
             style = discord.ButtonStyle.red
             emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
             journey_msg += '**🛑 Not enough resources:**\n'
             journey_msg += '\nResource       | Current  | Minimum Needed\n'
             journey_msg += '------------------------------------------\n'
-            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limit])
+            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limits])
         elif resource_constraints:
             style = discord.ButtonStyle.blurple
             emoji = '⚠️'
-            journey_msg += '**⚠️ Limited reserves:**\n'
+            journey_msg += '**⚠️ Limited resource:**\n'
             journey_msg += '\nResource       | Current  | Recommended\n'
             journey_msg += '--------------------------------------\n'
             journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_constraints])

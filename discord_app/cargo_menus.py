@@ -94,14 +94,16 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             for vehicle in self.df_state.convoy_obj['vehicles']
             if vehicle['vehicle_id'] != self.df_state.cargo_obj['vehicle_id']
         ]
+
         if not options:
             placeholder = 'No valid vehicles to move cargo into'
             disabled = True
             options = [discord.SelectOption(label='none', value='none')]
 
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower()),  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             custom_id='select_vehicle',
             disabled=disabled,
             row=row

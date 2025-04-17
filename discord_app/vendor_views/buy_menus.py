@@ -7,9 +7,9 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_cargo_emoji
 from discord_app.map_rendering import add_map_to_embed
-from discord_app.vendor_views  import vendor_inv_md
+from discord_app.vendor_views  import vendor_inv_md, wet_price
 import                                discord_app.nav_menus
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vehicle_menus
@@ -102,14 +102,14 @@ class BuyResourceButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await buy_resource_menu(self.df_state, self.resource_type)
 
 class BuyVehicleSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, row: int=2):
         self.df_state = df_state
-        
+
         placeholder = 'Vehicle Inventory'
         disabled = False
 
@@ -135,10 +135,11 @@ class BuyVehicleSelect(discord.ui.Select):
             placeholder = 'Vendor has no vehicle inventory'
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
-        
+
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             disabled=disabled,
             custom_id='select_vehicle',
             row=row
@@ -146,7 +147,6 @@ class BuyVehicleSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -167,37 +167,48 @@ class BuyCargoSelect(discord.ui.Select):
 
         options = []
         for cargo in self.df_state.vendor_obj['cargo_inventory']:
-            label = f"{cargo['name']} | ${cargo['price']:,.0f}"
-            if cargo.get('recipient_vendor'):
-                label += f" | {cargo['recipient_location']}"
+            wet_unit_price = wet_price(cargo, self.df_state.vendor_obj)
 
-            emoji = None  # Determine emoji based on tutorial stage
+            label = f'{cargo['name']} | ${wet_unit_price:,.0f}'
+            if cargo.get('recipient_vendor'):
+                label += f' | {cargo['recipient_location']}'
+
+            emoji = get_cargo_emoji(cargo)
+
+            if (
+                len(self.df_state.user_obj['convoys']) == 1 and
+                cargo['name'] == 'Mail'
+            ):
+                emoji = DF_LOGO_EMOJI
+
+            # Emoji based on tutorial stage
             if tutorial_stage == 2:
                 if cargo['name'] in {'Water Jerry Cans', 'MRE Boxes'}:
                     emoji = DF_LOGO_EMOJI
             elif tutorial_stage == 4:
                 if (
-                    cargo['volume'] < self.df_state.convoy_obj['total_free_space'] and
-                    cargo['weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
-                    cargo['price'] < self.df_state.convoy_obj['money'] and
+                    cargo['unit_volume'] < self.df_state.convoy_obj['total_free_space'] and
+                    cargo['unit_dry_weight'] < self.df_state.convoy_obj['total_remaining_capacity'] and
+                    cargo['unit_price'] < self.df_state.convoy_obj['money'] and
                     cargo['capacity'] is None
                 ):
                     emoji = DF_LOGO_EMOJI
 
             options.append(discord.SelectOption(
-                label=label,
+                label=label,  # No emoji in label
                 value=cargo['cargo_id'],
-                emoji=emoji
+                emoji=emoji  # Emoji added here
             ))
 
         if not options:
             placeholder = 'Vendor has no cargo inventory'
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
-        
+
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
             placeholder=placeholder,
-            options=options,
+            options=sorted_options,
             disabled=disabled,
             custom_id='select_cargo',
             row=row
@@ -205,7 +216,6 @@ class BuyCargoSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -230,11 +240,11 @@ class ResourceBuyQuantityEmbed(discord.Embed):
         self.resource_type = resource_type
         self.cart_quantity = cart_quantity
         super().__init__()
-        
+
         self = df_embed_author(self, self.df_state)
 
         cart_price = self.cart_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
-        
+
         self.description = '\n'.join([
             f'## {df_state.vendor_obj['name']}',
             f'### Buying {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,.0f} per Liter/Serving',
@@ -284,7 +294,6 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         try:
@@ -297,9 +306,9 @@ class ResourceConfirmBuyButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+
         cart_price = self.cart_quantity * self.df_state.vendor_obj[f'{self.resource_type}_price']
-        
+
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
@@ -329,24 +338,17 @@ class CargoBuyQuantityEmbed(discord.Embed):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
         super().__init__()
-        
+
         self = df_embed_author(self, self.df_state)
-        
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
-        cart_volume = self.cart_quantity * self.df_state.cargo_obj['volume']
-        
-        resource_weights = {'fuel': 0.79, 'water': 1, 'food': 0.75}
-        resource_weight = next(  # Check if cargo has any resources in it
-            (weight for key, weight in resource_weights.items() if self.df_state.cargo_obj.get(key)),
-            None  # Default to None, in case that cargo contains no resource
-        )
-        cart_weight = self.cart_quantity * self.df_state.cargo_obj['weight']  # Calc (empty) weight
-        if resource_weight:  # Calc resource weight
-            cart_weight += self.cart_quantity * self.df_state.cargo_obj['capacity'] * resource_weight
+
+        cart_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, self.cart_quantity)
+
+        cart_volume = self.cart_quantity * self.df_state.cargo_obj['unit_volume']
+        cart_weight = self.cart_quantity * self.df_state.cargo_obj['unit_weight']
 
         desc = [
             f'## {self.df_state.vendor_obj['name']}',
-            f'### Buying {self.df_state.cargo_obj['name']} for ${self.df_state.cargo_obj['price']:,.0f} per item',
+            f'### Buying {self.df_state.cargo_obj['name']} for ${cart_price / self.cart_quantity:,.0f} per item',
             f'*{self.df_state.cargo_obj['base_desc']}*',
             '',
             f'- Cart volume: **{cart_volume:,.1f}L**',
@@ -355,10 +357,10 @@ class CargoBuyQuantityEmbed(discord.Embed):
             f'  - {self.df_state.convoy_obj['total_remaining_capacity']:,.0f}kg weight capacity in convoy',
         ]
         if self.df_state.cargo_obj['recipient']:
-            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+            cart_delivery_reward = self.cart_quantity * self.df_state.cargo_obj['unit_delivery_reward']
             desc.extend([
                 '',
-                f'💰 **Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of ${delivery_reward:,.0f}**'
+                f'💰 **Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of ${cart_delivery_reward:,.0f}**'
             ])
         desc.append(
             f'### Cart: {self.cart_quantity:,} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}'
@@ -369,13 +371,13 @@ class CargoBuyQuantityEmbed(discord.Embed):
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
                 f'- Vendor Inventory: {self.df_state.cargo_obj['quantity']}',
-                f'- Volume (per unit): {self.df_state.cargo_obj['volume']}L',
-                f'- Weight (per unit): {self.df_state.cargo_obj['weight']}kg'
+                f'- Volume (per unit): {self.df_state.cargo_obj['unit_volume']}L',
+                f'- Dry Weight (per unit): {self.df_state.cargo_obj['unit_dry_weight']}kg'
             ])
         else:
             self.add_field(name='Vendor Inventory', value=self.df_state.cargo_obj['quantity'])
-            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['volume']} liter(s)')
-            self.add_field(name='Weight (per unit)', value=f'{self.df_state.cargo_obj['weight']} kilogram(s)')
+            self.add_field(name='Volume (per unit)', value=f'{self.df_state.cargo_obj['unit_volume']} liter(s)')
+            self.add_field(name='Dry Weight (per unit)', value=f'{self.df_state.cargo_obj['unit_dry_weight']} kilogram(s)')
 
 class CargoBuyQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, cart_quantity: int=1):
@@ -433,7 +435,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
         self.df_state = df_state
         self.cart_quantity = cart_quantity
 
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
+        cart_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, self.cart_quantity)
 
         label = f'Buy {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) | ${cart_price:,.0f}'
         disabled = False
@@ -453,9 +455,8 @@ class CargoConfirmBuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
-        
+
         try:
             self.df_state.convoy_obj = await api_calls.buy_cargo(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
@@ -466,9 +467,9 @@ class CargoConfirmBuyButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
-        cart_price = self.cart_quantity * self.df_state.cargo_obj['price']
-        
+
+        cart_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, self.cart_quantity)
+
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
         desc = [
@@ -476,7 +477,7 @@ class CargoConfirmBuyButton(discord.ui.Button):
             f'Purchased {self.cart_quantity} {self.df_state.cargo_obj['name']}(s) for ${cart_price:,.0f}'
         ]
         if self.df_state.cargo_obj['recipient']:
-            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['delivery_reward']
+            delivery_reward = self.cart_quantity * self.df_state.cargo_obj['unit_delivery_reward']
             desc.append(f'Deliver to {self.df_state.cargo_obj['recipient_vendor']['name']} for a reward of $**{delivery_reward:,.0f}**')
         embed.description = '\n'.join(desc)
 
@@ -509,15 +510,15 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
             for vehicle in self.df_state.convoy_obj['vehicles']:
                 # Determine max quantity by volume
                 free_space = vehicle['free_space']
-                max_by_volume = free_space / cargo_obj['volume']
-                
+                max_by_volume = free_space / cargo_obj['unit_volume']
+
                 # Determine max quantity by weight
                 weight_capacity = vehicle['remaining_capacity']
-                max_by_weight = weight_capacity / cargo_obj['weight']
+                max_by_weight = weight_capacity / cargo_obj['unit_weight']
 
                 # Determine max quantity by price
                 convoy_money = self.df_state.convoy_obj['money']
-                max_by_price = convoy_money / cargo_obj['price']
+                max_by_price = convoy_money / cargo_obj['unit_price']
 
                 quantity += int(min(max_by_volume, max_by_weight, max_by_price))
 
@@ -556,18 +557,18 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         # Disable if the resulting quantity is out of valid bounds
         if resultant_quantity <= 0:
             return True
-        
+
         if resultant_quantity > inventory_quantity:
             return True
-        
+
         if self.cargo_for_sale:
-            max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['volume']
-            max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['weight']
+            max_by_volume = self.df_state.convoy_obj['total_free_space'] / self.df_state.cargo_obj['unit_volume']
+            max_by_weight = self.df_state.convoy_obj['total_remaining_capacity'] / self.df_state.cargo_obj['unit_weight']
             if resultant_quantity > max_by_volume or resultant_quantity > max_by_weight:
                 return True
 
-            cart_price = resultant_quantity * self.df_state.cargo_obj['price']
-            
+            cart_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, self.cart_quantity)
+
         else:
             if resultant_quantity > max_convoy_capacity:
                 return True
@@ -581,7 +582,6 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         self.cart_quantity += self.button_quantity  # Update cart quantity
@@ -603,9 +603,9 @@ async def buy_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=buy_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []
-    for category, part in df_state.vehicle_obj['parts'].items():
+    for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
-            part_list.append(f'- {category.replace('_', ' ').capitalize()}\n  - None')
+            part_list.append(f'- {part['slot'].replace('_', ' ').capitalize()}\n  - None')
             continue
 
         part_list.append(discord_app.cargo_menus.format_part(part))
@@ -670,7 +670,6 @@ class BuyVehicleButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         try:
@@ -734,38 +733,100 @@ class TopUpButton(discord.ui.Button):
         self.resource_vendors = {}
         self.top_up_price = 0
         label = 'Cannot top up: No vendors'
-        disabled = True
 
-        if self.df_state.sett_obj is not None and 'vendors' in self.df_state.sett_obj:  # Only proceed with resource calculations if settlement exists and has vendors
+        if self.df_state.sett_obj and 'vendors' in self.df_state.sett_obj:
             resource_types = ['fuel', 'water', 'food']
+
+            # Sort resources by depletion level (lowest filled % first)
+            sorted_resources = sorted(
+                resource_types,
+                key=lambda r: (self.df_state.convoy_obj[r] / max(self.df_state.convoy_obj[f'max_{r}'], 1))
+            )
+            
+            # print('sorted resources by demand')
+            # print(sorted_resources)
+
             available_resources = []
+            remaining_weight = self.df_state.convoy_obj['total_remaining_capacity']
+            weights = self.df_state.misc['resource_weights']
 
-            for resource_type in resource_types:
-                # Calculate convoy's need for each resource
-                convoy_need = self.df_state.convoy_obj[f'max_{resource_type}'] - self.df_state.convoy_obj[resource_type]
-                if convoy_need > 0:
-                    vendor = min(
-                        (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
-                        key=lambda v: v[f'{resource_type}_price'],
-                        default=None
-                    )
-                    if vendor:
-                        # Calculate top-up cost and track vendor info for each resource
-                        self.top_up_price += convoy_need * vendor[f'{resource_type}_price']
-                        self.resource_vendors[resource_type] = {
-                            'vendor_id': vendor['vendor_id'],
-                            'price': vendor[f'{resource_type}_price'],
-                            'convoy_need': convoy_need
-                        }
-                        available_resources.append(resource_type)
-                else:
-                    label = 'Convoy is already topped up'
+            # print(f'remaining weight : {remaining_weight}')
+            # print(f'weights: {weights}')
 
-            if available_resources:  # Update label and disabled state based on available resources
+            for resource_type in sorted_resources:
+                current = self.df_state.convoy_obj[resource_type]
+                max_allowed = self.df_state.convoy_obj[f'max_{resource_type}']
+
+                # print(f'current amout of {resource_type} : {current}')
+                # print(f'Maximum Cap of {resource_type} : {max_allowed}')
+
+                convoy_need = max(0, max_allowed - current)
+                
+                if convoy_need <= 0 or remaining_weight <= 0:
+                    # print(f'Convoy full of {resource_type}')
+                    continue
+                    
+                vendor = min(
+                    (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
+                    key=lambda v: v[f'{resource_type}_price'],
+                    default=None
+                )
+                
+                if not vendor:
+                    # no vendor is found selling given resource
+                    # print('no vendor')
+                    continue
+                
+                weight_per_unit = weights.get(resource_type, 1.0)
+                
+                # Calculate how many units we can actually fit within remaining weight
+                max_units_by_weight = int(remaining_weight / weight_per_unit)
+                actual_top_up = min(convoy_need, max_units_by_weight)
+                
+                # print(f'Max units to buy based on weight : {max_units_by_weight}')
+                # print(f'Convoy need : {convoy_need}')
+                # print(f'Actual need : {actual_top_up}')
+
+                if actual_top_up <= 0:
+                    continue
+                    
+                price = vendor[f'{resource_type}_price']
+                cost = actual_top_up * price
+                
+                # print(f'{resource_type} cost for {actual_top_up} amount : {cost}')
+
+                self.resource_vendors[resource_type] = {
+                    'vendor_id': vendor['vendor_id'],
+                    'price': price,
+                    'convoy_need': actual_top_up
+                }
+
+                self.top_up_price += cost
+                # print(f'top up price {self.top_up_price}')
+                available_resources.append(resource_type)
+
+                # ✅ Update remaining weight after purchase
+                remaining_weight -= actual_top_up * weight_per_unit
+                # print(f'Remaining weight after buying {resource_type}: {remaining_weight}')
+
+            # Generate label
+            if available_resources:
                 available_resources_str = ', '.join(available_resources)
-                if self.top_up_price != 0:
+                if self.top_up_price > 0:
                     label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
                     disabled = self.top_up_price > self.df_state.convoy_obj['money']
+            else:
+                disabled = True
+                if self.top_up_price == 0:
+                    label = 'Convoy is already topped up'
+                elif remaining_weight <= 0:
+                    label = 'Convoy is full'
+                elif not self.df_state.sett_obj['vendors']:
+                    label = 'No vendors available for top up'
+                else:
+                    label = 'Cannot top up'
+
+            # print(self.resource_vendors)
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
@@ -778,10 +839,10 @@ class TopUpButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
         if not interaction.response.is_done():
             await interaction.response.defer()
-
-        self.df_state.interaction = interaction
 
         try:
             # Attempt to top up each resource from its respective vendor

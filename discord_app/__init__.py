@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
 # SPDX-License-Identifier: UNLICENSED
-'Discord Frontend'
+""" Discord Frontend """
 from __future__             import annotations
 from datetime               import datetime
 import                             io
@@ -126,7 +126,7 @@ def df_embed_author(embed: discord.Embed, df_state: DFState) -> discord.Embed:
 
 
 def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str:
-    '''
+    """
     Generate a Discord timestamp string for a given datetime or ISO format string and format letter.
 
     Args:
@@ -145,7 +145,7 @@ def discord_timestamp(formatted_time: str | datetime, format_letter: str) -> str
 
     Returns:
         str: The Discord-formatted timestamp string.
-    '''
+    """
     # Convert ISO format string to datetime object if necessary
     if isinstance(formatted_time, str):
         formatted_time = datetime.fromisoformat(formatted_time)
@@ -206,7 +206,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
                 f"- Use the `Cargo Inventory` dropdown to select {DF_LOGO_EMOJI}` Water Jerry Cans`",
                 "- Blurple `+1` button to add an additional jerry can to your cart",
-                "- Green `Buy 2 Water Jerry Cans(s)` button. Note: the cans are sold already full",
+                "- Green `Buy 2 Water Jerry Cans(s)` button. Note: the cans are sold filled, and price will vary based on price of fuel/water,",
                 f"- **Repeat this process, to buy just one of {DF_LOGO_EMOJI}` MRE Boxes`, which contain food, and come full**",
             ])
         case 3:
@@ -232,7 +232,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
         case 5:
             tutorial_embed.description = '\n'.join([
                 "### Now that you have a vehicle, provisions, and a delivery to fulfill, let's get you on the road! 🛣️",
-                "1. Gray `convoy` button",
+                "1. Gray `Convoy` button",
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
@@ -243,10 +243,11 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 "### Finishing this ~~fight~~ delivery... 🚛",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
                 "- `Top up fuel | $XXX` button to refill your resources",
-                "- Gray `convoy` button",
+                "- Gray `Convoy` button",
                 "- Green `Embark on new Journey` button",
                 "- Use the `Where to?` dropdown menu to select your delivery destination",
                 "  - This destination will have the name of the cargo bound for it in parentheses after its name",
+                "- The cost of resources will vary depending on the supply and demands of the settlment"
             ])
         case 7:
             tutorial_embed.description = '\n'.join([
@@ -295,7 +296,7 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 - With the basics down, it's time for your first delivery. 📦
   - Head to the market once again and look into the goods with a **Profit margin**, which will earn you some money once you bring them to their destination.
 - Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️
-  - Use the gray `convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
+  - Use the gray `Convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
   - Your convoy will present you the path it will take to get there and how many resources you'll use in the process; hit `Embark upon Journey` to send them on their way!
 - ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱
   - If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.
@@ -303,3 +304,133 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 Happy trails! The game will be updated frequently, and we will be listening closely for any feedback you've got. Have fun!
 -# You can show this message at any time with **`/df-help`**
 '''
+
+
+def get_vehicle_emoji(vehicle_shape: str) -> str | None:
+    """
+    Returns the corresponding emoji for a given vehicle shape.
+
+    Args:
+        vehicle_shape (str): The shape of the vehicle to retrieve the emoji for.
+
+    Returns:
+        str | None: The emoji corresponding to the vehicle shape, or None if no emoji is found.
+    """
+    vehicle_emojis = {shape: emoji for emoji, shapes in {
+        '🚗': {
+            'sedan', '4-door_coupe', 'wagon', 'kammback',
+            'hatchback', 'compact_hatchback',
+            '2-door_SxS', '4-door_SxS',
+        },
+        '🚙': {
+            'SUV', 'long_SUV', 'CUV',
+            '4x4', '4x4_APC',
+            'minivan', 'cabover_minivan',
+        },
+        '🏎️': {'2-door_sedan', 'convertible', 'dune_buggy', 'tracked_vehicle'},
+        '🛻': {
+            'single_cab_pickup', 'crew_cab_pickup', 'extended_cab_pickup', 'cabover_pickup',
+            'SUT',
+            'ute',
+            '4x4_APC_pickup',
+            '2-door_UTV', '4-door_UTV',
+        },
+        '🚐': {
+            'van', 'cargo_van',
+            'cabover_minivan',
+        },
+        '🚌': {'bus', 'coach',},
+        '🚚': {
+            '6x6', '6x6_cabover',
+            '8x8_cabover',
+            '10x10_cabover',
+            '6x6_APC', '8x8_APC',
+            'straight_truck',
+        },
+        '🚛': {
+            'square_cab_4_axle_tractor',
+            'day_cab_2_axle_tractor', 'day_cab_3_axle_tractor',
+            'sleeper_cab_3_axle_tractor',
+            '8x8_tractor',
+            '2_section_tracked_vehicle',
+        },
+    }.items() for shape in shapes}  # Invert the dictionary to map vehicle shapes to emojis
+
+    return vehicle_emojis.get(vehicle_shape)  # Retrieve and return the corresponding emoji (or None if not found)
+
+
+def get_cargo_emoji(cargo: dict) -> str | None:
+    """
+    Returns the corresponding emoji for a given cargo type.
+
+    Args:
+        cargo (dict): The cargo object to retrieve the emoji for.
+
+    Returns:
+        str | None: The emoji corresponding to the cargo type, or None if no match is found.
+    """
+    cargo_emoji = {
+        'recipient': '📦',
+        'parts': '⚙️',
+        'fuel': '🛢️',
+        'water': '💧',
+        'food': '🥪',
+    }
+
+    for key, emoji in cargo_emoji.items():  # Iterate over (key, emoji) pairs to check for a match
+        if cargo.get(key) is not None:
+            return emoji
+
+    return None  # Default to None if no match is found
+
+
+def get_vendor_emoji(vendor: dict) -> str | None:
+    """
+    Returns the appropriate emoji for a vendor based on their supply request.
+
+    Args:
+        vendor (dict): The vendor object containing supply request details.
+
+    Returns:
+        str | None: The corresponding emoji, or None if no match is found.
+    """
+    supply_request = vendor.get('supply_request', {})
+
+    emoji_mapping = {
+        'cargo': '📦',
+        'vehicle': '🚗',
+        'repair_price': '🔧',
+        'mechanic': '🔧',
+        'fuel': '⛽',
+        'water': '🚰',
+        'food': '🍱',
+    }
+
+    # Find the first matching supply request type with a value > 0
+    for key, emoji in emoji_mapping.items():
+        if supply_request.get(key, 0) > 0:
+            return emoji
+
+    return None  # Default to None if no matching request
+
+
+def get_settlement_emoji(settlement_type: str) -> str | None:
+    """
+    Returns the appropriate emoji for a settlement based on its type.
+
+    Args:
+        settlement (dict): The settlement object containing type information.
+
+    Returns:
+        str | None: The corresponding emoji, or None if no match is found.
+    """
+    settlement_emojis = {
+        'dome': '🏙️',
+        'city': '🏢',
+        'city-state': '🏢',
+        'town': '🏘️',
+        'village': '🏠',
+        'military_base': '🪖',
+    }
+
+    return settlement_emojis.get(settlement_type)

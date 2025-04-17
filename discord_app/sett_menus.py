@@ -8,13 +8,14 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI
+from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_vendor_emoji
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
 import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
 import                                discord_app.warehouse_menus
+import                                discord_app.banner_menus
 from discord_app.df_state      import DFState
 
 
@@ -42,7 +43,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             f'# {df_state.sett_obj['name']} Warehouse',
             await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
         ])
-    
+
     vendor_displayables = []  # TODO: make these more better
     for vendor in df_state.sett_obj['vendors']:
         displayable_services = []
@@ -66,7 +67,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if vendor['repair_price']:
             displayable_services.append('- Mechanic services')
 
-        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['part']]
+        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['parts']]
         if part_cargo:
             displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 
@@ -74,7 +75,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             f'## {vendor['name']}',
             '\n'.join(displayable_services)
         ]))
-    
+
     embed.description += '\n' + '\n'.join([
         f'# {df_state.sett_obj['name']} vendors',
         '\n'.join(vendor_displayables)
@@ -90,13 +91,12 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             og_message = await df_state.interaction.original_response()
             await df_state.interaction.followup.edit_message(og_message.id, embeds=embeds, view=view, attachments=[])
         else:
-         await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
+            await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
 
-
 class SettView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching settlement button menu """
     def __init__(self, df_state: DFState, vendors):
         self.df_state = df_state
         super().__init__(timeout=600)
@@ -105,6 +105,7 @@ class SettView(discord.ui.View):
 
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
         self.add_item(WarehouseButton(self.df_state))
+        self.add_item(SettBannerButton(self.df_state))
         self.add_item(VendorSelect(self.df_state, vendors, row=2))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
@@ -131,18 +132,22 @@ class WarehouseButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
 
+        if self.df_state.warehouse_obj is not None:
+            emoji = '🏭'
+        else:
+            emoji = '📦'
+
         label = 'Warehouse'
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label=label,
             custom_id='warehouse_button',
-            emoji='📦',
+            emoji=emoji,
             row=1
         )
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         local_warehouse = next((
@@ -154,12 +159,35 @@ class WarehouseButton(discord.ui.Button):
 
         await discord_app.warehouse_menus.warehouse_menu(self.df_state)
 
+class SettBannerButton(discord.ui.Button):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+
+        label = 'Banner'
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label=label,
+            custom_id='sett_banner_button',
+            emoji='🎌',
+            row=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        self.df_state.interaction = interaction
+
+        await discord_app.banner_menus.banner_menu(self.df_state)
+
 class VendorSelect(discord.ui.Select):
     def __init__(self, df_state: DFState, vendors, row: int=1):
         self.df_state = df_state
         self.vendors = vendors
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL
+
+        placeholder = 'Select vendor to visit'
+        disabled = False
+
         if tutorial_stage == 1:
             options=[
                 discord.SelectOption(
@@ -180,20 +208,30 @@ class VendorSelect(discord.ui.Select):
             ]
         else:  # Not in tutorial
             options=[
-                discord.SelectOption(label=vendor['name'],value=vendor['vendor_id'])
+                discord.SelectOption(
+                    label=f'{vendor['name']}',
+                    value=vendor['vendor_id'],
+                    emoji= '🔧' if 'Mechanic' in vendor['name'] else get_vendor_emoji(vendor)
+                )
                 for vendor in self.vendors
             ]
-        
+
+        if not options:
+            placeholder = f'No vendors in {df_state.sett_obj['name']}'
+            disabled = True
+            options = [discord.SelectOption(label='none', value='none')]
+
+        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
-            placeholder='Select vendor to visit',
-            options=options,
+            placeholder=placeholder,
+            options=sorted_options,
+            disabled=disabled,
             custom_id='select_vendor',
             row=row
         )
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
 
         self.df_state.vendor_obj = next((

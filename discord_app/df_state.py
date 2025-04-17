@@ -15,7 +15,7 @@ DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
 class DFState:
-    ''' A class to hold the state of the DF Discord menus. '''
+    """ A class to hold the state of the DF Discord menus. """
     def __init__(
             self,
             user_discord_id=None,
@@ -27,9 +27,11 @@ class DFState:
             convoy_obj=None,
             vehicle_obj=None,
             cargo_obj=None,
+            part_obj=None,
             interaction=None,
             back_stack=None,
-            user_cache=None
+            user_cache=None,
+            misc=None,
     ):
         self.user_discord_id = user_discord_id
         self.map_obj = map_obj
@@ -40,11 +42,13 @@ class DFState:
         self.convoy_obj = convoy_obj
         self.vehicle_obj = vehicle_obj
         self.cargo_obj = cargo_obj
+        self.part_obj = part_obj
         self.user_cache = user_cache
 
         self.interaction: discord.Interaction = interaction
 
         self.back_stack = back_stack or []
+        self.misc = misc
 
     def append_menu_to_back_stack(self, func, args: dict | None=None):
         if args is None:

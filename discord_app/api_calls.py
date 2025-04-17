@@ -44,7 +44,7 @@ async def render_map(
                 'lowlight_color': lowlight_color
             }
         )
-    
+
     # Check response status
     _check_code(response)
 
@@ -88,6 +88,17 @@ async def get_tile(x: int, y: int) -> dict:
                 'x': x,
                 'y': y
             }
+        )
+
+    _check_code(response)
+    return response.json()
+
+async def resource_weights() -> dict:
+    """ Fetch the weight per unit of each resource type from the API. """
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f"{DF_API_HOST}/cargo/resource/weights",
+            params={}
         )
 
     _check_code(response)
@@ -155,6 +166,19 @@ async def new_convoy(user_id: UUID, new_convoy_name: str) -> dict:
     _check_code(response)
     return response.json()
 
+
+async def redeem_referral(user_id: UUID, referral_code: str) -> dict:
+
+
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/user/redeem_referral',
+            params={  # Send as query params
+                'user_id': user_id,
+                'referral_code': referral_code
+            }
+        )
+        return response.json()
 
 async def get_convoy(convoy_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
@@ -347,6 +371,37 @@ async def add_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_carg
     return response.json()
 
 
+async def remove_part(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID, part_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/vendor/vehicle/part/remove',
+            params={
+                'vendor_id': vendor_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id,
+                'part_id': part_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def vendor_scrap_vehicle(vendor_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/vendor/vehicle/scrap',
+            params={
+                'vendor_id': vendor_id,
+                'convoy_id': convoy_id,
+                'vehicle_id': vehicle_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
 async def get_vehicle(vehicle_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
@@ -361,11 +416,22 @@ async def get_vehicle(vehicle_id: UUID) -> dict:
 async def check_part_compatibility(vehicle_id: UUID, part_cargo_id: UUID) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(
-            url=f'{DF_API_HOST}/vehicle/part_compatibility',
+            url=f'{DF_API_HOST}/vehicle/part/check_compatibility',
             params={
                 'vehicle_id': vehicle_id,
                 'part_cargo_id': part_cargo_id
             }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def check_scrap(vehicle_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/vehicle/check_scrap',
+            params={'vehicle_id': vehicle_id}
         )
 
     _check_code(response)
@@ -382,7 +448,7 @@ async def send_message(sender_id: UUID, recipient_id: UUID, message: str) -> dic
                 'message': message
             }
         )
-    
+
     _check_code(response)
     return response.json()
 
@@ -531,7 +597,6 @@ async def retrieve_vehicle_in_warehouse(warehouse_id: UUID, convoy_id: UUID, veh
     return response.json()
 
 
-
 async def store_vehicle_in_warehouse(warehouse_id: UUID, convoy_id: UUID, vehicle_id: UUID) -> list[dict]:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(
@@ -560,3 +625,116 @@ async def spawn_convoy_from_warehouse(warehouse_id: UUID, vehicle_id: UUID, new_
 
     _check_code(response)
     return response.json()
+
+
+async def new_banner(
+        user_id: UUID,
+        name: str,
+        description: str,
+        banner_desc: str,
+        public: bool,
+        discord_id: int
+) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/banner/new',
+            params={
+                'user_id': user_id,
+                'name': name,
+                'description': description,
+                'banner_desc': banner_desc,
+                'public': public,
+                'discord_id': discord_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_banner_by_discord_id(discord_id: int) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/get_by_discord_id',
+            params={'discord_id': discord_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_settlement_banner(sett_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/settlement/get',
+            params={'sett_id': sett_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_banner_internal_leaderboard(banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/leaderboard/internal',
+            params={'banner_id': banner_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_banner_global_leaderboard(banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/banner/leaderboard/global',
+            params={'banner_id': banner_id}
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def form_allegiance(user_id: UUID, banner_id: UUID) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.post(
+            url=f'{DF_API_HOST}/banner/allegiance/form',
+            params={
+                'user_id': user_id,
+                'banner_id': banner_id
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def change_username(user_id, new_name) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/user/update_username',
+            params={
+                'user_id': user_id,
+                'new_name': new_name
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+
+async def change_convoy_name(convoy_id: UUID, new_name: str) -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.patch(
+            url=f'{DF_API_HOST}/convoy/update_convoy_name',
+            params={
+                'convoy_id': convoy_id,
+                'new_name': new_name
+            }
+        )
+
+    _check_code(response)
+    return response.json()
+
+

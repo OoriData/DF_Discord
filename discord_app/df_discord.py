@@ -3,19 +3,15 @@
 import                                  os
 import                                  asyncio
 import                                  logging
-import                                  textwrap
-from typing                      import Optional
-from datetime                    import datetime, timezone, timedelta
-from io                          import BytesIO
 
 import                                  discord
-import                                  httpx
 from discord                     import app_commands, HTTPException
 from discord.ext                 import commands, tasks
 
 from utiloori.ansi_color         import ansi_color
 
 from discord_app                 import DF_DISCORD_LOGO as API_BANNER
+from discord_app                 import DF_GUILD_ID, DF_CHANNEL_ID, WASTELANDER_ROLE, ALPHA_ROLE, BETA_ROLE
 from discord_app                 import TimeoutView, api_calls, DF_HELP
 from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
@@ -23,17 +19,12 @@ from discord_app.main_menu_menus import main_menu
 DF_API_HOST = os.environ['DF_API_HOST']
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
-DF_GUILD_ID = int(os.environ['DF_GUILD_ID'])
-DF_CHANNEL_ID = int(os.environ['DF_CHANNEL_ID'])
-WASTELANDER_ROLE = int(os.environ['WASTELANDER_ROLE'])
-ALPHA_ROLE = int(os.environ['ALPHA_ROLE'])
-BETA_ROLE = int(os.environ['BETA_ROLE'])
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
 
 
-class Desolate_Cog(commands.Cog):
+class DesolateCog(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.message_history_limit = 1
@@ -42,9 +33,10 @@ class Desolate_Cog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        'Called when the bot is ready to start taking commands'
+        """ Called when the bot is ready to start taking commands """
         await self.bot.tree.sync()
 
+        logger.info(ansi_color(f'Bot/App: {self.bot.user.name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
@@ -66,14 +58,14 @@ class Desolate_Cog(commands.Cog):
         logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
         df_notification_channel = self.bot.get_channel(DF_CHANNEL_ID)
         logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
-        
+
         logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
         self.notifier.start()
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
     def find_roles(self):
-        '''Cache player roles'''
+        """ Cache player roles """
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
         self.wastelander_role, self.beta_role, self.alpha_role = None, None, None
         for role in guild.roles:
@@ -89,13 +81,14 @@ class Desolate_Cog(commands.Cog):
             if self.wastelander_role and self.alpha_role and self.beta_role:  # Break early if all roles are found
                 break
 
-    @app_commands.command(name='desolate-frontiers', description='Desolate Frontiers main menu')
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def df_main_menu(self, interaction: discord.Interaction):
+    async def mm(self, interaction: discord.Interaction):
         if not self.cache_ready.is_set():
             await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
             return
+        
+        # ENTITLEMENTS CHECKER MECHANISM
+        # user_entitlements = [entitlement async for entitlement in self.bot.entitlements(user=interaction.user)]
+        # import pprint;pprint.pprint(user_entitlements)
 
         await main_menu(
             interaction=interaction,
@@ -103,7 +96,19 @@ class Desolate_Cog(commands.Cog):
             user_cache=self.df_users_cache,
             edit=False
         )
-        
+
+    @app_commands.command(name='desolate-frontiers', description='Show the Desolate Frontiers main menu')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def desolate_frontiers_main_menu(self, interaction: discord.Interaction):
+        await self.mm(interaction)
+
+    @app_commands.command(name='df', description='A short alias to show the Desolate Frontiers main menu')
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def df_main_menu(self, interaction: discord.Interaction):
+        await self.mm(interaction)
+
     @app_commands.command(name='df-map', description='Show the full game map')
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -137,6 +142,10 @@ class Desolate_Cog(commands.Cog):
         help_embed = discord.Embed(description=DF_HELP)
         await interaction.response.send_message(embed=help_embed, ephemeral=True)
 
+    @app_commands.command(name='redeem_free_days', description="Redeem available free days")
+    async def redeem_free_days(self, interaction: discord.Interaction):
+        return  # Ignore commands
+
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
         if not isinstance(self.df_users_cache, dict):  # Initialize cache if not already a dictionary
@@ -165,7 +174,7 @@ class Desolate_Cog(commands.Cog):
             if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call
                 await add_discord_roles(member)  # Add Alpha/Beta roles
                 continue
-            
+
             try:  # Fetch user data via API only if they aren't in the cache
                 user_dict = await api_calls.get_user_by_discord(member.id)
                 self.df_users_cache[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
@@ -246,7 +255,7 @@ def main():
     assert bot.DISCORD_TOKEN
 
     async def startup():
-        await bot.add_cog(Desolate_Cog(bot))
+        await bot.add_cog(DesolateCog(bot))
 
     asyncio.run(startup())
 

@@ -5,11 +5,11 @@ import                           discord
 
 import                           discord_app.main_menu_menus
 import                           discord_app.convoy_menus
-import discord_app.sett_menu
+import discord_app.sett_menus
 import                           discord_app.vendor_views.vendor_menus
 
 from discord_app.df_state import DFState, DFMenu
-from discord_app          import validate_interaction
+from discord_app          import validate_interaction, get_settlement_emoji
 
 
 def add_nav_buttons(view: discord.ui.View, df_state: DFState):
@@ -38,8 +38,8 @@ class NavBackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await self.df_state.previous_menu()
 
 class NavMainMenuButton(discord.ui.Button):
@@ -55,7 +55,7 @@ class NavMainMenuButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
+
         await discord_app.main_menu_menus.main_menu(
             interaction=interaction,
             df_map=self.df_state.map_obj,
@@ -75,8 +75,8 @@ class NavConvoyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await discord_app.convoy_menus.convoy_menu(self.df_state)
 
 class NavSettButton(discord.ui.Button):
@@ -90,17 +90,23 @@ class NavSettButton(discord.ui.Button):
             label = 'Settlement'
             disabled = True
 
+        if df_state.sett_obj:
+            emoji = get_settlement_emoji(df_state.sett_obj['sett_type'])
+        else:
+            emoji = None
+
         super().__init__(
             style=discord.ButtonStyle.gray,
             label=label,
             disabled=disabled,
             custom_id='nav_sett_button',
+            emoji = emoji,
             row=0
         )
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         self.df_state.vendor_obj = None  # Reset
-        await discord_app.sett_menu.sett_menu(self.df_state)
+        await discord_app.sett_menus.sett_menu(self.df_state)

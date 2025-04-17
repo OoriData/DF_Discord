@@ -18,8 +18,10 @@ services:
       BETA_ROLE: ${BETA_ROLE}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - df_bridge
     restart: unless-stopped
-  
+
   df_map:
     build:
       context: .
@@ -29,4 +31,11 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
     ports:
       - "9100:9100"  # outie:innie
+    networks:
+      - df_bridge
     restart: unless-stopped
+
+networks:
+  df_bridge:
+    external: true
+    name: df_bridge  # Match network name

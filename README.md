@@ -6,18 +6,24 @@
 ╚═════════════════════════════════════════════════════════════════════════════════════╝
 ```
 # Desolate Frontiers Discord Frontend
+
 ## Running the Discord frontend
-To run the Desolate Frontiers Discord frontend, you can use this command (from the root folder):
-```sh
-source $HOME/.local/venv/df_discord/bin/activate
-op run --env-file op_discord.env --no-masking -- python -m discord_app.df_discord
-```
-You'll also need to have the map renderer running, which is a seperate program (so, run in a seperate terminal/tab):
+
+You need to have the map renderer running, which is a separate program (so, run in a seperate terminal/tab):
 ```sh
 source $HOME/.local/venv/df_discord/bin/activate
 cd map_render
 hypercorn server:app --workers=2 --bind=0.0.0.0:9100
+cd ..
 ```
+
+To run the Desolate Frontiers Discord frontend, you can use this command (from the root folder):
+```sh
+source $HOME/.local/venv/df_discord/bin/activate
+op run --env-file op_discord.env -- python -m discord_app.df_discord
+```
+Note: in some debugging scenarios you might want to add the `--no-masking` flag, but do so judiciously.
+
 
 ### environment (internal version, remove before open-source)
 To run that discord bot in a test environment, your `op_discord.env` should look something like this:
@@ -64,6 +70,7 @@ pip install -U -r requirements.txt -c constraints.txt
 ```
 For ease of development, you can install the libraries for the map renderer to the same venv:
 ```sh
+pip install -U pip
 pip install -U -r map_render/requirements.txt -c map_render/constraints.txt
 ```
 

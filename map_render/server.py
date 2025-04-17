@@ -1,5 +1,7 @@
-'''
-Launcch the map server:
+# SPDX-FileCopyrightText: 2024-present Oori Data <info@oori.dev>
+# SPDX-License-Identifier: UNLICENSED
+"""
+Launch the map server:
 ```sh
 # Probably more like --workers=4 for production
 hypercorn server:app --workers=2 --bind=0.0.0.0:9100
@@ -13,7 +15,7 @@ curl -X POST "http://localhost:9100/render-map" \
   --data-binary @/tmp/test_map_obj.bin \
   --output /tmp/map.png
 ```
-'''
+"""
 from io import BytesIO
 from typing import Any
 import warnings
@@ -34,7 +36,7 @@ from df_lib.map_struct import deserialize_map
 # Context manager for the FastAPI app's lifespan: https://fastapi.tiangolo.com/advanced/events/
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
-#     '''Inner bracketing of the FastAPI event loop'''
+#     """ Inner bracketing of the FastAPI event loop """
 #     # Startup async code here, in order to share app's correct event loop
 #     logger.info('Startup…')
 #     yield
@@ -82,7 +84,7 @@ app = FastAPI()
 @app.post('/unpack-map')
 async def unpack_map_(request: Request):
 # async def unpack_map_(data: bytes):
-    '''
+    """
     Dev utility to unpack a map struct
 
     ```sh
@@ -91,7 +93,7 @@ curl -X POST "http://localhost:9100/unpack-map" \
 --data-binary @/tmp/test_map_obj.bin \
 --output /tmp/map.json
     ```
-    '''
+    """
     try:
         # Read the raw binary data from the request body
         data = await request.body()
@@ -108,7 +110,7 @@ async def render_map_(
     lowlight_color: str | None = Query(default=None, description='Highlight color to use')
 ):
 # async def unpack_map_(data: bytes):
-    '''
+    """
     Dev utility to unpack a map struct
 
     ```sh
@@ -117,7 +119,7 @@ time curl -X POST "http://localhost:9100/render-map" \
 --data-binary @/tmp/test_map_obj.bin \
 --output /tmp/map.png
     ```
-    '''
+    """
     try:
         data = await request.body()
         map_data = deserialize_map(data)
@@ -130,7 +132,7 @@ time curl -X POST "http://localhost:9100/render-map" \
 
 @app.post('/render-map-json')
 async def render_map_json_(data: Any = Body(...)):  # noqa B008
-    '''
+    """
     Request body is a top-level JSON object with keys:
 
         "tiles": list[list[dict]],
@@ -145,14 +147,13 @@ time curl -X POST "http://localhost:9100/render-map-json" \
 --data-binary @map_render/test_map_obj.json \
 --output /tmp/map.png
     ```
-
-    '''
+    """
     img_byte_arr = do_render_map(data)
     return StreamingResponse(img_byte_arr, media_type='image/png')
 
 
 @app.get('/health-check', status_code=status.HTTP_200_OK, tags=['healthcheck'])
 async def health_check():
-    '''Health check for Docker, etc.'''
+    """ Health check for Docker, etc. """
     # Feel free to test any dependent resources (e.g. working DB connections) here
     return {'status': 'OK'}

@@ -31,7 +31,7 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
     vendor_embed = df_embed_author(vendor_embed, df_state)
 
     vendor_embed.description = await vendor_inv_md(df_state.vendor_obj)
-    
+
     embeds = [vendor_embed]
     embeds = add_tutorial_embed(embeds, df_state)
 
@@ -43,7 +43,7 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
         await df_state.interaction.followup.send(embeds=embeds, view=vendor_view)
 
 class VendorView(discord.ui.View):
-    ''' Overarching convoy button menu '''
+    """ Overarching vendor button menu """
     def __init__(self, df_state: DFState):
         self.df_state = df_state
         super().__init__(timeout=600)
@@ -55,9 +55,17 @@ class VendorView(discord.ui.View):
         self.add_item(SellButton(df_state))
 
         tutorial_stage = get_user_metadata(self.df_state, 'tutorial')  # TUTORIAL BUTTON DISABLING
-        if tutorial_stage in {1, 2, 3, 4, 5}:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
+        if tutorial_stage == 1:  # Only proceed if tutorial stage is in a relevant set of stages (1 through 5)
             for item in self.children:
                 item.disabled = item.custom_id not in (
+                    'nav_back_button',
+                    'nav_sett_button',
+                    'buy_button'
+                )
+        if tutorial_stage in {2, 3, 4, 5}:
+            for item in self.children:
+                item.disabled = item.custom_id not in (
+                    'sell_button',
                     'nav_back_button',
                     'nav_sett_button',
                     'buy_button'
@@ -91,8 +99,8 @@ class BuyButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.buy_menus.buy_menu(self.df_state)
 
 class MechanicButton(discord.ui.Button):
@@ -106,16 +114,17 @@ class MechanicButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Mechanic (Repairs, part/upgrade management)',
+            label='Mechanic',
             disabled=disabled,
             custom_id='mech_button',
+            emoji='🔧',
             row=2
         )
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.mechanic_menus.mechanic_menu(self.df_state)
 
 class SellButton(discord.ui.Button):
@@ -132,6 +141,6 @@ class SellButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
-        
         self.df_state.interaction = interaction
+
         await discord_app.vendor_views.sell_menus.sell_menu(self.df_state)

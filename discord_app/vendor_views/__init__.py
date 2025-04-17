@@ -100,5 +100,7 @@ def wet_price(cargo: dict, vendor: dict, quantity: int = 1) -> int:
         if resource_amount:
             unit_proportion = quantity / cargo['quantity']
             resource_price += resource_amount * unit_proportion * vendor[price_key]
+    
+    dry_price = cargo['unit_price'] * quantity
 
-    return cargo['unit_price'] + resource_price
+    return dry_price + resource_price

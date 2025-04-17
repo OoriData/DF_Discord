@@ -762,10 +762,15 @@ class ConfirmJourneyButton(discord.ui.Button):
         style = override_style or discord.ButtonStyle.green
         emoji = override_emoji or '🛣️'
 
+        if emoji == '🛑':  # XXX: REMOVE ME WHEN YOU CAN SEND CONVOYS TO THEIR DEATHS
+            disabled = True
+        else:
+            disabled = False
+
         super().__init__(
             style=style,
             label='Embark upon Journey',
-            disabled=False,
+            disabled=disabled,
             custom_id='confirm_journey_button',
             emoji=emoji,
             row=row,

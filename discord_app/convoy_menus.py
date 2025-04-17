@@ -11,7 +11,11 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji, get_cargo_emoji
+from discord_app               import (
+    api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed,
+    get_user_metadata, validate_interaction, metric_to_imperial, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji,
+    get_settlement_emoji, get_cargo_emoji
+)
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
@@ -63,19 +67,38 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 
     convoy_embed.description = vehicles_embed_str(df_state.convoy_obj['vehicles'])
 
+    if get_user_metadata(df_state, 'imperial'):
+        user_volume_unit = 'gallons'
+        user_mass_unit = 'lb'
+
+        convoy_fuel_capacity = metric_to_imperial(df_state.convoy_obj['max_fuel'], 'volume')
+        convoy_water_capacity = metric_to_imperial(df_state.convoy_obj['max_water'], 'volume')
+
+        convoy_fuel = metric_to_imperial(df_state.convoy_obj['fuel'], 'volume')
+        convoy_water = metric_to_imperial(df_state.convoy_obj['water'], 'volume')
+    else:
+        user_volume_unit = 'liters'
+        user_mass_unit = 'kg'
+
+        convoy_fuel_capacity = df_state.convoy_obj['max_fuel']
+        convoy_water_capacity = df_state.convoy_obj['max_water']
+
+        convoy_fuel = df_state.convoy_obj['fuel']
+        convoy_water = df_state.convoy_obj['water']
+
     if get_user_metadata(df_state, 'mobile'):
         convoy_embed.description += '\n' + '\n'.join([
             '### Convoy Stats',
-            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
-            f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
+            f'Fuel ⛽️: **{convoy_fuel:,.2f}** / {convoy_fuel_capacity:.0f}L',
+            f'Water 💧: **{convoy_water:,.2f}** / {convoy_water_capacity:.0f}L',
             f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
             f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
             f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
         ])
     else:
-        convoy_embed.add_field(name='Fuel ⛽️', value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.0f} liters')
-        convoy_embed.add_field(name='Water 💧', value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters')
+        convoy_embed.add_field(name='Fuel ⛽️', value=f'**{convoy_fuel:,.2f}**\n/{convoy_fuel_capacity:.0f} {user_volume_unit}')
+        convoy_embed.add_field(name='Water 💧', value=f'**{convoy_water:,.2f}**\n/{convoy_water_capacity:.0f} {user_volume_unit}')
         convoy_embed.add_field(name='Food 🥪', value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals')
 
         convoy_embed.add_field(name='Efficiency 🌿', value=f'**{df_state.convoy_obj['efficiency']:.0f}**\n/100')

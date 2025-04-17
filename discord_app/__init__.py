@@ -174,6 +174,18 @@ def get_user_metadata(df_state: DFState, metadata_key: str):
     user_metadata = df_state.convoy_obj.get('user_metadata')
     return user_metadata.get(metadata_key)
 
+def metric_to_imperial(measurement, unit_type: str):
+    ''' # What the fuck is a kilometer? '''
+    match unit_type:
+        case 'volume':
+            # Liter to gallon conversion
+            return measurement / 3.79
+        case 'mass':
+            # Kilogram to pound conversion
+            return measurement / 2.20
+        case 'velocity':
+            # Km/h to mi/h conversion
+            return measurement / 1.61
 
 def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
     if not df_state.convoy_obj:

@@ -819,7 +819,7 @@ class TopUpButton(discord.ui.Button):
                 disabled = True
                 if self.top_up_price == 0:
                     label = 'Convoy is already topped up'
-                elif self.df_state.convoy_obj['total_remaining_capacity'] <= 0:
+                elif remaining_weight <= 0:
                     label = 'Convoy is full'
                 elif not self.df_state.sett_obj['vendors']:
                     label = 'No vendors available for top up'

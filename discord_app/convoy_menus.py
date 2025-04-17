@@ -537,7 +537,6 @@ class DestinationSelect(discord.ui.Select):
 
         for sett_name, x, y, _, cargo_names, emoji in settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
-            print(unique_cargo_names)
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
             options.append(discord.SelectOption(
@@ -578,15 +577,85 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
 
     prospective_journey_plus_misc = route_choices[route_index]
 
-    embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
-    embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
+    convoy_embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
+    convoy_embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
-    embeds = [embed, *follow_on_embeds]
+    # Check for resource constraints and limits
+    resource_constraints = []
+    resource_limits = []
+
+    for resource in ['fuel', 'water', 'food', 'kwh']:
+        if resource == 'fuel':
+            available = sum(
+                df_state.convoy_obj.get(resource, {}).values()
+            ) if isinstance(df_state.convoy_obj.get(resource), dict) else df_state.convoy_obj.get(resource, 0)
+        elif resource == 'kwh':
+            for v in df_state.convoy_obj['vehicles']:
+                vehicle_id = v['vehicle_id']
+                vehicle_name = v['name']
+                
+                if vehicle_id in prospective_journey_plus_misc['kwh_expenses'] and not v['internal_combustion']:
+                    available_kwh = df_state.convoy_obj.get('kwh', {}).get(vehicle_id, 0)
+                    required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
+
+                    if available_kwh < required_kwh:
+                        resource_limits.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
+                    elif available_kwh < 2 * required_kwh:
+                        resource_constraints.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
+            
+            continue
+
+        else:
+            available = df_state.convoy_obj.get(resource, 0)
+
+        required = prospective_journey_plus_misc.get(f'{resource}_expense', 0)
+        recommended = 2 * required
+
+        if available < required:
+            resource_limits.append((resource, available, required))
+        elif available < recommended:
+            resource_constraints.append((resource, available, recommended))
+
+    override_style = None
+    override_emoji = None
+
+    if resource_constraints:  # If any resources are below the recommended level
+        override_style = discord.ButtonStyle.red
+        override_emoji = '⚠️'
+        journey_msg = ''
+        journey_msg += '**⚠️ Limited resource:**\n'
+        journey_msg += '\nResource       | Current  | Recommended\n'
+        journey_msg += '--------------------------------------\n'
+        journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_constraints])
+        journey_msg += '\n'
+
+        follow_on_embeds.append(discord.Embed(
+            color=discord.Color.yellow(),
+            description=journey_msg
+        ))
+
+    elif resource_limits:  # If any resources are below the minimum required
+        override_style = discord.ButtonStyle.red
+        override_emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
+        journey_msg = ''
+        journey_msg += '**🛑 Not enough resources:**\n'
+        journey_msg += '\nResource       | Current  | Minimum Needed\n'
+        journey_msg += '------------------------------------------\n'
+        journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_limits])
+
+        follow_on_embeds.append(discord.Embed(
+            color=discord.Color.red(),
+            description=journey_msg
+        ))
+
+    embeds = [convoy_embed, *follow_on_embeds]
     embeds = add_tutorial_embed(embeds, df_state)
 
     view = SendConvoyConfirmView(
         df_state=df_state,
         prospective_journey_plus_misc=prospective_journey_plus_misc,
+        override_style=override_style,
+        override_emoji=override_emoji,
         route_choices=route_choices,
         route_index=route_index
     )
@@ -611,8 +680,10 @@ class SendConvoyConfirmView(discord.ui.View):
     def __init__(
             self,
             df_state: DFState,
-            prospective_journey_plus_misc: dict,
             route_choices: list,
+            prospective_journey_plus_misc: dict,
+            override_style: discord.ButtonStyle | None = None,
+            override_emoji: str | None = None,
             route_index: int = 0
     ):
         self.df_state = df_state
@@ -626,7 +697,12 @@ class SendConvoyConfirmView(discord.ui.View):
 
         if len(route_choices) > 1:
             self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index=self.route_index))
-        self.add_item(ConfirmJourneyButton(df_state, self.prospective_journey_plus_misc))
+        self.add_item(ConfirmJourneyButton(
+            df_state=df_state,
+            prospective_journey_plus_misc=self.prospective_journey_plus_misc,
+            override_style=override_style,
+            override_emoji=override_emoji
+        ))
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(
             df_state=self.df_state,
             menu=route_menu,
@@ -672,187 +748,43 @@ class NextJourneyButton(discord.ui.Button):
         await route_menu(self.df_state, self.routes, self.index)
 
 class ConfirmJourneyButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict, row: int = 1):
+    def __init__(
+            self,
+            df_state: DFState,
+            prospective_journey_plus_misc: dict,
+            override_style: discord.ButtonStyle | None = None,
+            override_emoji: str | None = None,
+            row: int = 1
+    ):
         self.df_state = df_state
         self.prospective_journey_plus_misc = prospective_journey_plus_misc
 
-        label = 'Embark upon Journey'
-        emoji = '🛣️'
-        disabled = False
-        journey_msg = ''
-
-        resource_constraints = []
-        resource_limits = []
-
-        for resource in ['fuel', 'water', 'food', 'kwh']:
-            if resource == 'fuel':
-                available = sum(self.df_state.convoy_obj.get(resource, {}).values()) if isinstance(self.df_state.convoy_obj.get(resource), dict) else self.df_state.convoy_obj.get(resource, 0)
-            elif resource == 'kwh':
-                for v in df_state.convoy_obj['vehicles']:
-                    vehicle_id = v['vehicle_id']
-                    vehicle_name = v['name']
-                    
-                    if vehicle_id in prospective_journey_plus_misc['kwh_expenses'] and not v['internal_combustion']:
-                        available_kwh = self.df_state.convoy_obj.get('kwh', {}).get(vehicle_id, 0)
-                        required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
-
-                        if available_kwh < required_kwh:
-                            resource_limits.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
-                        elif available_kwh < 2 * required_kwh:
-                            resource_constraints.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
-                
-                continue
-
-            else:
-                available = self.df_state.convoy_obj.get(resource, 0)
-
-            required = self.prospective_journey_plus_misc.get(f'{resource}_expense', 0)
-            recommended = 2 * required
-
-            if available < required:
-                resource_limits.append((resource, available, required))
-            elif available < recommended:
-                resource_constraints.append((resource, available, recommended))
-
-        style = discord.ButtonStyle.green
-        journey_msg = ''
-
-        if resource_limits:
-            style = discord.ButtonStyle.red
-            emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
-            journey_msg += '**🛑 Not enough resources:**\n'
-            journey_msg += '\nResource       | Current  | Minimum Needed\n'
-            journey_msg += '------------------------------------------\n'
-            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_limits])
-        elif resource_constraints:
-            style = discord.ButtonStyle.blurple
-            emoji = '⚠️'
-            journey_msg += '**⚠️ Limited resource:**\n'
-            journey_msg += '\nResource       | Current  | Recommended\n'
-            journey_msg += '--------------------------------------\n'
-            journey_msg += '\n'.join([f"{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}" for r, a, m in resource_constraints])
-            journey_msg += '\n'
+        style = override_style or discord.ButtonStyle.green
+        emoji = override_emoji or '🛣️'
 
         super().__init__(
             style=style,
-            label=label,
-            disabled=disabled,
+            label='Embark upon Journey',
+            disabled=False,
             custom_id='confirm_journey_button',
             emoji=emoji,
             row=row,
         )
-        self.journey_msg = journey_msg
 
     async def callback(self, interaction: discord.Interaction):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
-
-        await interaction.response.defer()
-
-        confirmation_message = 'Are you sure you want to embark on this journey?'
-        if self.journey_msg:
-            confirmation_message += f'\n\n{self.journey_msg}'
-
-        await interaction.followup.send(
-            content=confirmation_message,
-            view=JourneyConfirmationView(self.df_state, self.prospective_journey_plus_misc),
-            ephemeral=True
-        )
-
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
-
-class ConfirmJourneyActionButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict):
-        super().__init__(
-            style=discord.ButtonStyle.green,
-            label='Confirm',
-            custom_id='confirm_journey_action'
-        )
-        self.df_state = df_state
-        self.prospective_journey_plus_misc = prospective_journey_plus_misc
-
-    async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
-        self.df_state.interaction = interaction
-        
-        if not interaction.response.is_done():
-            await interaction.response.defer()  # Prevents duplicate responses
 
         try:
             self.df_state.convoy_obj = await api_calls.send_convoy(
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 journey_id=self.prospective_journey_plus_misc['journey']['journey_id']
             )
-
-            # Create success embed
-            embed = discord.Embed(
-                title='Journey Started',
-                description='Your convoy has embarked on the journey!',
-                color=discord.Color.green()
-            )
-            
-            # Create a new view with just the Journey button
-            new_view = discord.ui.View()
-            new_view.add_item(JourneyButton(self.df_state))
-            
-            # Update the message with success embed and the Journey button
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=embed, view=new_view)
-            else:
-                await interaction.edit_original_response(embed=embed, view=new_view)
-                
         except RuntimeError as e:
-            # Create error embed
-            embed = discord.Embed(
-                title='Error',
-                description=str(e),
-                color=discord.Color.red()
-            )
-
-            # Show error but keep the buttons to let them try again
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=embed, ephemeral=True)
-            else:
-                # Keep the current view in case of error
-                await interaction.edit_original_response(embed=embed)
-
-        # Send the updated response with no buttons (empty view)
-
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
-
-
-class JourneyConfirmationView(discord.ui.View):
-    def __init__(self, df_state: DFState, prospective_journey_plus_misc: dict):
-        super().__init__()
-        self.df_state = df_state
-        self.prospective_journey_plus_misc = prospective_journey_plus_misc
-
-        self.add_item(ConfirmJourneyActionButton(df_state, prospective_journey_plus_misc))
-        self.add_item(CancelButton())
-
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
-
-class CancelButton(discord.ui.Button):
-    def __init__(self):
-        super().__init__(
-            style=discord.ButtonStyle.grey,
-            label='Cancel',
-            custom_id='cancel'
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()  # ✅ Ensures the interaction is acknowledged
-
-        try:
-            original_message = await interaction.original_response()
-            await interaction.followup.edit_message(original_message.id, content='Cancelled Planned Journey', view=None)
-
-        except discord.errors.NotFound:
-            # ✅ If the original message no longer exists, send a new ephemeral message instead
-            await interaction.followup.send('Cancelled Planned Journey', ephemeral=True)
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
+        
+        await convoy_menu(self.df_state)
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)

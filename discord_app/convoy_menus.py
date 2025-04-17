@@ -77,6 +77,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         convoy_fuel = metric_to_imperial(df_state.convoy_obj['fuel'], 'volume')
         convoy_water = metric_to_imperial(df_state.convoy_obj['water'], 'volume')
     else:
+        user_volume_unit = 'liters'
+        user_mass_unit = 'kg'
+
         convoy_fuel_capacity = df_state.convoy_obj['max_fuel']
         convoy_water_capacity = df_state.convoy_obj['max_water']
 

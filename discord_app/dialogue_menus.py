@@ -102,23 +102,36 @@ class DialogueView(discord.ui.View):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id))
+        dialogue_obj = await api_calls.get_dialogue_by_char_ids(self.char_a_id, self.char_b_id)
+        dialogue_msg = dialogue_obj['messages'][self.page]['content']
+
+        await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id, dialogue_msg=dialogue_msg))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 class SendMessageModal(discord.ui.Modal):
-    def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID):
+    def __init__(self, df_state: DFState, char_a_id: UUID, char_b_id: UUID, dialogue_msg: str = None):
         self.df_state = df_state
         self.char_a_id = char_a_id
         self.char_b_id = char_b_id
+        self.dialogue_msg = dialogue_msg
 
         super().__init__(title='Send a message to your convoy captain')
 
+        self.add_item(discord.ui.TextInput(
+            label='Previous message from convoy',
+            style=discord.TextStyle.paragraph,
+            required=False,
+            default=self.dialogue_msg,
+            max_length=2048,
+            custom_id='previous_message'
+        ))
         self.convoy_name_input = discord.ui.TextInput(
             label='Message to send',
             style=discord.TextStyle.paragraph,
             required=True,
+            placeholder='',
             default='hello!',
             max_length=2048,
             custom_id='new_message'
@@ -135,3 +148,36 @@ class SendMessageModal(discord.ui.Modal):
             return
 
         await dialogue_menu(self.df_state, self.char_a_id, self.char_b_id)
+
+
+class RespondToConvoyView(discord.ui.View):
+    def __init__(
+            self,
+            user_discord_id,
+            user_convoy_id,
+            user_cache
+    ):
+        self.user_discord_id = user_discord_id
+        self.user_convoy_id = user_convoy_id
+        self.user_cache = user_cache
+
+        super().__init__(timeout=600)
+
+        self.df_state = DFState(user_discord_id=self.user_discord_id)
+    
+    @discord.ui.button(style=discord.ButtonStyle.blurple, label='Respond')
+    async def respond_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
+        self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)  # TODO: implement 'next' pattern to fetch this out of user_obj
+        self.df_state.map_obj = await api_calls.get_map()
+        self.df_state.user_cache = self.user_cache
+
+        self.df_state.interaction = interaction
+        
+        await validate_interaction(interaction=interaction, df_state=self.df_state)
+
+        await dialogue_menu(
+            df_state=self.df_state,
+            char_a_id=self.df_state.user_obj['user_id'],
+            char_b_id=self.df_state.convoy_obj['convoy_id']
+        )

@@ -15,6 +15,7 @@ from discord_app                 import DF_GUILD_ID, DF_CHANNEL_ID, WASTELANDER_
 from discord_app                 import TimeoutView, api_calls, DF_HELP
 from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
+from discord_app.dialogue_menus  import RespondToConvoyView
 
 DF_API_HOST = os.environ['DF_API_HOST']
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -191,7 +192,8 @@ class DesolateCog(commands.Cog):
             self.cache_ready.set()  # Signal that the cache is ready
 
 
-    @tasks.loop(minutes=1)
+    # @tasks.loop(minutes=1)
+    @tasks.loop(seconds=15) # Definitely don't push this line to prod
     async def notifier(self):
         if isinstance(self.df_users_cache, dict):  # If the cache has been initialized
             notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
@@ -212,19 +214,33 @@ class DesolateCog(commands.Cog):
                             await notification_channel.send(ping)
 
                             # Compile message content from unseen dialogues
-                            notifications = [
-                                message['content']
-                                for dialogue in unseen_dialogue_dicts
-                                for message in dialogue['messages']
-                            ]
+                            # notifications = [
+                            #     message['content']
+                            #     for dialogue in unseen_dialogue_dicts
+                            #     for message in dialogue['messages']
+                            # ]
+                            
+                            notifications = []
+                            for dialogue in unseen_dialogue_dicts:
+                                notification = {'message_content': None, 'message_metadata': dialogue}  # TODO: unpack 'dialogue' object later rather than storing message content and message metadata separately
+                                for message in dialogue['messages']:
+                                    notification['message_content'] = message['content']
+                                    notifications.append(notification)
 
                             for notification in notifications:
-                                embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                                # embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                                embed = discord.Embed(description=notification['message_content'][:4096])  # Embed descriptions can be a maximum of 4096 chars
                                 embed.set_author(
                                     name=discord_user.display_name,
                                     icon_url=discord_user.avatar.url
                                 )
-                                await notification_channel.send(embed=embed)
+
+                                user_convoy_id = notification['message_metadata']['char_b_id']
+
+                                # use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
+                                view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
+
+                                await notification_channel.send(embed=embed, view=view)
 
                             logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 

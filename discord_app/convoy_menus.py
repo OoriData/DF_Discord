@@ -141,7 +141,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
         
         if get_user_metadata(df_state, 'mobile'):
-            extra_embed.description += '\n' + '\n'.join([
+            extra_embed.description = '\n' + '\n'.join([
                 '### Journey',
                 f'- Fuel expense: **{sum(prospective_journey_plus_misc['fuel_expenses'].values()):.2f}**L',
                 f'- Water expense: **{prospective_journey_plus_misc['water_expense']:.2f}**L',

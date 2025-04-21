@@ -4,6 +4,7 @@ import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
 import                                textwrap
+from uuid                      import UUID
 
 import                                discord
 
@@ -14,24 +15,30 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
+class DFMenu:
+    def __init__(self, func, args):
+        self.func = func
+        self.args = args
+
+
 class DFState:
     """ A class to hold the state of the DF Discord menus. """
     def __init__(
             self,
-            user_discord_id=None,
-            map_obj=None,
-            user_obj=None,
-            sett_obj=None,
-            vendor_obj=None,
-            warehouse_obj=None,
-            convoy_obj=None,
-            vehicle_obj=None,
-            cargo_obj=None,
-            part_obj=None,
-            interaction=None,
-            back_stack=None,
-            user_cache=None,
-            misc=None,
+            user_discord_id: int | None=None,
+            map_obj: dict | None=None,
+            user_obj: dict | None=None,
+            sett_obj: dict | None=None,
+            vendor_obj: dict | None=None,
+            warehouse_obj: dict | None=None,
+            convoy_obj: dict | None=None,
+            vehicle_obj: dict | None=None,
+            cargo_obj: dict | None=None,
+            part_obj: dict | None=None,
+            interaction: discord.Interaction | None=None,
+            back_stack: list[DFMenu] | None=None,
+            user_cache: dict[int: UUID] | None=None,
+            misc: dict | None=None,
     ):
         self.user_discord_id = user_discord_id
         self.map_obj = map_obj
@@ -63,9 +70,3 @@ class DFState:
         current_menu: DFMenu = self.back_stack.pop()  # To be thrown out
         previous_menu: DFMenu = self.back_stack.pop()
         await previous_menu.func(df_state=self, **previous_menu.args)
-
-
-class DFMenu:
-    def __init__(self, func, args):
-        self.func = func
-        self.args = args

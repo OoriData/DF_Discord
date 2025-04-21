@@ -175,7 +175,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
                     battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                     battery_charge = battery['kwh']
                     battery_size = battery['capacity']
-                    batt_emoji = '🔋' if kwh_expense < (battery_size * 0.2) else '🪫'
+                    batt_emoji = '🔋' if kwh_expense > (battery_size * 0.2) else '🪫'
 
                     extra_embed.add_field(
                         name=f'{vehicle['name']} {get_vehicle_emoji(vehicle['shape'])} kWh expense',
@@ -598,7 +598,7 @@ class DestinationSelect(discord.ui.Select):
             await route_menu(self.df_state, route_choices)
 
 
-async def route_menu(df_state: DFState, route_choices: list, route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
+async def route_menu(df_state: DFState, route_choices: list[dict], route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
     df_state.append_menu_to_back_stack(func=route_menu, args={
         'route_choices': route_choices,
         'route_index': route_index
@@ -623,11 +623,12 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
             ) if isinstance(df_state.convoy_obj.get(resource), dict) else df_state.convoy_obj.get(resource, 0)
         elif resource == 'kwh':
             for v in df_state.convoy_obj['vehicles']:
-                vehicle_id = v['vehicle_id']
-                vehicle_name = v['name']
-                
-                if vehicle_id in prospective_journey_plus_misc['kwh_expenses'] and not v['internal_combustion']:
-                    available_kwh = df_state.convoy_obj.get('kwh', {}).get(vehicle_id, 0)
+                if v['electric']:
+                    vehicle_name = v['name']
+                    vehicle_id = v['vehicle_id']
+                    battery = next((c for c in v['cargo'] if c.get('kwh') is not None))
+
+                    available_kwh = battery['kwh']
                     required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
 
                     if available_kwh < required_kwh:
@@ -655,7 +656,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
         override_style = discord.ButtonStyle.red
         override_emoji = '⚠️'
         journey_msg = ''
-        journey_msg += '**⚠️ Limited resource:**\n'
+        journey_msg += f'**{override_emoji} Limited resource:**\n'
         journey_msg += '\nResource       | Current  | Recommended\n'
         journey_msg += '--------------------------------------\n'
         journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_constraints])
@@ -670,7 +671,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
         override_style = discord.ButtonStyle.red
         override_emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
         journey_msg = ''
-        journey_msg += '**🛑 Not enough resources:**\n'
+        journey_msg += f'**{override_emoji} Not enough resources:**\n'
         journey_msg += '\nResource       | Current  | Minimum Needed\n'
         journey_msg += '------------------------------------------\n'
         journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_limits])

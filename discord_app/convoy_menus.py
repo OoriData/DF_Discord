@@ -36,9 +36,8 @@ async def convoy_menu(df_state: DFState, edit: bool = True):
     if not df_state.interaction.response.is_done():
         await df_state.interaction.response.defer()
 
-    embed, image_file = await make_convoy_embed(df_state)
+    embeds, image_file = await make_convoy_embed(df_state)
 
-    embeds = [embed]
     embeds = add_tutorial_embed(embeds, df_state)
 
     view = ConvoyView(df_state)
@@ -57,7 +56,7 @@ async def convoy_menu(df_state: DFState, edit: bool = True):
             attachments=[image_file]
         )
 
-async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[discord.Embed, discord.File]:
+async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=None) -> list[list[discord.Embed], discord.File]:
     convoy_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))
     convoy_embed = df_embed_author(convoy_embed, df_state)
 
@@ -86,6 +85,8 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
     convoy_y = df_state.convoy_obj['y']
 
     if df_state.convoy_obj['journey']:  # If the convoy is in transit
+        extra_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))
+
         journey = df_state.convoy_obj['journey']
         route_tiles = []  # a list of tuples
         pos = 0  # bad way to do it but i'll fix later
@@ -102,25 +103,29 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         progress_in_miles = journey['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
 
         if get_user_metadata(df_state, 'mobile'):
-            convoy_embed.description += '\n' + '\n'.join([
+            extra_embed.description += '\n' + '\n'.join([
                 '### Journey',
                 f'Destination 📍: **{destination['settlements'][0]['name']}**',
                 f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',
                 f'Progress 🚗: **{progress_percent:.0f}%** ({progress_in_miles:.0f} miles)'
             ])
         else:
-            convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({journey['dest_x']}, {journey['dest_y']})')  # XXX: replace coords with `{territory_name}`
-            convoy_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
-            convoy_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
+            extra_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({journey['dest_x']}, {journey['dest_y']})')  # XXX: replace coords with `{territory_name}`
+            extra_embed.add_field(name='ETA ⏰', value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}')
+            extra_embed.add_field(name='Progress 🚗', value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)')
 
-        convoy_embed, image_file = await add_map_to_embed(
+        convoy_embed, image_file = await add_map_to_embed(  # Add map to main convoy embed
             embed=convoy_embed,
             highlights=[(convoy_x, convoy_y)],
             lowlights=route_tiles,
             map_obj=df_state.map_obj
         )
 
+        embeds = [convoy_embed, extra_embed]
+
     elif prospective_journey_plus_misc:  # If a journey is being considered
+        extra_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))
+
         route_tiles = []  # a list of tuples
         pos = 0  # bad way to do it but i'll fix later
         for x in prospective_journey_plus_misc['journey']['route_x']:
@@ -136,7 +141,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         distance_miles = 30 * len(prospective_journey_plus_misc['journey']['route_x'])
         
         if get_user_metadata(df_state, 'mobile'):
-            convoy_embed.description += '\n' + '\n'.join([
+            extra_embed.description += '\n' + '\n'.join([
                 '### Journey',
                 f'- Fuel expense: **{sum(prospective_journey_plus_misc['fuel_expenses'].values()):.2f}**L',
                 f'- Water expense: **{prospective_journey_plus_misc['water_expense']:.2f}**L',
@@ -145,21 +150,46 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
                 f'- ETA ⏰: **{delta_t}** ({eta_discord_time})',
                 f'- Distance 🗺️: {distance_miles} miles'
             ])
+
+            for vehicle in df_state.convoy_obj['vehicles']:
+                if vehicle['electric']:
+                    kwh_expense = prospective_journey_plus_misc['kwh_expenses'][vehicle['vehicle_id']]
+                    battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+                    battery_charge = battery['kwh']
+                    battery_size = battery['capacity']
+                    batt_emoji = '🔋' if kwh_expense < (battery_size * 0.2) else '🪫'
+
+                    extra_embed.description += f'\n- {vehicle['name']} {get_vehicle_emoji(vehicle['shape'])} kWh expense: **{kwh_expense:.2f}** kWh {batt_emoji}\n({battery_charge}/{battery_size} kWh)'
         else:
-            convoy_embed.add_field(name='Journey fuel expense', value=f'**{sum(prospective_journey_plus_misc['fuel_expenses'].values()):.2f}** liters')
-            convoy_embed.add_field(name='Journey water expense', value=f'**{prospective_journey_plus_misc['water_expense']:.2f}** liters')
-            convoy_embed.add_field(name='Journey food expense', value=f'**{prospective_journey_plus_misc['food_expense']:.2f}** meals')
+            extra_embed.add_field(name='Journey fuel expense', value=f'**{sum(prospective_journey_plus_misc['fuel_expenses'].values()):.2f}** liters')
+            extra_embed.add_field(name='Journey water expense', value=f'**{prospective_journey_plus_misc['water_expense']:.2f}** liters')
+            extra_embed.add_field(name='Journey food expense', value=f'**{prospective_journey_plus_misc['food_expense']:.2f}** meals')
 
-            convoy_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({prospective_journey_plus_misc['journey']['dest_x']}, {prospective_journey_plus_misc['journey']['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
-            convoy_embed.add_field(name='ETA ⏰', value=f'**{delta_t}**\n{eta_discord_time}')
-            convoy_embed.add_field(name='Distance 🗺️', value=f'**{distance_km:,} km**\n{distance_miles} miles')
+            extra_embed.add_field(name='Destination 📍', value=f'**{destination['settlements'][0]['name']}**\n({prospective_journey_plus_misc['journey']['dest_x']}, {prospective_journey_plus_misc['journey']['dest_y']})')  # XXX: replace coords with `\n{territory_name}`
+            extra_embed.add_field(name='ETA ⏰', value=f'**{delta_t}**\n{eta_discord_time}')
+            extra_embed.add_field(name='Distance 🗺️', value=f'**{distance_km:,} km**\n{distance_miles} miles')
 
-        convoy_embed, image_file = await add_map_to_embed(
+            for vehicle in df_state.convoy_obj['vehicles']:
+                if vehicle['electric']:
+                    kwh_expense = prospective_journey_plus_misc['kwh_expenses'][vehicle['vehicle_id']]
+                    battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+                    battery_charge = battery['kwh']
+                    battery_size = battery['capacity']
+                    batt_emoji = '🔋' if kwh_expense < (battery_size * 0.2) else '🪫'
+
+                    extra_embed.add_field(
+                        name=f'{vehicle['name']} {get_vehicle_emoji(vehicle['shape'])} kWh expense',
+                        value=f'**{kwh_expense:.2f}** kWh {batt_emoji}\n({battery_charge:.0f} / {battery_size} kWh)'
+                    )
+
+        convoy_embed, image_file = await add_map_to_embed(  # Add map to main convoy embed
             embed=convoy_embed,
             highlights=[(convoy_x, convoy_y)],
             lowlights=route_tiles,
             map_obj=df_state.map_obj
         )
+
+        embeds = [convoy_embed, extra_embed]
 
     else:  # If the convoy is just chilling somewhere
         convoy_embed, image_file = await add_map_to_embed(
@@ -168,7 +198,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
             map_obj=df_state.map_obj
         )
 
-    return convoy_embed, image_file
+        embeds = [convoy_embed]
+
+    return embeds, image_file
 
 def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> str:
     vehicles_list = []
@@ -439,9 +471,8 @@ async def send_convoy_menu(df_state: DFState):
 
     await df_state.interaction.response.defer()
 
-    embed, image_file = await make_convoy_embed(df_state)
+    embeds, image_file = await make_convoy_embed(df_state)
 
-    embeds = [embed]
     embeds = add_tutorial_embed(embeds, df_state)
 
     # df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
@@ -577,7 +608,8 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
 
     prospective_journey_plus_misc = route_choices[route_index]
 
-    convoy_embed, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
+    embeds, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
+    convoy_embed = embeds[0]  # Get the convoy embed from the list of embeds
     convoy_embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
     # Check for resource constraints and limits
@@ -648,7 +680,7 @@ async def route_menu(df_state: DFState, route_choices: list, route_index: int = 
             description=journey_msg
         ))
 
-    embeds = [convoy_embed, *follow_on_embeds]
+    embeds.extend(follow_on_embeds)  # Add the follow-on embeds to the convoy embed
     embeds = add_tutorial_embed(embeds, df_state)
 
     view = SendConvoyConfirmView(

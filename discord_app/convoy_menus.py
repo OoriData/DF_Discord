@@ -157,7 +157,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
                     battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                     battery_charge = battery['kwh']
                     battery_size = battery['capacity']
-                    batt_emoji = '🔋' if kwh_expense < (battery_size * 0.2) else '🪫'
+
+                    remaining_charge = battery_charge - kwh_expense
+                    batt_emoji = '🔋' if remaining_charge > (battery_size * 0.2) else '🪫'
 
                     extra_embed.description += f'\n- {vehicle['name']} {get_vehicle_emoji(vehicle['shape'])} kWh expense: **{kwh_expense:.2f}** kWh {batt_emoji}\n({battery_charge}/{battery_size} kWh)'
         else:
@@ -175,7 +177,9 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
                     battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                     battery_charge = battery['kwh']
                     battery_size = battery['capacity']
-                    batt_emoji = '🔋' if kwh_expense > (battery_size * 0.2) else '🪫'
+
+                    remaining_charge = battery_charge - kwh_expense
+                    batt_emoji = '🔋' if remaining_charge > (battery_size * 0.2) else '🪫'
 
                     extra_embed.add_field(
                         name=f'{vehicle['name']} {get_vehicle_emoji(vehicle['shape'])} kWh expense',
@@ -593,13 +597,29 @@ class DestinationSelect(discord.ui.Select):
         else:  # If the choice is a destination
             dest_x, dest_y = map(int, self.values[0].split(','))  # Extract destination coordinates
 
-            await self.df_state.interaction.response.defer()
-            route_choices = await api_calls.find_route(self.df_state.convoy_obj['convoy_id'], dest_x, dest_y)
-            await route_menu(self.df_state, route_choices)
+            await route_finder(self.df_state, dest_x, dest_y, route_index=0)  # Call the route finder with the selected destination
 
 
-async def route_menu(df_state: DFState, route_choices: list[dict], route_index: int = 0, follow_on_embeds: list[discord.Embed] | None = None):
+async def route_finder(df_state: DFState, dest_x: int, dest_y: int, route_index: int, follow_on_embeds: list[discord.Embed] | None = None):
+    """ Find a route to the destination """
+    if not df_state.interaction.response.is_done():
+        await df_state.interaction.response.defer()
+
+    route_choices = await api_calls.find_route(df_state.convoy_obj['convoy_id'], dest_x, dest_y)
+    await route_menu(df_state, dest_x, dest_y, route_choices, route_index=route_index, follow_on_embeds=follow_on_embeds)
+
+
+async def route_menu(
+        df_state: DFState,
+        dest_x: int,
+        dest_y: int,
+        route_choices: list[dict],
+        route_index: int = 0,
+        follow_on_embeds: list[discord.Embed] | None = None
+):
     df_state.append_menu_to_back_stack(func=route_menu, args={
+        'dest_x': dest_x,
+        'dest_y': dest_y,
         'route_choices': route_choices,
         'route_index': route_index
     })  # Add this menu to the back stack
@@ -613,29 +633,42 @@ async def route_menu(df_state: DFState, route_choices: list[dict], route_index: 
     convoy_embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
     # Check for resource constraints and limits
-    resource_constraints = []
-    resource_limits = []
+    safety_resources = []
+    critical_resources = []
 
     for resource in ['fuel', 'water', 'food', 'kwh']:
         if resource == 'fuel':
             available = sum(
                 df_state.convoy_obj.get(resource, {}).values()
             ) if isinstance(df_state.convoy_obj.get(resource), dict) else df_state.convoy_obj.get(resource, 0)
+
+            required = sum(
+                prospective_journey_plus_misc['fuel_expenses'].values()
+            ) if isinstance(prospective_journey_plus_misc.get('fuel_expenses'), dict) else prospective_journey_plus_misc.get('fuel_expense', 0)
+            recommended = 2 * required
+
+            if available < required:
+                critical_resources.append((resource, available, required))
+            elif available < recommended:
+                safety_resources.append((resource, available, recommended))
+
+            continue
+
         elif resource == 'kwh':
             for v in df_state.convoy_obj['vehicles']:
                 if v['electric']:
                     vehicle_name = v['name']
                     vehicle_id = v['vehicle_id']
-                    battery = next((c for c in v['cargo'] if c.get('kwh') is not None))
+                    battery = next(c for c in v['cargo'] if c.get('kwh') is not None)
 
                     available_kwh = battery['kwh']
                     required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
 
                     if available_kwh < required_kwh:
-                        resource_limits.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
+                        critical_resources.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
                     elif available_kwh < 2 * required_kwh:
-                        resource_constraints.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
-            
+                        safety_resources.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
+
             continue
 
         else:
@@ -645,41 +678,94 @@ async def route_menu(df_state: DFState, route_choices: list[dict], route_index: 
         recommended = 2 * required
 
         if available < required:
-            resource_limits.append((resource, available, required))
+            critical_resources.append((resource, available, required))
         elif available < recommended:
-            resource_constraints.append((resource, available, recommended))
+            safety_resources.append((resource, available, recommended))
+
+    safety_margin_emoji = '⚠️'
+    critical_margin_emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
 
     override_style = None
     override_emoji = None
 
-    if resource_constraints:  # If any resources are below the recommended level
+    if critical_resources:  # If any resources are below the minimum required
+        critical_margin_embed = discord.Embed(color=discord.Color.red())
+
         override_style = discord.ButtonStyle.red
-        override_emoji = '⚠️'
-        journey_msg = ''
-        journey_msg += f'**{override_emoji} Limited resource:**\n'
-        journey_msg += '\nResource       | Current  | Recommended\n'
-        journey_msg += '--------------------------------------\n'
-        journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_constraints])
-        journey_msg += '\n'
+        override_emoji = critical_margin_emoji
+        critical_margin_embed.description = '\n'.join([
+            f'# {critical_margin_emoji} Critical resource shortage!',
+            f'**{df_state.convoy_obj['name']} lacks the minimum resources needed for this journey!** '
+            'The convoy needs more supplies just to reach its destination, let alone handle any unexpected **encounters** or **weather** along the way.',
+            '## Resources below minimum to reach destination',
+        ])
 
-        follow_on_embeds.append(discord.Embed(
-            color=discord.Color.yellow(),
-            description=journey_msg
-        ))
+        for resource, available, requirement in critical_resources:
+            match resource:
+                case 'fuel':
+                    resource_name = 'Fuel ⛽️'
+                    resource_unit = 'liters'
+                    resource_short_unit = 'L'
+                case 'water':
+                    resource_name = 'Water 💧'
+                    resource_unit = 'liters'
+                    resource_short_unit = 'L'
+                case 'food':
+                    resource_name = 'Food 🥪'
+                    resource_unit = 'meals'
+                    resource_short_unit = 'meals'
+                case _:
+                    resource_name = resource + ' 🔋'
+                    resource_unit = 'kWh'
+                    resource_short_unit = 'kWh'
 
-    elif resource_limits:  # If any resources are below the minimum required
+            if get_user_metadata(df_state, 'mobile'):
+                critical_margin_embed.description += f'\n- {resource_name}: **{available:.0f}** / {requirement:.0f} {resource_short_unit}'
+            else:
+                critical_margin_embed.add_field(
+                    name=resource_name,
+                    value=f'**{available:.2f}**\n/ {requirement:.0f} {resource_unit}',
+                )
+
+        follow_on_embeds.append(critical_margin_embed)
+
+    if safety_resources:  # If any resources are below the recommended level
+        safety_margin_embed = discord.Embed(color=discord.Color.yellow())
+
         override_style = discord.ButtonStyle.red
-        override_emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
-        journey_msg = ''
-        journey_msg += f'**{override_emoji} Not enough resources:**\n'
-        journey_msg += '\nResource       | Current  | Minimum Needed\n'
-        journey_msg += '------------------------------------------\n'
-        journey_msg += '\n'.join([f'{r:<15} | {round(a, 2):<8} | {round(m, 2):<8}' for r, a, m in resource_limits])
+        override_emoji = safety_margin_emoji
+        safety_margin_embed.description = '\n'.join([
+            f'# {safety_margin_emoji} Insufficient reserves for safe travel!',
+            f'**{df_state.convoy_obj['name']} does not have enough emergency supplies for this journey!** '
+            'It is recommended to carry **double** the required resources to handle unexpected **encounters** or **weather** during travel.',
+            '## Resources below recommended reserves',
+        ])
 
-        follow_on_embeds.append(discord.Embed(
-            color=discord.Color.red(),
-            description=journey_msg
-        ))
+        for resource, available, recommended in safety_resources:
+            match resource:
+                case 'fuel':
+                    resource_name = 'Fuel ⛽️'
+                    resource_unit = 'liters'
+                case 'water':
+                    resource_name = 'Water 💧'
+                    resource_unit = 'liters'
+                case 'food':
+                    resource_name = 'Food 🥪'
+                    resource_unit = 'meals'
+                case _:
+                    resource_name = resource + ' 🔋'
+                    resource_unit = 'kWh'
+                    resource_short_unit = 'kWh'
+
+            if get_user_metadata(df_state, 'mobile'):
+                safety_margin_embed.description += f'\n- {resource_name}: **{available:.0f}** / {recommended:.0f} {resource_short_unit}'
+            else:
+                safety_margin_embed.add_field(
+                    name=resource_name,
+                    value=f'**{available:.2f}**\n/ {recommended:.0f} {resource_unit}',
+                )
+
+        follow_on_embeds.append(safety_margin_embed)
 
     embeds.extend(follow_on_embeds)  # Add the follow-on embeds to the convoy embed
     embeds = add_tutorial_embed(embeds, df_state)
@@ -689,6 +775,8 @@ async def route_menu(df_state: DFState, route_choices: list[dict], route_index: 
         prospective_journey_plus_misc=prospective_journey_plus_misc,
         override_style=override_style,
         override_emoji=override_emoji,
+        dest_x=dest_x,
+        dest_y=dest_y,
         route_choices=route_choices,
         route_index=route_index
     )
@@ -713,6 +801,8 @@ class SendConvoyConfirmView(discord.ui.View):
     def __init__(
             self,
             df_state: DFState,
+            dest_x: int,
+            dest_y: int,
             route_choices: list,
             prospective_journey_plus_misc: dict,
             override_style: discord.ButtonStyle | None = None,
@@ -729,7 +819,13 @@ class SendConvoyConfirmView(discord.ui.View):
         add_nav_buttons(self, self.df_state)
 
         if len(route_choices) > 1:
-            self.add_item(NextJourneyButton(df_state=self.df_state, routes=route_choices, index=self.route_index))
+            self.add_item(NextJourneyButton(
+                df_state=self.df_state,
+                dest_x=dest_x,
+                dest_y=dest_y,
+                routes=route_choices,
+                index=self.route_index
+            ))
         self.add_item(ConfirmJourneyButton(
             df_state=df_state,
             prospective_journey_plus_misc=self.prospective_journey_plus_misc,
@@ -738,9 +834,10 @@ class SendConvoyConfirmView(discord.ui.View):
         ))
         self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(
             df_state=self.df_state,
-            menu=route_menu,
+            menu=route_finder,
             menu_args={
-                'route_choices': self.route_choices,
+                'dest_x': dest_x,
+                'dest_y': dest_y,
                 'route_index': self.route_index
             },
             row=2
@@ -757,10 +854,13 @@ class SendConvoyConfirmView(discord.ui.View):
 
 class NextJourneyButton(discord.ui.Button):
     """ Loads alternative journey """
-    def __init__(self, df_state: DFState, routes: list, index: int, row: int=1):
+    def __init__(self, df_state: DFState, dest_x: int, dest_y: int, routes: list, index: int, row: int=1):
         self.df_state = df_state
+        self.dest_x = dest_x
+        self.dest_y = dest_y
         self.routes = routes
         self.index = index
+
         super().__init__(
             label='Show Next Route',
             custom_id='alt_route',
@@ -778,7 +878,7 @@ class NextJourneyButton(discord.ui.Button):
         self.index += 1  # ensures that route index will route
         self.index = self.index % len(self.routes)
 
-        await route_menu(self.df_state, self.routes, self.index)
+        await route_menu(self.df_state, self.dest_x, self.dest_y, self.routes, self.index)
 
 class ConfirmJourneyButton(discord.ui.Button):
     def __init__(

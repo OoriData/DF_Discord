@@ -11,7 +11,11 @@ import                                logging
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji, get_cargo_emoji
+from discord_app               import (
+    api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed,
+    get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji,
+    get_cargo_emoji
+)
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
 import discord_app.vendor_views.buy_menus
@@ -614,7 +618,6 @@ async def route_finder(df_state: DFState, dest_x: int, dest_y: int, route_index:
     route_choices = await api_calls.find_route(df_state.convoy_obj['convoy_id'], dest_x, dest_y)
     await route_menu(df_state, dest_x, dest_y, route_choices, route_index=route_index, follow_on_embeds=follow_on_embeds)
 
-# Refactored version of route_menu
 async def route_menu(
         df_state: DFState,
         dest_x: int,
@@ -673,30 +676,23 @@ async def route_menu(
     # Check electric vehicle kWh constraints
     for vehicle in df_state.convoy_obj['vehicles']:
         if vehicle.get('electric'): # Check if the vehicle is electric
-            try:
-                # Find the battery component in the vehicle's cargo
-                battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
-                # Get available charge from the battery
-                available_kwh = battery.get('kwh', 0)
-                # Get required charge for this vehicle for the journey
-                required_kwh = prospective_journey_plus_misc.get('kwh_expenses', {}).get(vehicle['vehicle_id'], 0)
-                # Recommended charge is double the required
-                recommended_kwh = 2 * required_kwh
+            # Find the battery component in the vehicle's cargo
+            battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+            # Get available charge from the battery
+            available_kwh = battery.get('kwh', 0)
+            # Get required charge for this vehicle for the journey
+            required_kwh = prospective_journey_plus_misc.get('kwh_expenses', {}).get(vehicle['vehicle_id'], 0)
+            # Recommended charge is double the required
+            recommended_kwh = 2 * required_kwh
 
-                # Use vehicle name for clarity in warnings
-                resource_name = f"{vehicle['name']} (kWh)"
+            # Use vehicle name for clarity in warnings
+            resource_name = f'{vehicle['name']} (kWh)'
 
-                # Check against thresholds
-                if available_kwh < required_kwh:
-                    critical_resources.append((resource_name, available_kwh, required_kwh))
-                elif available_kwh < recommended_kwh:
-                    safety_resources.append((resource_name, available_kwh, recommended_kwh))
-            except StopIteration:
-                # Handle case where an electric vehicle somehow doesn't have a battery listed
-                logger.warning(f"Electric vehicle {vehicle['name']} ({vehicle['vehicle_id']}) has no cargo item with 'kwh'.")
-            except KeyError as e:
-                # Handle potential missing keys, though 'kwh_expenses' and 'vehicle_id' should exist
-                logger.error(f"KeyError while checking kWh for vehicle {vehicle.get('name', 'N/A')}: {e}")
+            # Check against thresholds
+            if available_kwh < required_kwh:
+                critical_resources.append((resource_name, available_kwh, required_kwh))
+            elif available_kwh < recommended_kwh:
+                safety_resources.append((resource_name, available_kwh, recommended_kwh))
 
 
     # --- Generate Warning Embeds (if necessary) ---
@@ -715,7 +711,7 @@ async def route_menu(
         resources_list: list[tuple[str, float, float]],
         mobile_view: bool
     ) -> discord.Embed:
-        """Creates a formatted embed for resource warnings."""
+        """ Creates a formatted embed for resource warnings. """
         embed = discord.Embed(color=color)
         description_lines = [title, header, subheader]
 

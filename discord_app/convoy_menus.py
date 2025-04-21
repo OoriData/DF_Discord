@@ -602,13 +602,19 @@ class DestinationSelect(discord.ui.Select):
 
 async def route_finder(df_state: DFState, dest_x: int, dest_y: int, route_index: int, follow_on_embeds: list[discord.Embed] | None = None):
     """ Find a route to the destination """
+    df_state.append_menu_to_back_stack(func=route_finder, args={
+        'dest_x': dest_x,
+        'dest_y': dest_y,
+        'route_index': route_index
+    })  # Add this menu to the back stack
+
     if not df_state.interaction.response.is_done():
         await df_state.interaction.response.defer()
 
     route_choices = await api_calls.find_route(df_state.convoy_obj['convoy_id'], dest_x, dest_y)
     await route_menu(df_state, dest_x, dest_y, route_choices, route_index=route_index, follow_on_embeds=follow_on_embeds)
 
-
+# Refactored version of route_menu
 async def route_menu(
         df_state: DFState,
         dest_x: int,
@@ -617,183 +623,203 @@ async def route_menu(
         route_index: int = 0,
         follow_on_embeds: list[discord.Embed] | None = None
 ):
-    df_state.append_menu_to_back_stack(func=route_menu, args={
-        'dest_x': dest_x,
-        'dest_y': dest_y,
-        'route_choices': route_choices,
-        'route_index': route_index
-    })  # Add this menu to the back stack
+    """
+    Displays the details of a potential journey route and checks for resource constraints.
 
+    Args:
+        df_state: The current state of the Discord application.
+        dest_x: The x-coordinate of the destination tile.
+        dest_y: The y-coordinate of the destination tile.
+        route_choices: A list of possible route dictionaries calculated by the API.
+        route_index: The index of the currently selected route from route_choices.
+        follow_on_embeds: Optional list of embeds to append after the main convoy/route embeds.
+    """
+    # Initialize follow_on_embeds if None
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
+    # Get the specific route data for the selected index
     prospective_journey_plus_misc = route_choices[route_index]
 
+    # Generate the base convoy embed and the map image file, including prospective journey details
     embeds, image_file = await make_convoy_embed(df_state, prospective_journey_plus_misc)
-    convoy_embed = embeds[0]  # Get the convoy embed from the list of embeds
+    # The first embed is the main convoy embed
+    convoy_embed = embeds[0]
+    # Add a footer indicating which route is being shown out of the available choices
     convoy_embed.set_footer(text=f'Showing route [{route_index + 1} / {len(route_choices)}]')
 
-    # Check for resource constraints and limits
-    safety_resources = []
-    critical_resources = []
+    # --- Resource Constraint Checking ---
+    # Lists to store resources that fall below critical or safety thresholds
+    critical_resources = [] # Below minimum required
+    safety_resources = []   # Below recommended safety margin (2x required)
 
-    for resource in ['fuel', 'water', 'food', 'kwh']:
-        if resource == 'fuel':
-            available = sum(
-                df_state.convoy_obj.get(resource, {}).values()
-            ) if isinstance(df_state.convoy_obj.get(resource), dict) else df_state.convoy_obj.get(resource, 0)
+    # Define resources to check (excluding 'kwh' initially as it requires special handling)
+    standard_resources = ['fuel', 'water', 'food']
 
-            required = sum(
-                prospective_journey_plus_misc['fuel_expenses'].values()
-            ) if isinstance(prospective_journey_plus_misc.get('fuel_expenses'), dict) else prospective_journey_plus_misc.get('fuel_expense', 0)
-            recommended = 2 * required
-
-            if available < required:
-                critical_resources.append((resource, available, required))
-            elif available < recommended:
-                safety_resources.append((resource, available, recommended))
-
-            continue
-
-        elif resource == 'kwh':
-            for v in df_state.convoy_obj['vehicles']:
-                if v['electric']:
-                    vehicle_name = v['name']
-                    vehicle_id = v['vehicle_id']
-                    battery = next(c for c in v['cargo'] if c.get('kwh') is not None)
-
-                    available_kwh = battery['kwh']
-                    required_kwh = prospective_journey_plus_misc['kwh_expenses'].get(vehicle_id, 0)
-
-                    if available_kwh < required_kwh:
-                        critical_resources.append((f'{vehicle_name} (kWh)', available_kwh, required_kwh))
-                    elif available_kwh < 2 * required_kwh:
-                        safety_resources.append((f'{vehicle_name} (kWh)', available_kwh, 2 * required_kwh))
-
-            continue
-
-        else:
-            available = df_state.convoy_obj.get(resource, 0)
-
+    # Check standard resources (fuel, water, food)
+    for resource in standard_resources:
+        # Get available amount from the convoy object
+        available = df_state.convoy_obj.get(resource, 0)
+        # Get required amount for the journey
         required = prospective_journey_plus_misc.get(f'{resource}_expense', 0)
+        # Recommended amount is double the required amount
         recommended = 2 * required
 
+        # Check against thresholds and append to lists if necessary
         if available < required:
             critical_resources.append((resource, available, required))
         elif available < recommended:
             safety_resources.append((resource, available, recommended))
 
-    safety_margin_emoji = '⚠️'
-    critical_margin_emoji = '🛑'  # I want to use ⛔️ but that breaks d.py >:(
+    # Check electric vehicle kWh constraints
+    for vehicle in df_state.convoy_obj['vehicles']:
+        if vehicle.get('electric'): # Check if the vehicle is electric
+            try:
+                # Find the battery component in the vehicle's cargo
+                battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
+                # Get available charge from the battery
+                available_kwh = battery.get('kwh', 0)
+                # Get required charge for this vehicle for the journey
+                required_kwh = prospective_journey_plus_misc.get('kwh_expenses', {}).get(vehicle['vehicle_id'], 0)
+                # Recommended charge is double the required
+                recommended_kwh = 2 * required_kwh
 
+                # Use vehicle name for clarity in warnings
+                resource_name = f"{vehicle['name']} (kWh)"
+
+                # Check against thresholds
+                if available_kwh < required_kwh:
+                    critical_resources.append((resource_name, available_kwh, required_kwh))
+                elif available_kwh < recommended_kwh:
+                    safety_resources.append((resource_name, available_kwh, recommended_kwh))
+            except StopIteration:
+                # Handle case where an electric vehicle somehow doesn't have a battery listed
+                logger.warning(f"Electric vehicle {vehicle['name']} ({vehicle['vehicle_id']}) has no cargo item with 'kwh'.")
+            except KeyError as e:
+                # Handle potential missing keys, though 'kwh_expenses' and 'vehicle_id' should exist
+                logger.error(f"KeyError while checking kWh for vehicle {vehicle.get('name', 'N/A')}: {e}")
+
+
+    # --- Generate Warning Embeds (if necessary) ---
+    # Default button style and emoji (can be overridden by warnings)
     override_style = None
     override_emoji = None
+    safety_margin_emoji = '⚠️'  # Emoji for safety warnings
+    critical_margin_emoji = '🛑' # Emoji for critical warnings
 
-    if critical_resources:  # If any resources are below the minimum required
-        critical_margin_embed = discord.Embed(color=discord.Color.red())
+    # Helper function to create resource warning embeds
+    def _create_warning_embed(
+        color: discord.Color,
+        title: str,
+        header: str,
+        subheader: str,
+        resources_list: list[tuple[str, float, float]],
+        mobile_view: bool
+    ) -> discord.Embed:
+        """Creates a formatted embed for resource warnings."""
+        embed = discord.Embed(color=color)
+        description_lines = [title, header, subheader]
 
-        override_style = discord.ButtonStyle.red
-        override_emoji = critical_margin_emoji
-        critical_margin_embed.description = '\n'.join([
-            f'# {critical_margin_emoji} Critical resource shortage!',
-            f'**{df_state.convoy_obj['name']} lacks the minimum resources needed for this journey!** '
-            'The convoy needs more supplies just to reach its destination, let alone handle any unexpected **encounters** or **weather** along the way.',
-            '## Resources below minimum to reach destination',
-        ])
+        # Define resource details (name, units) for formatting
+        resource_details = {
+            'fuel': ('Fuel ⛽️', 'liters', 'L'),
+            'water': ('Water 💧', 'liters', 'L'),
+            'food': ('Food 🥪', 'meals', 'meals'),
+            # Default for kWh (name is already specific, e.g., "VehicleName (kWh)")
+            'default_kwh': ('🔋', 'kWh', 'kWh')
+        }
 
-        for resource, available, requirement in critical_resources:
-            match resource:
-                case 'fuel':
-                    resource_name = 'Fuel ⛽️'
-                    resource_unit = 'liters'
-                    resource_short_unit = 'L'
-                case 'water':
-                    resource_name = 'Water 💧'
-                    resource_unit = 'liters'
-                    resource_short_unit = 'L'
-                case 'food':
-                    resource_name = 'Food 🥪'
-                    resource_unit = 'meals'
-                    resource_short_unit = 'meals'
-                case _:
-                    resource_name = resource + ' 🔋'
-                    resource_unit = 'kWh'
-                    resource_short_unit = 'kWh'
+        # Add details for each resource in the list
+        for resource, available, threshold in resources_list:
+            details_key = resource if resource in resource_details else 'default_kwh'
+            name, unit, short_unit = resource_details[details_key]
+            # Use vehicle name directly if it's a kWh resource
+            display_name = resource if details_key == 'default_kwh' else name
 
-            if get_user_metadata(df_state, 'mobile'):
-                critical_margin_embed.description += f'\n- {resource_name}: **{available:.0f}** / {requirement:.0f} {resource_short_unit}'
+            if mobile_view:
+                # Compact format for mobile
+                description_lines.append(f'- {display_name}: **{available:.0f}** / {threshold:.0f} {short_unit}')
             else:
-                critical_margin_embed.add_field(
-                    name=resource_name,
-                    value=f'**{available:.2f}**\n/ {requirement:.0f} {resource_unit}',
+                # Field format for desktop
+                embed.add_field(
+                    name=display_name,
+                    value=f'**{available:.2f}**\n/ {threshold:.0f} {unit}',
                 )
 
-        follow_on_embeds.append(critical_margin_embed)
+        embed.description = '\n'.join(description_lines)
+        return embed
 
-    if safety_resources:  # If any resources are below the recommended level
-        safety_margin_embed = discord.Embed(color=discord.Color.yellow())
+    # Check if there are critical resource shortages
+    if critical_resources:
+        override_style = discord.ButtonStyle.red # Red button style for critical issues
+        override_emoji = critical_margin_emoji   # Stop emoji
+        # Create the critical warning embed using the helper function
+        critical_embed = _create_warning_embed(
+            color=discord.Color.red(),
+            title=f'# {critical_margin_emoji} Critical resource shortage!',
+            header=f'**{df_state.convoy_obj['name']} lacks the minimum resources needed for this journey!**',
+            subheader='The convoy needs more supplies just to reach its destination.\n## Resources below minimum:',
+            resources_list=critical_resources,
+            mobile_view=get_user_metadata(df_state, 'mobile') # Check if user prefers mobile view
+        )
+        follow_on_embeds.append(critical_embed)
 
-        override_style = discord.ButtonStyle.red
-        override_emoji = safety_margin_emoji
-        safety_margin_embed.description = '\n'.join([
-            f'# {safety_margin_emoji} Insufficient reserves for safe travel!',
-            f'**{df_state.convoy_obj['name']} does not have enough emergency supplies for this journey!** '
-            'It is recommended to carry **double** the required resources to handle unexpected **encounters** or **weather** during travel.',
-            '## Resources below recommended reserves',
-        ])
+    # Check if there are safety margin shortages (only if no critical issues, or potentially show both)
+    # The original code implies safety warnings can show even if critical ones exist.
+    if safety_resources:
+        # If no critical issues, set button style to red for safety warning.
+        # If critical issues already exist, the style remains red.
+        if not critical_resources:
+            override_style = discord.ButtonStyle.red
+            override_emoji = safety_margin_emoji
+        # Ensure emoji reflects the most severe warning (critical takes precedence)
+        override_emoji = override_emoji or safety_margin_emoji # Use safety emoji if no critical emoji set
 
-        for resource, available, recommended in safety_resources:
-            match resource:
-                case 'fuel':
-                    resource_name = 'Fuel ⛽️'
-                    resource_unit = 'liters'
-                case 'water':
-                    resource_name = 'Water 💧'
-                    resource_unit = 'liters'
-                case 'food':
-                    resource_name = 'Food 🥪'
-                    resource_unit = 'meals'
-                case _:
-                    resource_name = resource + ' 🔋'
-                    resource_unit = 'kWh'
-                    resource_short_unit = 'kWh'
+        # Create the safety warning embed using the helper function
+        safety_embed = _create_warning_embed(
+            color=discord.Color.yellow(),
+            title=f'# {safety_margin_emoji} Insufficient reserves for safe travel!',
+            header=f'**{df_state.convoy_obj['name']} does not have enough emergency supplies for this journey!**',
+            subheader='It is recommended to carry **double** the required resources.\n## Resources below recommended reserves:',
+            resources_list=safety_resources,
+            mobile_view=get_user_metadata(df_state, 'mobile') # Check if user prefers mobile view
+        )
+        follow_on_embeds.append(safety_embed)
 
-            if get_user_metadata(df_state, 'mobile'):
-                safety_margin_embed.description += f'\n- {resource_name}: **{available:.0f}** / {recommended:.0f} {resource_short_unit}'
-            else:
-                safety_margin_embed.add_field(
-                    name=resource_name,
-                    value=f'**{available:.2f}**\n/ {recommended:.0f} {resource_unit}',
-                )
-
-        follow_on_embeds.append(safety_margin_embed)
-
-    embeds.extend(follow_on_embeds)  # Add the follow-on embeds to the convoy embed
+    # --- Final Embed and View Preparation ---
+    # Add any generated warning embeds to the main list of embeds
+    embeds.extend(follow_on_embeds)
+    # Add tutorial embed if applicable
     embeds = add_tutorial_embed(embeds, df_state)
 
+    # Create the confirmation view with buttons (Confirm, Next Route, Top Up)
     view = SendConvoyConfirmView(
         df_state=df_state,
         prospective_journey_plus_misc=prospective_journey_plus_misc,
-        override_style=override_style,
-        override_emoji=override_emoji,
+        override_style=override_style, # Pass the determined button style
+        override_emoji=override_emoji, # Pass the determined button emoji
         dest_x=dest_x,
         dest_y=dest_y,
         route_choices=route_choices,
         route_index=route_index
     )
 
+    # --- Edit Message ---
+    # Check if the interaction response has already been sent (e.g., deferred)
     if df_state.interaction.response.is_done():
+        # If already responded (e.g., deferred), edit the original message via followup
         og_message = await df_state.interaction.original_response()
         await df_state.interaction.followup.edit_message(
             og_message.id,
             embeds=embeds,
             view=view,
-            attachments=[image_file]
+            attachments=[image_file] # Include the map image file
         )
     else:
+        # If not responded yet, edit the initial deferred response
         await df_state.interaction.response.edit_message(
             embeds=embeds,
             view=view,
-            attachments=[image_file]
+            attachments=[image_file] # Include the map image file
         )
 
 class SendConvoyConfirmView(discord.ui.View):

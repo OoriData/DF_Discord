@@ -237,10 +237,12 @@ class DesolateCog(commands.Cog):
 
                                 user_convoy_id = notification['message_metadata']['char_b_id']
 
-                                # use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
-                                view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
+                                # XXX: use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
+                                # view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
 
-                                await notification_channel.send(embed=embed, view=view)
+                                # await notification_channel.send(embed=embed, view=view)
+
+                                await notification_channel.send(embed=embed)
 
                             logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 

@@ -107,7 +107,7 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
         progress_in_miles = journey['progress'] * 30  # progress is measured in tiles; tiles are 50km to a side
 
         if get_user_metadata(df_state, 'mobile'):
-            extra_embed.description += '\n' + '\n'.join([
+            extra_embed.description = '\n' + '\n'.join([
                 '### Journey',
                 f'Destination 📍: **{destination['settlements'][0]['name']}**',
                 f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',

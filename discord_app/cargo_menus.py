@@ -203,15 +203,16 @@ def format_part(part_cargo: dict):
         water_gal = round(part['water_capacity'] * 0.264172) if part.get('water_capacity') else None
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
 
+        slot = part['slot'].replace('_', ' ').capitalize() if part['slot'] != 'ice' else 'ICE'
         requirements = [
-            f'    - {req}'
+            f'    - {req.replace('_', ' ').capitalize()}' if req != 'ice' else '    - ICE'
             for req in part.get('requirements')
         ]
 
         part_attrs = [
-            f'- {part['slot'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['slot'].replace('_', ' ').capitalize()}',
+            f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
             f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
-            f'    - {part['wp']} wear points' if part.get('wp') else None,
+            f'    - {part['wp']} / 10 wear points' if part.get('wp') else None,
 
             f'  - Max AC: **{ac_add:+.0f}**' if ac_add else None,
             f'  - Efficiency: **{efficiency_add:+.0f}**' if efficiency_add else None,

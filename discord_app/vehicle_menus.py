@@ -23,6 +23,72 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
+def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict | None=None):
+    fields = {
+        # FIELD_NAME: ('STAT_KEY', '**BASE_FORMAT**', 'SUFFIX', 'MODIFIER_KEY', 'MODIFIER_FORMAT'),
+        '💵 Value': ('value', '**${:,}**', None, 'part_value', ' (${:+})'),
+        '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
+        '🥊 Weight Class': ('weight_class', '**{}**', None, None, None),
+        '⛽️ Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / 100', 'top_speed_add', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
+        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
+        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
+        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
+    }
+
+    # Special-cased "Powered by" field
+    if vehicle.get('internal_combustion') and vehicle.get('electric'):
+        powered_by = 'fuel ⛽️ and electric 🔋 (hybrid)'
+    elif vehicle.get('internal_combustion'):
+        powered_by = 'fuel ⛽️'
+    elif vehicle.get('electric'):
+        powered_by = 'electric 🔋'
+
+    fields = {
+        **fields,
+        '⚙️ Powertrain': ('_powertrain', '**{}**', None, None, None)
+    }
+    vehicle = {**vehicle, '_powertrain': powered_by}
+
+    raw_stats = {  # Map vehicle stats to raw stats
+        'efficiency': 'raw_efficiency',
+        'top_speed': 'raw_top_speed',
+        'offroad_capability': 'raw_offroad_capability'
+    }
+
+    for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
+        base_value = vehicle.get(stat_key)
+        base_value = None if base_value == '' else base_value  # Normalize empty strings to None
+
+        if base_value is None:
+            value_str = 'N/A'
+        else:
+            try:
+                value_str = base_format.format(base_value)
+            except Exception:
+                value_str = str(base_value)
+
+        mod_value = new_part.get(mod_key) if new_part and mod_key else None
+        if mod_value is not None and value_str != 'N/A' and mod_format:
+            value_str += mod_format.format(mod_value)
+
+        if suffix:
+            value_str += suffix
+
+        if stat_key in raw_stats and base_value is not None:
+            raw_value = vehicle.get(raw_stats[stat_key])
+            if raw_value is not None:
+                value_str += f' (*raw: {raw_value}*)'
+
+        if get_user_metadata(df_state, 'mobile'):
+            embed.description += f'\n- {name}: {value_str}'
+        else:
+            embed.add_field(name=name, value=value_str)
+
+    return embed
+
+
 async def vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=vehicle_menu)  # Add this menu to the back stack
 
@@ -64,67 +130,3 @@ class VehicleView(discord.ui.View):
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
-
-
-def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict | None=None):
-    fields = {
-        # FIELD_NAME: ('VEHICLE_KEY', '**BASE_FORMAT**', 'SUFFIX', 'PART_MODIFIER_KEY', 'MODIFIER_FORMAT'),
-        '💵 Value': ('value', '**${:,}**', None, 'part_value', ' (${:+})'),
-        '🛡️ AC': ('ac', '**{}**', f' / {vehicle['ac']}', 'ac_add', ' ({:+})'),
-        '⛽️ Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
-        '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / 100', 'top_speed_add', ' ({:+})'),
-        '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
-        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
-        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
-        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
-    }
-
-    # Special-cased "Powered by" field
-    if vehicle.get('internal_combustion') and vehicle.get('electric'):
-        powered_by = 'fuel ⛽️ and electric 🔋 (hybrid)'
-    elif vehicle.get('internal_combustion'):
-        powered_by = 'fuel ⛽️'
-    elif vehicle.get('electric'):
-        powered_by = 'electric 🔋'
-
-    fields = {
-        **fields,
-        '⚙️ Powertrain': ('_powertrain', '**{}**', None, None, None)
-    }
-    vehicle = {**vehicle, '_powertrain': powered_by}
-
-    raw_stats = {  # Map vehicle stats to raw stats
-        'efficiency': 'raw_efficiency',
-        'top_speed': 'raw_top_speed',
-        'offroad_capability': 'raw_offroad_capability'
-    }
-
-    for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
-        base_value = vehicle.get(stat_key) or None  # Normalize empty strings to None
-
-        if base_value is None:
-            value_str = 'N/A'
-        else:
-            try:
-                value_str = base_format.format(base_value)
-            except Exception:
-                value_str = str(base_value)
-
-        mod_value = new_part.get(mod_key) if new_part and mod_key else None
-        if mod_value is not None and value_str != 'N/A' and mod_format:
-            value_str += mod_format.format(mod_value)
-
-        if suffix:
-            value_str += suffix
-
-        if stat_key in raw_stats and base_value is not None:
-            raw_value = vehicle.get(raw_stats[stat_key])
-            if raw_value is not None:
-                value_str += f' (*raw: {raw_value}*)'
-
-        if get_user_metadata(df_state, 'mobile'):
-            embed.description += f'\n- {name}: {value_str}'
-        else:
-            embed.add_field(name=name, value=value_str)
-
-    return embed

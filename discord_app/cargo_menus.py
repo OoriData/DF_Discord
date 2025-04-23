@@ -192,29 +192,53 @@ def format_part(part_cargo: dict):
         offroad_capability_add = part.get('offroad_capability_add')
         cargo_capacity_add = part.get('cargo_capacity_add')
         weight_capacity_add = part.get('weight_capacity_add')
+        weight_capacity_multi = part.get('weight_capacity_multi')
 
-        fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
-        lbft = round(part['nm'] * 0.7376) if part.get('nm') else None
-        horsepower = round(part['kw'] * 1.34102) if part.get('kw') else None
         cargo_cubic_feet = round(cargo_capacity_add * 0.0353147) if cargo_capacity_add else None
         weight_lbs = round(weight_capacity_add * 2.20462) if weight_capacity_add else None
+
+        horsepower = round(part['kw'] * 1.34102) if part.get('kw') else None
+        lbft = round(part['nm'] * 0.7376) if part.get('nm') else None
+        fuel_gal = round(part['fuel_capacity'] * 0.264172) if part.get('fuel_capacity') else None
+        water_gal = round(part['water_capacity'] * 0.264172) if part.get('water_capacity') else None
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
+
+        requirements = [
+            f'    - {req}'
+            for req in part.get('requirements')
+        ]
 
         part_attrs = [
             f'- {part['slot'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['slot'].replace('_', ' ').capitalize()}',
-            f'  - **{part['name']}**',
+            f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
+            f'    - {part['wp']} wear points' if part.get('wp') else None,
 
             f'  - Max AC: **{ac_add:+.0f}**' if ac_add else None,
             f'  - Efficiency: **{efficiency_add:+.0f}**' if efficiency_add else None,
             f'  - Top speed: **{top_speed_add:+.0f}**' if top_speed_add else None,
             f'  - Offroad capability: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
-            f'  - Cargo capacity: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
-            f'  - Weight capacity: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
+            f'  - Cargo capacity add: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
+            f'  - Weight capacity add: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
+            f'  - Weight capacity multi: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
+
+            f'  - Minimum weight class: **{part['kwh_capacity']}**' if part.get('weight_class') else None,
+            '  - requirements:' if requirements else None,
+            '\n'.join(requirements) if requirements else None,
 
             f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
             f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,
-            f'  - **{part['capacity']}** L (**{fuel_gal}** gal)' if part.get('capacity') else None,
+            f'  - **{part['fuel_capacity']}** L (**{fuel_gal}** gal)' if part.get('fuel_capacity') else None,
+            f'  - **{part['water_capacity']}** L (**{water_gal}** gal)' if part.get('water_capacity') else None,
+            f'  - **{part['kwh_capacity']}** kWh' if part.get('kwh_capacity') else None,
+            f'  - **{part['energy_density']}** Wh/kg' if part.get('energy_density') else None,
+            f'  - **{part['coupling']}**' if part.get('coupling') else None,
+            f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
             f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
+
+            '  - **critical**' if part.get('removable') else None,
+            '  - **removable**' if part.get('removable') else None,
+            '  - **salvagable**' if part.get('salvagable') else None,
+            '  - **bolt-on**' if part.get('bolt_on') else None,
 
             f'  - *{part['description']}*' if part.get('description') else None,
             f'    - Part value: **${part['value']}**' if part.get('value') else None,

@@ -198,12 +198,13 @@ async def make_convoy_embed(
         expenses_print = '\n'.join([
             f'(Sum) Fuel expenses: {sum(prospective_journey_plus_misc['fuel_expenses'].values()):.2f}',
             f'Water expense: {prospective_journey_plus_misc['water_expense']:.2f}',
-            f'Food expense: {prospective_journey_plus_misc['food_expense']:.2f}'
+            f'Food expense: {prospective_journey_plus_misc['food_expense']:.2f}',
+            'kWh expenses:'
         ])
         for vehicle in df_state.convoy_obj['vehicles']:
             if vehicle['electric']:
                 expenses_print += (
-                    f'\nVehicle {vehicle['name']} kWh expense: '
+                    f'\n- {vehicle['name']}: '
                     f'{prospective_journey_plus_misc['kwh_expenses'][vehicle['vehicle_id']]:.2f}'
                 )
         logger.info(ansi_color(text=expenses_print, font_color='yellow'))

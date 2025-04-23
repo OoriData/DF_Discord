@@ -403,7 +403,7 @@ def get_vendor_emoji(vendor: dict) -> str | None:
         'mechanic': '🔧',
         'fuel': '⛽',
         'water': '🚰',
-        'food': '🍱',
+        'food': '🥪',
     }
 
     # Find the first matching supply request type with a value > 0

@@ -134,7 +134,11 @@ class BuyVehicleSelect(discord.ui.Select):
             ]
         else:
             options=[
-                discord.SelectOption(label=f'{vehicle['name']} | {get_vehicle_emoji(vehicle['shape'])} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                discord.SelectOption(
+                    label=f'{vehicle['name']} | ${vehicle['value']:,.0f}',
+                    value=vehicle['vehicle_id'],
+                    emoji=get_vehicle_emoji(vehicle['shape'])
+                )
                 for vehicle in self.df_state.vendor_obj['vehicle_inventory']
             ]
         if not options:

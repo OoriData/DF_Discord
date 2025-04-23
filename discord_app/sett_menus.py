@@ -48,37 +48,43 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         ])
 
     sorted_vendors = sorted(df_state.sett_obj['vendors'], key=lambda x: x['name'])
-    vendor_displayables = []  # TODO: make these more better
+    vendor_displayables = []
     for vendor in sorted_vendors:
         displayable_services = []
 
-        deliverable_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['recipient']]
+        deliverable_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['recipient']]  # Deliverable cargo
         if deliverable_cargo:
-            displayable_services.append(f'- {len(deliverable_cargo)} deliverable cargo')
+            displayable_services.append('- Deliverable cargo 📦')
 
-        RESOURCES = ['fuel', 'water', 'food']
-        for key in RESOURCES:
-            if vendor[key]:
-                displayable_services.append(f'- {key.capitalize()}')
+        for resource, r_emoji, r_c_emoji, unit in [  # Resources and their containers
+            ('fuel', '⛽️', '🛢️', 'liter'),
+            ('water', '💧', '🥤', 'liter'),
+            ('food', '🥪', '🥡', 'meal')
+        ]:
+            if vendor[resource]:
+                displayable_services.append(f'- {vendor[resource]:,.0f} {resource.capitalize()} {r_emoji}')
+                displayable_services.append(f'  - *${vendor[f'{resource}_price']:,.0f} per {unit}*')
 
-            resource_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo[key]]
+            resource_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo[resource]]
             if resource_cargo:
-                displayable_services.append(f'  - {len(resource_cargo)} {key.capitalize()} container(s)')
+                displayable_services.append(f'- {resource.capitalize()} containers {r_c_emoji}')
 
-        if vendor['vehicle_inventory']:
-            displayable_services.append(f'- {len(vendor['vehicle_inventory'])} vehicles')
+        if vendor['vehicle_inventory']:  # Vehicles
+            displayable_services.append('- Vehicles 🚗')
 
-        if vendor['repair_price']:
-            displayable_services.append('- Mechanic services')
+        if vendor['repair_price']:  # Mechanic services
+            displayable_services.append('- Mechanic services 🔧')
 
-        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['parts']]
+        part_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['parts']]  # Upgrade parts
         if part_cargo:
-            displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
+            displayable_services.append('- Upgrade parts ⚙️')
 
-        vendor_displayables.append('\n'.join([
+        vendor_displayable = '\n'.join([  # Final assembly of the vendor display
             f'## {vendor['name']} {get_vendor_emoji(vendor)}',
             '\n'.join(displayable_services)
-        ]))
+        ])
+
+        vendor_displayables.append(vendor_displayable)  # Add to the list of vendor displayables
 
     embed.description += '\n' + '\n'.join([
         f'# {df_state.sett_obj['name']} vendors',

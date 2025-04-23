@@ -14,7 +14,7 @@ def vehicles_md(vehicles, verbose: bool = False):
             powered_by_emoji = '⛽️'
         elif vehicle.get('electric'):
             powered_by_emoji = '🔋'
-        vehicle_str = f'- **{vehicle['name']}** | {get_vehicle_emoji(vehicle['shape'])} | {powered_by_emoji} | *${vehicle['value']:,}*'
+        vehicle_str = f'- {get_vehicle_emoji(vehicle['shape'])} | **{vehicle['name']}** | {powered_by_emoji} | *${vehicle['value']:,}*'
 
         if verbose:
             vehicle_str += '\n' + '\n'.join([

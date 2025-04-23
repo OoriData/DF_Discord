@@ -3,12 +3,18 @@
 'Vendor Menus'
 import                  math
 
-from discord_app import api_calls
+from discord_app import get_vehicle_emoji
 
 def vehicles_md(vehicles, verbose: bool = False):
     vehicle_list = []
     for vehicle in vehicles:
-        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
+        if vehicle.get('internal_combustion') and vehicle.get('electric'):
+            powered_by_emoji = '⛽️🔋'
+        elif vehicle.get('internal_combustion'):
+            powered_by_emoji = '⛽️'
+        elif vehicle.get('electric'):
+            powered_by_emoji = '🔋'
+        vehicle_str = f'- **{vehicle['name']}** | {get_vehicle_emoji(vehicle['shape'])} | {powered_by_emoji} | *${vehicle['value']:,}*'
 
         if verbose:
             vehicle_str += '\n' + '\n'.join([

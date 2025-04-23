@@ -36,7 +36,6 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 async def convoy_menu(df_state: DFState, edit: bool = True):
     df_state.append_menu_to_back_stack(func=convoy_menu)  # Add this menu to the back stack
 
-    # ✅ Check if the interaction response has already been sent before deferring
     if not df_state.interaction.response.is_done():
         await df_state.interaction.response.defer()
 
@@ -213,8 +212,10 @@ async def make_convoy_embed(df_state: DFState, prospective_journey_plus_misc=Non
 def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> str:
     vehicles_list = []
     vehicles_str = '### Vehicles\n'
-    if vehicles:
-        for vehicle in vehicles:
+
+    sorted_vehicles = sorted(vehicles, key=lambda x: x['name'], reverse=True)
+    if sorted_vehicles:
+        for vehicle in sorted_vehicles:
             vehicle_str = f'**{vehicle['name']}**'
             # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
             vehicle_str += '\n'

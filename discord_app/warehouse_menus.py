@@ -943,7 +943,8 @@ async def retrieve_vehicle_menu(df_state: DFState):
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
-    embed.description = vehicles_md(df_state.warehouse_obj['vehicle_storage'], verbose=True)
+    sorted_vehicles = sorted(df_state.warehouse_obj['vehicle_storage'], key=lambda x: x['name'], reverse=True)
+    embed.description = vehicles_md(sorted_vehicles, verbose=True)
 
     embeds = [embed]
 
@@ -1020,7 +1021,8 @@ async def spawn_convoy_menu(df_state: DFState):
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
 
-    embed.description = vehicles_md(df_state.warehouse_obj['vehicle_storage'], verbose=True)
+    sorted_vehicles = sorted(df_state.warehouse_obj['vehicle_storage'], key=lambda x: x['name'], reverse=True)
+    embed.description = vehicles_md(sorted_vehicles, verbose=True)
 
     embeds = [embed]
 

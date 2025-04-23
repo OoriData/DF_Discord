@@ -73,7 +73,7 @@ async def get_map(
         response = await client.get(
             url=f'{DF_API_HOST}/map/get',
             params=params,
-            timeout=10
+            timeout=20
         )
 
     _check_code(response)
@@ -215,7 +215,7 @@ async def find_route(convoy_id: UUID, dest_x: int, dest_y: int) -> list[dict]:
                 'dest_x': dest_x,
                 'dest_y': dest_y
             },
-            timeout=10
+            timeout=20
         )
 
     _check_code(response)

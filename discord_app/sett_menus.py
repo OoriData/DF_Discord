@@ -8,7 +8,10 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_vendor_emoji
+from discord_app               import (
+    api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction,
+    DF_LOGO_EMOJI, get_vendor_emoji
+)
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_views.vendor_menus
 import                                discord_app.vendor_views.buy_menus
@@ -44,8 +47,9 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
         ])
 
+    sorted_vendors = sorted(df_state.sett_obj['vendors'], key=lambda x: x['name'])
     vendor_displayables = []  # TODO: make these more better
-    for vendor in df_state.sett_obj['vendors']:
+    for vendor in sorted_vendors:
         displayable_services = []
 
         deliverable_cargo = [cargo for cargo in vendor['cargo_inventory'] if cargo['recipient']]
@@ -72,7 +76,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
             displayable_services.append(f'- {len(part_cargo)} upgrade part(s)')
 
         vendor_displayables.append('\n'.join([
-            f'## {vendor['name']}',
+            f'## {vendor['name']} {get_vendor_emoji(vendor)}',
             '\n'.join(displayable_services)
         ]))
 

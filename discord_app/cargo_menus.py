@@ -186,23 +186,30 @@ def format_part(part_cargo: dict):
 
     part_strs = []
     for part in parts:
+        ac_add = part.get('ac_add')
+        efficiency_add = part.get('efficiency_add')
+        top_speed_add = part.get('top_speed_add')
+        offroad_capability_add = part.get('offroad_capability_add')
+        cargo_capacity_add = part.get('cargo_capacity_add')
+        weight_capacity_add = part.get('weight_capacity_add')
+
         fuel_gal = round(part['capacity'] * 0.264172) if part.get('capacity') else None
         lbft = round(part['nm'] * 0.7376) if part.get('nm') else None
         horsepower = round(part['kw'] * 1.34102) if part.get('kw') else None
-        cargo_cubic_feet = round(part['cargo_capacity_add'] * 0.0353147) if part.get('cargo_capacity_add') else None
-        weight_lbs = round(part['weight_capacity_add'] * 2.20462) if part.get('weight_capacity_add') else None
+        cargo_cubic_feet = round(cargo_capacity_add * 0.0353147) if cargo_capacity_add else None
+        weight_lbs = round(weight_capacity_add * 2.20462) if weight_capacity_add else None
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
 
         part_attrs = [
             f'- {part['slot'].replace('_', ' ').capitalize()} (OE)' if part.get('OE') else f'- {part['slot'].replace('_', ' ').capitalize()}',
             f'  - **{part['name']}**',
 
-            f'  - Max AP: **{part['ac_add']:+.0f}**' if part.get('ac_add') else None,
-            f'  - Efficiency: **{part['fuel_efficiency_add']:+.0f}**' if part.get('fuel_efficiency_add') else None,
-            f'  - Top speed: **{part['top_speed_add']:+.0f}**' if part.get('top_speed_add') else None,
-            f'  - Offroad capability: **{part['offroad_capability_add']:+.0f}**' if part.get('offroad_capability_add') else None,
-            f'  - Cargo capacity: **{part['cargo_capacity_add']:+.0f}** L ({cargo_cubic_feet:+} ft³)' if part.get('cargo_capacity_add') else None,
-            f'  - Weight capacity: **{part['weight_capacity_add']:+.0f}** kg ({weight_lbs:+} lbs)' if part.get('weight_capacity_add') else None,
+            f'  - Max AC: **{ac_add:+.0f}**' if ac_add else None,
+            f'  - Efficiency: **{efficiency_add:+.0f}**' if efficiency_add else None,
+            f'  - Top speed: **{top_speed_add:+.0f}**' if top_speed_add else None,
+            f'  - Offroad capability: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
+            f'  - Cargo capacity: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
+            f'  - Weight capacity: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
 
             f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
             f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,

@@ -82,7 +82,8 @@ async def main_menu(
     if user_obj:
         if user_obj['convoys']:  # If the user has convoys
             convoy_descs = []
-            for convoy in user_obj['convoys']:
+            sorted_convoys = sorted(user_obj['convoys'], key=lambda x: x['name'], reverse=True)
+            for convoy in sorted_convoys:
                 tile_obj = await api_calls.get_tile(convoy['x'], convoy['y'])
 
                 if convoy['journey']:
@@ -482,9 +483,6 @@ class OptionsView(discord.ui.View):
 
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
-
-
-
 class ChangeUsernameButton(discord.ui.Button):
     def __init__(self, df_state: DFState, disabled: bool, row=2):
         super().__init__(
@@ -506,7 +504,6 @@ class ChangeUsernameButton(discord.ui.Button):
 
         if df_exp > datetime.now().date():  # XXX: this should prob use a timezone, eg. datetime.now(timezone.utc)
             await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
-
 
 class ChangeUsernameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
@@ -542,7 +539,6 @@ class ChangeUsernameModal(discord.ui.Modal):
         view = OptionsView(self.df_state)
 
         await self.df_state.interaction.response.edit_message(embeds=[user_embed], view=view, attachments=[])
-
 
 class ConvoySelectBeforeRename(discord.ui.Select):
     def __init__(self, df_state: DFState, row=0):
@@ -602,7 +598,6 @@ class ChangeConvoyNameButton(discord.ui.Button):
             ephemeral=True
         )
 
-
 class ChangeConvoyNameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -636,9 +631,6 @@ class ChangeConvoyNameModal(discord.ui.Modal):
         view = OptionsView(self.df_state)
 
         await interaction.response.edit_message(embeds=[embed], view=view, attachments=[])
-
-
-
 
 class ReferralButton(discord.ui.Button):
     def __init__(self, df_state: DFState, disabled: bool, row=2):
@@ -695,8 +687,6 @@ class AppModeButton(discord.ui.Button):
 
         await options_menu(self.df_state)
 
-
-
 class ReferralCodeModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):
         self.df_state = df_state
@@ -730,16 +720,6 @@ class ReferralCodeModal(discord.ui.Modal):
                 ephemeral=True
             )
 
-
-# class RedeemConfirmationView(discord.ui.View):
-#     def __init__(self, df_state: DFState):
-#         super().__init__()
-#         self.df_state = df_state
-
-#         # Add confirm and cancel buttons
-#         self.add_item(ConfirmRedeemButton(df_state))
-#         self.add_item(CancelButton())
-
 class CancelButton(discord.ui.Button):
     def __init__(self):
         super().__init__(
@@ -749,4 +729,4 @@ class CancelButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(content="Action cancelled.", view=None)
+        await interaction.response.edit_message(content='Action cancelled.', view=None)

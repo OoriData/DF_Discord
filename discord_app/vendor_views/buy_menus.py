@@ -7,7 +7,10 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction, DF_LOGO_EMOJI, get_cargo_emoji
+from discord_app               import (
+    api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction,
+    DF_LOGO_EMOJI, get_cargo_emoji, get_vehicle_emoji
+)
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.vendor_views  import vendor_inv_md, wet_price
 import                                discord_app.nav_menus
@@ -24,6 +27,9 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 async def buy_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=buy_menu)  # Add this menu to the back stack
+
+    df_state.vendor_obj['vehicle_inventory'] = sorted(df_state.vendor_obj['vehicle_inventory'], key=lambda x: x['name'])
+    df_state.vendor_obj['cargo_inventory'] = sorted(df_state.vendor_obj['cargo_inventory'], key=lambda x: x['name'])
 
     menu_embed = discord.Embed()
 
@@ -128,7 +134,7 @@ class BuyVehicleSelect(discord.ui.Select):
             ]
         else:
             options=[
-                discord.SelectOption(label=f'{vehicle['name']} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
+                discord.SelectOption(label=f'{vehicle['name']} | {get_vehicle_emoji(vehicle['shape'])} | ${vehicle['value']:,.0f}', value=vehicle['vehicle_id'])
                 for vehicle in self.df_state.vendor_obj['vehicle_inventory']
             ]
         if not options:

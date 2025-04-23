@@ -233,8 +233,8 @@ class ResourceSellQuantityEmbed(discord.Embed):
         self.description = '\n'.join([
             f'## {df_state.vendor_obj['name']}',
             f'### Selling {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,} per Liter/meals',
-            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]} Liters/meals',
-            f'### Sale: {self.sale_quantity:,.2f} Liters/meals | ${sale_price:,.0f}'
+            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type}: {self.df_state.convoy_obj[self.resource_type]:,.3f} Liters/meals',
+            f'### Sale: {self.sale_quantity:,.3f} Liters/meals | ${sale_price:,.0f}'
         ])
 
 class ResourceSellQuantityView(discord.ui.View):
@@ -262,7 +262,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
             self,
             df_state: DFState,
             sale_quantity: int,
-            resource_type: str=None,
+            resource_type: str | None=None,
             row: int=1
     ):
         self.df_state = df_state
@@ -273,7 +273,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell {self.sale_quantity:,.2f}L of {self.resource_type} | ${sale_price:,.0f}',
+            label=f'Sell {self.sale_quantity:,.3f}L of {self.resource_type} | ${sale_price:,.0f}',
             row=row
         )
 
@@ -298,7 +298,7 @@ class ResourceConfirmSellButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'## {self.df_state.vendor_obj['name']}',
-            f'Sold {self.sale_quantity:,.2f} Liters/meals of {self.resource_type} for ${sale_price:,.0f}'
+            f'Sold {self.sale_quantity:,.3f} Liters/meals of {self.resource_type} for ${sale_price:,.0f}'
         ])
 
         view = PostSellView(self.df_state)
@@ -595,7 +595,7 @@ class QuantitySellButton(discord.ui.Button):  # XXX: Explode this button into li
         if button_quantity == 'max':  # Handle "max" button logic
             self.button_quantity = inventory_quantity - self.sale_quantity
             self.button_quantity = max(0, self.button_quantity)  # Ensure the quantity is 0
-            label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
+            label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.3f})'
         else:
             self.button_quantity = int(button_quantity)
             label = f'{self.button_quantity:+,}'

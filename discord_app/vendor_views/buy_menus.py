@@ -822,12 +822,15 @@ class TopUpButton(discord.ui.Button):
             # Generate label
             if available_resources:
                 available_resources_str = ', '.join(available_resources)
-                if self.top_up_price > 0:
+                if int(self.top_up_price) > 0:
                     label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
                     disabled = self.top_up_price > self.df_state.convoy_obj['money']
+                else:
+                    label = 'Convoy is already topped up'
+                    disabled = True
             else:
                 disabled = True
-                if self.top_up_price == 0:
+                if int(self.top_up_price) == 0:  # If the top up price is 0, it means the convoy is already full
                     label = 'Convoy is already topped up'
                 elif remaining_weight <= 0:
                     label = 'Convoy is full'
@@ -835,8 +838,6 @@ class TopUpButton(discord.ui.Button):
                     label = 'No vendors available for top up'
                 else:
                     label = 'Cannot top up'
-
-            # print(self.resource_vendors)
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
@@ -854,8 +855,15 @@ class TopUpButton(discord.ui.Button):
         if not interaction.response.is_done():
             await interaction.response.defer()
 
+        resources = {
+            'fuel': ('⛽️', 'liter'),
+            'water': ('💧', 'liter'),
+            'food': ('🥪', 'meal')
+        }
+
         try:
             # Attempt to top up each resource from its respective vendor
+            topped_up_resources = []
             for resource_type, vendor_info in self.resource_vendors.items():
                 self.df_state.convoy_obj = await api_calls.buy_resource(
                     vendor_id=vendor_info['vendor_id'],
@@ -864,7 +872,19 @@ class TopUpButton(discord.ui.Button):
                     quantity=vendor_info['convoy_need']
                 )
 
-            receipt_embed = discord.Embed(description=f'### Topped up all resources for ${self.top_up_price:,.0f}')
+                emoji = resources[resource_type][0]
+                unit = resources[resource_type][1]
+                topped_up_resources.append(
+                    f'- {emoji} {resource_type.capitalize()} for ${vendor_info['price']:,.0f} per {unit}'
+                )
+
+            receipt_embed = discord.Embed(
+                color=discord.Color.green(),
+                description='\n'.join([
+                    f'### Topped up all resources for ${self.top_up_price:,.0f}',
+                    *topped_up_resources
+                ])
+            )
 
             await self.menu(
                 df_state=self.df_state,

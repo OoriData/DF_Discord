@@ -192,8 +192,7 @@ class DesolateCog(commands.Cog):
             self.cache_ready.set()  # Signal that the cache is ready
 
 
-    # @tasks.loop(minutes=1)
-    @tasks.loop(seconds=15) # Definitely don't push this line to prod
+    @tasks.loop(minutes=1)
     async def notifier(self):
         if isinstance(self.df_users_cache, dict):  # If the cache has been initialized
             notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)

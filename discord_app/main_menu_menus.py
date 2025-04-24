@@ -12,7 +12,8 @@ import                                discord_app
 from discord_app               import (
     api_calls, convoy_menus, warehouse_menus, banner_menus,
     handle_timeout, add_external_URL_buttons, discord_timestamp, df_embed_author, get_image_as_discord_file,
-    DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction, get_settlement_emoji
+    DF_GUILD_ID, DF_TEXT_LOGO_URL, DF_LOGO_EMOJI, OORI_RED, get_user_metadata, validate_interaction,
+    get_settlement_emoji, get_vehicle_emoji
 )
 import discord_app.convoy_menus
 from discord_app.map_rendering import add_map_to_embed
@@ -93,13 +94,13 @@ async def main_menu(
                     convoy_descs.extend([
                         f'## {convoy['name']} 🛣️\n'
                         f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.2f}%** (ETA: {discord_timestamp(eta, 't')})',
-                        '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
+                        '\n'.join([f'- {vehicle['name']} {get_vehicle_emoji(vehicle['shape'])}' for vehicle in convoy['vehicles']])
                     ])
                 else:
                     convoy_descs.extend([
                         f'## {convoy['name']} 🅿️\n'
                         f'Arrived at **{tile_obj['settlements'][0]['name']}**' if tile_obj['settlements'] else f'Arrived at **({convoy['x']}, {convoy['y']})**',
-                        '\n'.join([f'- {vehicle['name']}' for vehicle in convoy['vehicles']])
+                        '\n'.join([f'- {vehicle['name']} {get_vehicle_emoji(vehicle['shape'])}' for vehicle in convoy['vehicles']])
                     ])
 
             description = '\n' + '\n'.join(convoy_descs)

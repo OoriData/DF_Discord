@@ -294,7 +294,7 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     sorted_vehicles = sorted(vehicles, key=lambda x: x['name'], reverse=True)
     if sorted_vehicles:
         for vehicle in sorted_vehicles:
-            vehicle_str = f'**{vehicle['name']}**'
+            vehicle_str = f'**{vehicle['name']}** {get_vehicle_emoji(vehicle['shape'])}'
             # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
             vehicle_str += '\n'
             if verbose:

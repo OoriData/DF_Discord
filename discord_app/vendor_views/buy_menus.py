@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
+import                                math
 
 import                                discord
 
@@ -332,6 +333,8 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
 
 async def buy_cargo_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_cargo_menu)  # Add this menu to the back stack
 
     embed = CargoBuyQuantityEmbed(df_state)
@@ -734,164 +737,354 @@ class PostBuyView(discord.ui.View):
 
 
 class TopUpButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, menu, menu_args=None, row: int=1):
+    """
+    A Discord UI button that allows users to top up convoy resources (fuel, water, food)
+    from the cheapest available vendors in the current settlement, considering convoy
+    capacity and available funds.
+
+    Attributes:
+        df_state (DFState): The current state object containing convoy, settlement, and other relevant data.
+        menu (callable): The function to call to refresh or display the parent menu after the action is performed.
+        menu_args (dict): Arguments to pass to the menu function.
+        resource_vendors (dict): Stores the details of vendors and quantities for each resource planned for purchase.
+                                 Structure: { 'resource_type': {'vendor_id': ..., 'price': ..., 'quantity': ...} }
+        total_top_up_cost (int): The total calculated cost for topping up resources.
+    """
+    def __init__(self, df_state: DFState, menu: callable, menu_args: dict | None = None, row: int = 1):
+        """
+        Initializes the TopUpButton.
+
+        Calculates the optimal top-up plan based on resource needs, vendor prices,
+        convoy capacity, and sets the button's label, state (enabled/disabled),
+        and appearance accordingly.
+
+        Args:
+            df_state: The application's state object.
+            menu: The callback function to invoke for updating the UI menu.
+            menu_args: Optional dictionary of arguments for the menu function.
+            row: The row number for button placement in the Discord view.
+        """
         self.df_state = df_state
         self.menu = menu
         self.menu_args = menu_args if menu_args is not None else {}
 
-        # Initialize with disabled state and empty values
-        self.resource_vendors = {}
-        self.top_up_price = 0
-        label = 'Cannot top up: No vendors'
+        self.resource_types = ['fuel', 'water', 'food']
+        self.resource_metadata = {
+            'fuel': {'emoji': '⛽️', 'unit': 'liter'},
+            'water': {'emoji': '💧', 'unit': 'liter'},
+            'food': {'emoji': '🥪', 'unit': 'meal'}
+        }
 
-        if self.df_state.sett_obj and 'vendors' in self.df_state.sett_obj:
-            resource_types = ['fuel', 'water', 'food']
+        # --- State Initialization ---
+        # These will be populated by _calculate_top_up_plan
+        self.resource_vendors: dict[str, dict] = {}
+        self.total_top_up_cost: int = 0
+        # Default button state
+        button_label = 'Cannot top up: No vendors'
+        button_disabled = True
 
-            # Sort resources by depletion level (lowest filled % first)
-            sorted_resources = sorted(
-                resource_types,
-                key=lambda r: (self.df_state.convoy_obj[r] / max(self.df_state.convoy_obj[f'max_{r}'], 1))
+        # --- Core Logic Execution ---
+        # Check prerequisites for topping up
+        if self._can_attempt_top_up():
+            # Calculate the top-up plan (which vendors, how much, cost)
+            planned_resources, self.total_top_up_cost, self.resource_vendors = self._calculate_top_up_plan()
+
+            # Determine the button's final label and enabled/disabled state based on the plan
+            button_label, button_disabled = self._determine_button_state(
+                planned_resources=planned_resources,
+                total_cost=self.total_top_up_cost,
+                has_vendors=True # We know vendors exist if we got this far
             )
-            
-            # print('sorted resources by demand')
-            # print(sorted_resources)
+        else:
+            # Determine button state when prerequisites aren't met (no settlement/vendors)
+            button_label, button_disabled = self._determine_button_state(
+                planned_resources=[],
+                total_cost=0,
+                has_vendors=bool(self.df_state.sett_obj and 'vendors' in self.df_state.sett_obj)
+            )
 
-            available_resources = []
-            remaining_weight = self.df_state.convoy_obj['total_remaining_capacity']
-            weights = self.df_state.misc['resource_weights']
-
-            # print(f'remaining weight : {remaining_weight}')
-            # print(f'weights: {weights}')
-
-            for resource_type in sorted_resources:
-                current = self.df_state.convoy_obj[resource_type]
-                max_allowed = self.df_state.convoy_obj[f'max_{resource_type}']
-
-                # print(f'current amout of {resource_type} : {current}')
-                # print(f'Maximum Cap of {resource_type} : {max_allowed}')
-
-                convoy_need = max(0, max_allowed - current)
-                
-                if convoy_need <= 0 or remaining_weight <= 0:
-                    # print(f'Convoy full of {resource_type}')
-                    continue
-                    
-                vendor = min(
-                    (v for v in self.df_state.sett_obj['vendors'] if v.get(f'{resource_type}_price') is not None),
-                    key=lambda v: v[f'{resource_type}_price'],
-                    default=None
-                )
-                
-                if not vendor:
-                    # no vendor is found selling given resource
-                    # print('no vendor')
-                    continue
-                
-                weight_per_unit = weights.get(resource_type, 1.0)
-                
-                # Calculate how many units we can actually fit within remaining weight
-                max_units_by_weight = int(remaining_weight / weight_per_unit)
-                actual_top_up = min(convoy_need, max_units_by_weight)
-                
-                # print(f'Max units to buy based on weight : {max_units_by_weight}')
-                # print(f'Convoy need : {convoy_need}')
-                # print(f'Actual need : {actual_top_up}')
-
-                if actual_top_up <= 0:
-                    continue
-                    
-                price = vendor[f'{resource_type}_price']
-                cost = actual_top_up * price
-                
-                # print(f'{resource_type} cost for {actual_top_up} amount : {cost}')
-
-                self.resource_vendors[resource_type] = {
-                    'vendor_id': vendor['vendor_id'],
-                    'price': price,
-                    'convoy_need': actual_top_up
-                }
-
-                self.top_up_price += cost
-                # print(f'top up price {self.top_up_price}')
-                available_resources.append(resource_type)
-
-                # ✅ Update remaining weight after purchase
-                remaining_weight -= actual_top_up * weight_per_unit
-                # print(f'Remaining weight after buying {resource_type}: {remaining_weight}')
-
-            # Generate label
-            if available_resources:
-                available_resources_str = ', '.join(available_resources)
-                if int(self.top_up_price) > 0:
-                    label = f'Top up {available_resources_str} | ${self.top_up_price:,.0f}'
-                    disabled = self.top_up_price > self.df_state.convoy_obj['money']
-                else:
-                    label = 'Convoy is already topped up'
-                    disabled = True
-            else:
-                disabled = True
-                if int(self.top_up_price) == 0:  # If the top up price is 0, it means the convoy is already full
-                    label = 'Convoy is already topped up'
-                elif remaining_weight <= 0:
-                    label = 'Convoy is full'
-                elif not self.df_state.sett_obj['vendors']:
-                    label = 'No vendors available for top up'
-                else:
-                    label = 'Cannot top up'
-
+        # --- Final Button Setup ---
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label=label,
-            disabled=disabled,
-            custom_id='top_up_button',
+            label=button_label,
+            disabled=button_disabled,
+            custom_id='top_up_button', # Make sure this ID is unique if multiple buttons exist
             emoji='🛒',
             row=row
         )
 
-    async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
-        self.df_state.interaction = interaction
+    def _can_attempt_top_up(self) -> bool:
+        """Checks if the basic conditions for attempting a top-up are met."""
+        # Requires a settlement object with a list of vendors.
+        return bool(
+            self.df_state.sett_obj and
+            'vendors' in self.df_state.sett_obj and
+            self.df_state.sett_obj['vendors'] # Ensure the list isn't empty
+        )
 
+    def _get_resource_priority_order(self) -> list[str]:
+        """
+        Determines the order in which resources should be topped up,
+        prioritizing those with the lowest fill percentage.
+        """
+        convoy = self.df_state.convoy_obj
+
+        def fill_percentage(resource_type: str) -> float:
+            current = convoy.get(resource_type, 0)
+            maximum = max(convoy.get(f'max_{resource_type}', 1), 1) # Avoid division by zero
+            return current / maximum
+
+        # Sort resource types by their fill percentage (ascending)
+        return sorted(self.resource_types, key=fill_percentage)
+
+    def _find_cheapest_vendor_for_resource(self, resource_type: str) -> dict | None:
+        """Finds the vendor offering the lowest price for a given resource type."""
+        price_key = f'{resource_type}_price'
+        valid_vendors = [
+            v for v in self.df_state.sett_obj.get('vendors', [])
+            if v.get(price_key) is not None # Check if vendor sells this resource
+        ]
+
+        if not valid_vendors:
+            return None # No vendor sells this resource
+
+        # Find the vendor with the minimum price for this resource
+        return min(valid_vendors, key=lambda v: v[price_key])
+
+    def _calculate_top_up_plan(self) -> tuple[list[str], int, dict]:
+        """
+        Calculates the optimal resource top-up plan based on need, vendor prices,
+        and convoy weight capacity.
+
+        Returns:
+            A tuple containing:
+            - list[str]: The names of resources included in the top-up plan.
+            - int: The total calculated cost of the top-up plan.
+            - dict: A dictionary detailing the vendor, price, and quantity for each
+                    resource in the plan. Structure:
+                    { 'resource_type': {'vendor_id': ..., 'price': ..., 'quantity': ...} }
+        """
+        convoy = self.df_state.convoy_obj
+        weights = self.df_state.misc.get('resource_weights', {})
+
+        # Get initial state
+        remaining_weight = convoy.get('total_remaining_capacity', 0)
+        sorted_resource_types = self._get_resource_priority_order()
+
+        # Variables to store the plan details
+        planned_resources = []
+        total_cost = 0
+        resource_purchase_details = {} # Replaces self.resource_vendors during calculation
+
+        # Iterate through resources by priority
+        for resource_type in sorted_resource_types:
+            # Check if we still have capacity
+            if remaining_weight <= 0:
+                break # Stop if convoy is full by weight
+
+            # Calculate how much of the resource the convoy needs
+            current_amount = convoy.get(resource_type, 0)
+            max_capacity = convoy.get(f'max_{resource_type}', 0)
+            needed_quantity = max(0, max_capacity - current_amount)
+
+            # Skip if this resource is already full
+            if needed_quantity <= 0:
+                continue
+
+            # Find the best vendor for this resource
+            cheapest_vendor = self._find_cheapest_vendor_for_resource(resource_type)
+            if not cheapest_vendor:
+                continue # Skip if no vendor sells this resource
+
+            # Determine purchase limits based on weight
+            weight_per_unit = weights.get(resource_type, 1.0) # Default weight if not specified
+            if weight_per_unit <= 0: # Avoid division by zero or infinite purchase
+                weight_per_unit = 1.0
+
+            max_units_by_weight = math.floor(remaining_weight / weight_per_unit)
+
+            # Determine the actual quantity to buy (minimum of need and capacity)
+            actual_quantity_to_buy = min(needed_quantity, max_units_by_weight)
+
+            # Skip if we can't buy any (due to weight constraints)
+            if actual_quantity_to_buy <= 0:
+                continue
+
+            # Calculate cost and update plan
+            price = cheapest_vendor[f'{resource_type}_price']
+            cost_for_resource = actual_quantity_to_buy * price
+
+            # Add to plan if cost is positive (don't add free items if logic changes)
+            if cost_for_resource >= 0: # Allow free items if price is 0
+                total_cost += cost_for_resource
+                planned_resources.append(resource_type)
+                resource_purchase_details[resource_type] = {
+                    'vendor_id': cheapest_vendor['vendor_id'],
+                    'price': price,
+                    'quantity': actual_quantity_to_buy # Use 'quantity' for clarity
+                }
+
+                # Update remaining weight capacity
+                remaining_weight -= actual_quantity_to_buy * weight_per_unit
+
+        return planned_resources, int(round(total_cost)), resource_purchase_details
+
+    def _determine_button_state(
+            self,
+            planned_resources: list[str],
+            total_cost: int,
+            has_vendors: bool
+    ) -> tuple[str, bool]:
+        """
+        Determines the button's label and enabled/disabled state based on the
+        calculated top-up plan and convoy status.
+
+        Args:
+            planned_resources: List of resource types included in the plan.
+            total_cost: The total cost of the planned top-up.
+            has_vendors: Boolean indicating if vendors exist in the settlement.
+
+        Returns:
+            A tuple containing:
+            - str: The button label.
+            - bool: The button disabled state (True for disabled, False for enabled).
+        """
+        convoy = self.df_state.convoy_obj
+        can_afford = total_cost <= convoy.get('money', 0)
+
+        if planned_resources and total_cost > 0:
+            # Case 1: Resources can be bought, and they cost something.
+            label = f'Top up {", ".join(planned_resources)} | ${total_cost:,.0f}'
+            disabled = not can_afford # Disable if cannot afford
+            if disabled:
+                 label += ' (Insufficient Funds)' # Add reason if disabled
+        elif planned_resources and total_cost == 0:
+            # Case 2: Resources can be 'bought' (potentially free?), convoy has space.
+            label = f'Top up {", ".join(planned_resources)} | $0' # Indicate free top-up
+            disabled = False # Always enable if free and possible
+        elif total_cost == 0 and not planned_resources:
+            # Case 3: Nothing to buy, cost is zero. Implies convoy is full of needed resources.
+            label = 'Convoy is already topped up'
+            disabled = True
+        elif not has_vendors:
+            # Case 4: No vendors available in the settlement.
+            label = 'No vendors available for top up'
+            disabled = True
+        # Note: The original code had a check for `remaining_weight <= 0` leading to "Convoy is full".
+        # This case is now implicitly handled. If remaining_weight was 0 initially or became 0,
+        # `planned_resources` might be empty or incomplete. If it's empty, Case 3 applies.
+        # If it's incomplete but > 0 cost, Case 1 applies. If it's empty because needs were met
+        # before running out of weight, Case 3 applies. A specific "Convoy is full" message
+        # might be less informative than "Already topped up" or showing what *can* be bought.
+        # If you specifically need "Convoy is full" when weight is the sole limiter even if
+        # needs aren't met, more complex state tracking from _calculate_top_up_plan is needed.
+        else:
+            # Case 5: Fallback - Cannot top up for other reasons (e.g., needs met,
+            # but weight full before considering all items, or specific items unavailable).
+            # This state might be reached if weight is full but *some* resources are still needed
+            # but cannot be bought due to weight, and no other resources were plannable.
+            # Or if vendors only sell items the convoy doesn't need.
+            label = 'Cannot top up' # General unavailability
+            disabled = True
+
+        return label, disabled
+
+    async def callback(self, interaction: discord.Interaction):
+        """
+        Executed when the button is clicked.
+
+        Validates the interaction, performs the resource purchase API calls based
+        on the plan calculated in __init__, sends a receipt, and updates the menu.
+        Handles potential errors during the purchase process.
+        """
+        # --- Interaction Validation and Deferral ---
+        # Use the provided validation function. Ensure it handles state checks if needed.
+        # If validate_interaction could modify df_state, consider its placement carefully.
+        # await validate_interaction(interaction=interaction, df_state=self.df_state) # Uncomment if needed
+        self.df_state.interaction = interaction # Store interaction for potential use
+
+        # Defer the interaction response immediately to prevent timeouts,
+        # especially as API calls can take time.
         if not interaction.response.is_done():
             await interaction.response.defer()
 
-        resources = {
-            'fuel': ('⛽️', 'liter'),
-            'water': ('💧', 'liter'),
-            'food': ('🥪', 'meal')
-        }
+        # --- Check if there's anything to buy ---
+        if not self.resource_vendors or self.total_top_up_cost < 0: # Cost < 0 check as safeguard
+            # This should ideally not happen if the button wasn't disabled, but good practice.
+            await interaction.followup.send('Nothing to top up or an error occurred in planning.', ephemeral=True)
+            return
 
+        # --- Execute Purchases ---
         try:
-            # Attempt to top up each resource from its respective vendor
-            topped_up_resources = []
-            for resource_type, vendor_info in self.resource_vendors.items():
-                self.df_state.convoy_obj = await api_calls.buy_resource(
-                    vendor_id=vendor_info['vendor_id'],
+            topped_up_details = [] # For building the receipt message
+
+            # Iterate through the pre-calculated plan
+            for resource_type, purchase_info in self.resource_vendors.items():
+                vendor_id = purchase_info['vendor_id']
+                quantity = purchase_info['quantity']
+                price = purchase_info['price']
+
+                # Check if quantity is valid before calling API
+                if quantity <= 0:
+                    # Log this unexpected state if possible
+                    print(f'Warning: Skipped buying {resource_type} due to zero quantity in plan.')
+                    continue
+
+                # --- API Call ---
+                # Assuming api_calls.buy_resource performs the transaction and returns
+                # the *updated* convoy object state. If it only returns success/failure,
+                # you might need a separate call to refresh df_state.convoy_obj afterwards.
+                updated_convoy_obj = await api_calls.buy_resource(
+                    vendor_id=vendor_id,
                     convoy_id=self.df_state.convoy_obj['convoy_id'],
                     resource_type=resource_type,
-                    quantity=vendor_info['convoy_need']
+                    quantity=quantity
+                )
+                # --- State Update ---
+                # CRITICAL: Update the state object with the result from the API call.
+                self.df_state.convoy_obj = updated_convoy_obj
+
+                # --- Receipt Message Preparation ---
+                meta = self.resource_metadata.get(resource_type, {'emoji': '📦', 'unit': 'unit'}) # Fallback metadata
+                topped_up_details.append(
+                    f'- {meta['emoji']} {quantity} {resource_type.capitalize()} for '
+                    f'${price:,.0f} per {meta['unit']}' # Show per unit price
                 )
 
-                emoji = resources[resource_type][0]
-                unit = resources[resource_type][1]
-                topped_up_resources.append(
-                    f'- {emoji} {resource_type.capitalize()} for ${vendor_info['price']:,.0f} per {unit}'
-                )
-
+            # --- Success Feedback ---
             receipt_embed = discord.Embed(
                 color=discord.Color.green(),
+                title='Top-Up Successful',
                 description='\n'.join([
-                    f'### Topped up all resources for ${self.top_up_price:,.0f}',
-                    *topped_up_resources
-                ])
-            )
+                    f'### Topped up all resources for ${self.total_top_up_cost:,.0f}',
+                    *topped_up_details
+                    ])
+                )
 
+            # --- Update Original Menu/View ---
+            # Call the menu function passed during initialization to refresh the UI.
+            # Pass the updated df_state and the receipt embed.
             await self.menu(
                 df_state=self.df_state,
-                follow_on_embeds=[receipt_embed],
+                follow_on_embeds=[receipt_embed], # Use a consistent kwarg name
                 **self.menu_args
             )
 
-        except RuntimeError as e:
-            # Handle error response
-            await interaction.response.send_message(content=str(e), ephemeral=True)
+        except RuntimeError as e: # Catch specific errors from api_calls if possible
+            # --- Error Handling ---
+            error_embed = discord.Embed(
+                color=discord.Color.red(),
+                title='Top-Up Failed',
+                description=f'An error occurred: {e}'
+            )
+            # Use followup because we deferred earlier. Send ephemeral so only user sees error.
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            # Optionally, you might want to refresh the menu even on failure
+            # to show the potentially unchanged state, depending on UX preference.
+            # await self.menu(df_state=self.df_state, **self.menu_args)
+
+        except Exception as e: # Catch unexpected errors
+            # Log the full error for debugging
+            # print(f'An unexpected error occurred during top-up callback: {e}')
+            # Inform the user generically
+            await interaction.followup.send('An unexpected error occurred. Please try again later.', ephemeral=True)

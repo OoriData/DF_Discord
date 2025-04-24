@@ -1047,7 +1047,7 @@ class TopUpButton(discord.ui.Button):
                 # --- Receipt Message Preparation ---
                 meta = self.resource_metadata.get(resource_type, {'emoji': '📦', 'unit': 'unit'}) # Fallback metadata
                 topped_up_details.append(
-                    f'- {meta['emoji']} {quantity} {resource_type.capitalize()} for '
+                    f'- {meta['emoji']} {quantity:.2f} {resource_type.capitalize()} for '
                     f'${price:,.0f} per {meta['unit']}' # Show per unit price
                 )
 

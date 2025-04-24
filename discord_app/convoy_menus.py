@@ -35,7 +35,7 @@ logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVE
 
 def fuzz(amount: float) -> int:
     """ Fuzzes the amount to the nearest integer or multiple of 10. """
-    if amount < 10:  # If the amount is less than 10, round up to the nearest integer
+    if amount < 20:  # If the amount is less than 10, round up to the nearest integer
         return int(amount) if amount == int(amount) else int(amount) + 1
 
     return int((amount + 9) // 10 * 10)  # Round up to the nearest multiple of 10
@@ -81,7 +81,7 @@ async def make_convoy_embed(
             '### Convoy Stats',
             f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
             f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
-            f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
+            f'Food 🥪: **{df_state.convoy_obj['food']:,.0f}** / {df_state.convoy_obj['max_food']:.0f} meals',
             f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
             f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
@@ -97,7 +97,7 @@ async def make_convoy_embed(
         )
         convoy_embed.add_field(
             name='Food 🥪',
-            value=f'**{df_state.convoy_obj['food']:,.2f}**\n/{df_state.convoy_obj['max_food']:.0f} meals'
+            value=f'**{df_state.convoy_obj['food']:,.0f}**\n/{df_state.convoy_obj['max_food']:.0f} meals'
         )
 
         convoy_embed.add_field(
@@ -217,7 +217,7 @@ async def make_convoy_embed(
         # Add expense fields to the embed
         if get_user_metadata(df_state, 'mobile'):  # If the user is on mobile
             extra_embed.description = '\n' + '\n'.join([
-                '### Journey',
+                '### Estimated Journey Cost',
                 f'- Fuel expense: **{fuzzed_fuel_expense:.0f}**L',
                 f'- Water expense: **{fuzzed_water_expense:.0f}**L',
                 f'- Food expense: **{fuzzed_food_expense:.0f}** meals',

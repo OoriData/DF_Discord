@@ -3,7 +3,6 @@
 import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
-import                                textwrap
 import                                math
 
 import                                discord
@@ -89,28 +88,28 @@ async def make_convoy_embed(
     else:
         convoy_embed.add_field(
             name='Fuel ⛽️',
-            value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/{df_state.convoy_obj['max_fuel']:.0f} liters'
+            value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/ {df_state.convoy_obj['max_fuel']:.0f} liters'
         )
         convoy_embed.add_field(
             name='Water 💧',
-            value=f'**{df_state.convoy_obj['water']:,.2f}**\n/{df_state.convoy_obj['max_water']:.0f} liters'
+            value=f'**{df_state.convoy_obj['water']:,.2f}**\n/ {df_state.convoy_obj['max_water']:.0f} liters'
         )
         convoy_embed.add_field(
             name='Food 🥪',
-            value=f'**{df_state.convoy_obj['food']:,.0f}**\n/{df_state.convoy_obj['max_food']:.0f} meals'
+            value=f'**{df_state.convoy_obj['food']:,.2f}**\n/ {df_state.convoy_obj['max_food']:.0f} meals'
         )
 
         convoy_embed.add_field(
             name='Efficiency 🌿',
-            value=f'**{df_state.convoy_obj['efficiency']:.0f}**\n/100'
+            value=f'**{df_state.convoy_obj['efficiency']:.0f}**\n/ 100'
         )
         convoy_embed.add_field(
             name='Top Speed 🚀',
-            value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/100'
+            value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/ 100'
         )
         convoy_embed.add_field(
             name='Offroad Capability 🏔️',
-            value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/100'
+            value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/ 100'
         )
 
     convoy_x = df_state.convoy_obj['x']

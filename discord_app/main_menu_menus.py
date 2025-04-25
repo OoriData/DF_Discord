@@ -4,7 +4,6 @@ from __future__                import annotations
 import                                os
 from datetime import                  datetime, timezone, timedelta, date
 from typing                    import Optional
-import                                textwrap
 import                                asyncio
 import                                discord
 

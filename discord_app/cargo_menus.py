@@ -4,7 +4,6 @@ from __future__                import annotations
 import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
-import                                textwrap
 
 import                                discord
 
@@ -153,11 +152,11 @@ class MapButton(discord.ui.Button):
         recipient_y = self.recipient_obj['y']
 
         embed = discord.Embed(
-            title=f'Map relative to {self.df_state.convoy_obj['name']}',
-            description=textwrap.dedent('''
-                🟨 - Your convoy's location
-                🟦 - Recipient vendor's location
-            ''')
+            description='\n'.join([
+                f'## {self.df_state.cargo_obj['name']}',
+                '🟨 - Your convoy\'s location'
+                '🟦 - Recipient vendor\'s location'
+            ])
         )
 
         map_embed, image_file = await add_map_to_embed(

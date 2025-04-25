@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
-import                                textwrap
 
 import                                discord
 
@@ -22,6 +21,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def mechanic_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=mechanic_menu)  # Add this menu to the back stack
 
     vehicle_list = []
@@ -31,12 +32,11 @@ async def mechanic_menu(df_state: DFState):
     displayable_vehicles = '\n'.join(vehicle_list)
 
     embed = discord.Embed(
-        title=df_state.vendor_obj['name'],
-        description=textwrap.dedent(f'''\
-            **Select a vehicle for repairs/upgrades:**
-            Vehicles:
-            {displayable_vehicles}
-        ''')
+        description='\n'.join([
+            f'# {df_state.vendor_obj['name']}',
+            '### Select a vehicle for repairs/upgrades',
+            displayable_vehicles
+        ])
     )
     embed = df_embed_author(embed, df_state)
 

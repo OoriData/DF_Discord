@@ -3,7 +3,6 @@
 import                                os
 from datetime import                  datetime, timezone, timedelta
 from typing                    import Optional
-import                                textwrap
 from uuid                      import UUID
 
 import                                discord

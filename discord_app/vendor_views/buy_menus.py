@@ -27,6 +27,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def buy_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_menu)  # Add this menu to the back stack
 
     df_state.vendor_obj['vehicle_inventory'] = sorted(df_state.vendor_obj['vehicle_inventory'], key=lambda x: x['name'])
@@ -238,6 +240,8 @@ class BuyCargoSelect(discord.ui.Select):
 
 
 async def buy_resource_menu(df_state: DFState, resource_type: str):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_resource_menu, args={'resource_type': resource_type})  # Add this menu to the back stack
 
     embed = ResourceBuyQuantityEmbed(df_state, resource_type)
@@ -260,7 +264,7 @@ class ResourceBuyQuantityEmbed(discord.Embed):
             f'## {df_state.vendor_obj['name']}',
             f'### Buying {self.resource_type} for ${self.df_state.vendor_obj[f'{self.resource_type}_price']:,.0f} per Liter/Serving',
             f'{self.df_state.convoy_obj['name']}\'s capacity for {self.resource_type}: {self.df_state.convoy_obj[f'max_{self.resource_type}']}',
-            f'### Cart: {self.cart_quantity:,.2f} Liters/meals | ${cart_price:,.0f}'
+            f'### Cart: {self.cart_quantity:,.3f} Liters/meals | ${cart_price:,.0f}'
         ])
 
 class ResourceBuyQuantityView(discord.ui.View):
@@ -324,7 +328,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
         embed = df_embed_author(embed, self.df_state)
         embed.description = '\n'.join([
             f'## {self.df_state.vendor_obj['name']}',
-            f'Purchased {self.cart_quantity:,.2f} Liters/meals of {self.resource_type} for ${cart_price:,.0f}'
+            f'Purchased {self.cart_quantity:,.3f} Liters/meals of {self.resource_type} for ${cart_price:,.0f}'
         ])
 
         view = PostBuyView(self.df_state)
@@ -544,7 +548,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         if button_quantity == 'max':  # Handle "max" button logic
             self.button_quantity = min(max_convoy_capacity, inventory_quantity) - self.cart_quantity
             self.button_quantity = max(0, self.button_quantity)  # Ensure the quantity is 0 or greater
-            label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.2f})'
+            label = f'max ({self.button_quantity:+,})' if self.cargo_for_sale else f'max ({self.button_quantity:+,.3f})'
         else:
             self.button_quantity = int(button_quantity)
             label = f'{self.button_quantity:+,}'
@@ -613,6 +617,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
 
 async def buy_vehicle_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []

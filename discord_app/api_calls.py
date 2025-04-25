@@ -73,7 +73,7 @@ async def get_map(
         response = await client.get(
             url=f'{DF_API_HOST}/map/get',
             params=params,
-            timeout=20
+            timeout=30
         )
 
     _check_code(response)

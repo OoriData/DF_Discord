@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
-import                                textwrap
 
 import                                discord
 

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: UNLICENSED
 from __future__                import annotations
 import                                os
-import                                textwrap
 
 import                                discord
 
@@ -22,6 +21,8 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 
 async def sell_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_menu)  # Add this menu to the back stack
 
     resources_list = []
@@ -212,6 +213,8 @@ class SellCargoSelect(discord.ui.Select):
 
 
 async def sell_resource_menu(df_state: DFState, resource_type: str):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_resource_menu, args={'resource_type': resource_type})  # Add this menu to the back stack
 
     embed = ResourceSellQuantityEmbed(df_state, resource_type)
@@ -307,6 +310,8 @@ class ResourceConfirmSellButton(discord.ui.Button):
 
 
 async def sell_cargo_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_cargo_menu)  # Add this menu to the back stack
 
     embed = CargoSellQuantityEmbed(df_state)
@@ -497,6 +502,8 @@ class SellAllCargoButton(discord.ui.Button):
 
 
 async def sell_vehicle_menu(df_state: DFState):
+    if not df_state.vendor_obj:
+        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []

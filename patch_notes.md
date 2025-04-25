@@ -2,7 +2,7 @@
 # 0.1.0
 
 
-## 🗺️ The map is now four times the resolution!
+<!-- ## 🗺️ The map is now four times the resolution!
 ### 🥾 We've moved around and messed with the roads and trails quite a bit
 - This change was made with the aim of making offroad builds and convoys more viable.
 - We've removed or degraded several roads and trails, functionally nerfing convoys that can't rough it.
@@ -115,7 +115,7 @@
 - Resource estimation is now much more accurate.
   - This also comes with a fuzz factor on the estimates that you are displayed on the frontend; some future features are going to make exact resource estimation much less reliable.  <!-- move to frontend notes? -->
 - Cargo balancing has seen minor updates.
-  - This should make hunting down good deliveries a bit less of a priority, although finding a particularly good delivery is still exciting!
+  - This should make hunting down good deliveries a bit less of a priority, although finding a particularly good delivery is still exciting! -->
 
 
 ## 🐛 Known Bugs

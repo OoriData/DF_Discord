@@ -434,3 +434,50 @@ def get_settlement_emoji(settlement_type: str) -> str | None:
     }
 
     return settlement_emojis.get(settlement_type)
+
+
+def remove_items_pending_deletion(data):
+    """
+    Recursively removes items from nested dictionaries and lists
+    if they are dictionaries containing 'pending_deletion': True.
+
+    Args:
+        data: The dictionary or list to process.
+
+    Returns:
+        The processed dictionary or list with flagged items removed,
+        or None if the input data itself was flagged for deletion.
+    """
+    if isinstance(data, dict):
+        # Check if the dictionary itself is marked for deletion
+        if data.get('pending_deletion') is True:
+            return None  # Signal to the caller to remove this dict
+
+        # Create a new dictionary, processing values recursively
+        new_dict = {}
+        for key, value in data.items():
+            # Don't include the pending_deletion flag in the output
+            if key == 'pending_deletion':
+                continue
+
+            processed_value = remove_items_pending_deletion(value)
+            # Only add the key-value pair if the value wasn't flagged for deletion
+            if processed_value is not None:
+                new_dict[key] = processed_value
+        # Return the cleaned dictionary, or None if it becomes empty (optional, depends on desired behavior)
+        # return new_dict if new_dict else None
+        return new_dict
+
+    elif isinstance(data, list):
+        # Create a new list, processing items recursively
+        new_list = []
+        for item in data:
+            processed_item = remove_items_pending_deletion(item)
+            # Only add the item if it wasn't flagged for deletion
+            if processed_item is not None:
+                new_list.append(processed_item)
+        # Return the cleaned list, potentially empty
+        return new_list
+    else:
+        # Return non-dict/list data types as is
+        return data

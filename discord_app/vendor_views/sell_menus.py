@@ -7,7 +7,10 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji
+from discord_app               import (
+    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji,
+    remove_items_pending_deletion
+)
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -412,6 +415,7 @@ class CargoConfirmSellButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
         sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_price']
 
@@ -484,7 +488,7 @@ class SellAllCargoButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
         
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
@@ -566,6 +570,7 @@ class SellVehicleButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)

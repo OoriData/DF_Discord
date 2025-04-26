@@ -120,5 +120,10 @@
 
 ## 🐛 Known Bugs
 - Top up button is not always working correctly
+  - Mitigate by buying resources individually
 - Notifications are sometimes duplicated
-- The back button occasionally doesn't work when deep in a vendor menu
+  - No user mitigation
+- `Scrap {VEHICLE} | ${SCRAP_PRICE}` button is sometimes being disabled when it shouldn't be (eg. no cargo, but still disabled)
+  - Mitigate by refreshing menu by using `Main Menu` button and then navigate back to scrap menu
+- Cargo appears to stay in convoy inventory after being manually sold
+  - Mitigate by refreshing menu by using `Main Menu` button and then navigate back to vendor menu

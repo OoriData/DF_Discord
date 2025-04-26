@@ -7,7 +7,9 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
+from discord_app               import (
+    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, remove_items_pending_deletion
+)
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -338,6 +340,7 @@ class InstallConfirmView(discord.ui.View):
             vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
             part_cargo_id=self.df_state.cargo_obj['cargo_id']
         )
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
         self.df_state.vehicle_obj = next((  # Get the updated vehicle from the returned convoy obj
             v for v in self.df_state.convoy_obj['vehicles']
@@ -473,6 +476,7 @@ class RemoveConfirmView(discord.ui.View):
             vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
             part_id=self.df_state.part_obj['part_id']
         )
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
         self.df_state.vehicle_obj = next((  # Get the updated vehicle from the returned convoy obj
             v for v in self.df_state.convoy_obj['vehicles']
@@ -586,6 +590,7 @@ class ScrapVehicleButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
+        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)

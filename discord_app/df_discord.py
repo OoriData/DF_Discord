@@ -191,7 +191,6 @@ class DesolateCog(commands.Cog):
             logger.info(ansi_color('User cache initialization complete', 'green'))
             self.cache_ready.set()  # Signal that the cache is ready
 
-
     @tasks.loop(minutes=1)
     async def notifier(self):
         if isinstance(self.df_users_cache, dict):  # If the cache has been initialized

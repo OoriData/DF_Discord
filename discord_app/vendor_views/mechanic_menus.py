@@ -245,7 +245,13 @@ class UpgradeVehicleView(discord.ui.View):
 async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
     df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor})  # Add this menu to the back stack
 
-    cargo_inventory = df_state.vendor_obj['cargo_inventory'] if is_vendor else df_state.convoy_obj['all_cargo']
+    if is_vendor:
+        cargo_inventory = df_state.vendor_obj['cargo_inventory']
+    else:
+        cargo_inventory = [
+            c for c in df_state.convoy_obj['all_cargo']
+            if c.get('parts')
+        ]
 
     incompatible_part_cargo_strs = []
     compatible_part_cargo = []

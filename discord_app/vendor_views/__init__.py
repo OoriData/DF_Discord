@@ -139,6 +139,10 @@ async def enrich_delivery_info(df_state: DFState, cargo: dict, verbose: bool) ->
             if s['sett_id'] == cargo['recipient_vendor']['sett_id']
         ), None)
 
+    # Add vendor's (source) position too — needed for distance calculation later
+    cargo['vendor_x'] = df_state.vendor_obj['x']
+    cargo['vendor_y'] = df_state.vendor_obj['y']
+
 
 def format_delivery_info(cargo: dict) -> str:
     """ Format delivery details (destination, profit, distance, volume/weight) """
@@ -149,7 +153,7 @@ def format_delivery_info(cargo: dict) -> str:
     ]
 
     margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)
-    delivery_info.append(f'\n  - Profit margin: {"💵 " * margin}')
+    delivery_info.append(f'\n  - Profit margin: {'💵 ' * margin}')
 
     tile_distance = math.sqrt(
         (vendor_obj['x'] - cargo['vendor_x']) ** 2 +

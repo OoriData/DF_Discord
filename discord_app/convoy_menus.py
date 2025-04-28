@@ -78,9 +78,9 @@ async def make_convoy_embed(
     if get_user_metadata(df_state, 'mobile'):
         convoy_embed.description += '\n' + '\n'.join([
             '### Convoy Stats',
-            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.3f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
-            f'Water 💧: **{df_state.convoy_obj['water']:,.3f}** / {df_state.convoy_obj['max_water']:.0f}L',
-            f'Food 🥪: **{df_state.convoy_obj['food']:,.3f}** / {df_state.convoy_obj['max_food']:.0f} meals',
+            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
+            f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
+            f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
             f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
             f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
@@ -88,15 +88,15 @@ async def make_convoy_embed(
     else:
         convoy_embed.add_field(
             name='Fuel ⛽️',
-            value=f'**{df_state.convoy_obj['fuel']:,.3f}**\n/ {df_state.convoy_obj['max_fuel']:.0f} liters'
+            value=f'**{df_state.convoy_obj['fuel']:,.2f}**\n/ {df_state.convoy_obj['max_fuel']:.0f} liters'
         )
         convoy_embed.add_field(
             name='Water 💧',
-            value=f'**{df_state.convoy_obj['water']:,.3f}**\n/ {df_state.convoy_obj['max_water']:.0f} liters'
+            value=f'**{df_state.convoy_obj['water']:,.2f}**\n/ {df_state.convoy_obj['max_water']:.0f} liters'
         )
         convoy_embed.add_field(
             name='Food 🥪',
-            value=f'**{df_state.convoy_obj['food']:,.3f}**\n/ {df_state.convoy_obj['max_food']:.0f} meals'
+            value=f'**{df_state.convoy_obj['food']:,.2f}**\n/ {df_state.convoy_obj['max_food']:.0f} meals'
         )
 
         convoy_embed.add_field(
@@ -308,10 +308,10 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
             if vehicle['electric']:
                 battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                 battery_emoji = '🔋' if battery['kwh'] > (battery['capacity'] * 0.2) else '🪫'
-                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.3f}** / {battery['capacity']} kWh\n'
+                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.2f}** / {battery['capacity']} kWh\n'
 
-            vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']:,.3f}** / {vehicle['cargo_capacity']} liters'
-            vehicle_str += f' & **{vehicle['total_cargo_weight']:,.3f}** / {vehicle['weight_capacity']} kg'
+            vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']:,.0f}** / {vehicle['cargo_capacity']} liters'
+            vehicle_str += f' & **{vehicle['total_cargo_weight']:,.0f}** / {vehicle['weight_capacity']} kg'
 
             # more verbose option, can we find a way to have this as well, without being as wordy?
             # vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']}** / {vehicle['cargo_capacity']} liters ({vehicle['cargo_capacity'] - vehicle['total_cargo_volume']} available)'

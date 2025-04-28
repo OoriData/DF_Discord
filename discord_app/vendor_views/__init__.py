@@ -121,7 +121,7 @@ def format_basic_cargo(cargo: dict) -> str:
     for resource in ['fuel', 'water', 'food']:
         if cargo.get(resource):
             unit = ' meals' if resource == 'food' else 'L'
-            cargo_str += f'\n  - {resource.capitalize()}: {cargo['unit_capacity']:,.2f}{unit} each'
+            cargo_str += f'\n  - {resource.capitalize()}: {cargo['unit_capacity']:,.0f}{unit} each'
     return cargo_str
 
 

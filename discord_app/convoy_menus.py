@@ -248,6 +248,9 @@ async def make_convoy_embed(
                 battery_charge = battery['kwh']
                 battery_size = battery['capacity']
 
+                # Ensure kWh expense doesn't exceed battery charge
+                fuzzed_kwh_expense = min(fuzzed_kwh_expense, battery_charge)
+
                 remaining_charge = battery_charge - fuzzed_kwh_expense
                 batt_emoji = '🔋' if remaining_charge > (battery_size * 0.2) else '🪫'
 

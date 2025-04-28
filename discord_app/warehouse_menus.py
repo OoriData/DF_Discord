@@ -76,7 +76,7 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
 
     cargo_list = []
     for cargo in warehouse_obj['cargo_storage']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,.2f} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:

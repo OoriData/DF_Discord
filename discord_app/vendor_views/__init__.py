@@ -121,7 +121,7 @@ def format_basic_cargo(cargo: dict) -> str:
     for resource in ['fuel', 'water', 'food']:
         if cargo.get(resource):
             unit = ' meals' if resource == 'food' else 'L'
-            cargo_str += f'\n  - {resource.capitalize()}: {cargo['unit_capacity']:,f}{unit} each'
+            cargo_str += f'\n  - {resource.capitalize()}: {cargo['unit_capacity']:,.2f}{unit} each'
     return cargo_str
 
 
@@ -163,7 +163,7 @@ def format_delivery_info(cargo: dict) -> str:
     distance_miles = 30 * tile_distance
     delivery_info.append(f'\n  - Distance: {distance_km:,.0f} km ({distance_miles:,.0f} miles)')
 
-    delivery_info.append(f'\n  - Volume/Weight: {cargo['unit_volume']:,}L / {cargo['unit_weight']:,}kg *each*')
+    delivery_info.append(f'\n  - Volume/Weight: {cargo['unit_volume']:,}L / {cargo['unit_weight']:,.2f}kg *each*')
 
     return ''.join(delivery_info)
 

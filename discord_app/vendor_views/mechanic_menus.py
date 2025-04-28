@@ -10,6 +10,7 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import (
     api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, remove_items_pending_deletion
 )
+from discord_app.vendor_views  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
@@ -27,17 +28,49 @@ async def mechanic_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=mechanic_menu)  # Add this menu to the back stack
 
+    convoy_parts = []
+    for cargo in df_state.convoy_obj['all_cargo']:
+        if cargo.get('parts'):
+            cargo_str = f'- **{cargo['name']}**'
+
+            await enrich_parts_compatibility(df_state.convoy_obj, cargo)
+            cargo_str += format_parts_compatibility(df_state.convoy_obj, cargo)
+
+            convoy_parts.append(cargo_str)
+    if convoy_parts:
+        displayable_convoy_parts = '\n'.join(convoy_parts)
+    else:
+        displayable_convoy_parts = '- None'
+
+    vendor_parts = []
+    for cargo in df_state.vendor_obj['cargo_inventory']:
+        if cargo.get('parts'):
+            cargo_str = format_basic_cargo(cargo)
+
+            await enrich_parts_compatibility(df_state.convoy_obj, cargo)
+            cargo_str += format_parts_compatibility(df_state.convoy_obj, cargo)
+
+            vendor_parts.append(cargo_str)
+    if vendor_parts:
+        displayable_vendor_parts = '\n'.join(vendor_parts)
+    else:
+        displayable_vendor_parts = '- None'
+
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- {vehicle['name']} - ${vehicle['value']}'
+        vehicle_str = f'- **{vehicle['name']}** | *${vehicle['value']}*'
         vehicle_list.append(vehicle_str)
     displayable_vehicles = '\n'.join(vehicle_list)
 
     embed = discord.Embed(
         description='\n'.join([
             f'# {df_state.vendor_obj['name']}',
+            '## Upgrade parts from convoy inventory',
+            displayable_convoy_parts,
+            '## Upgrade parts from vendor inventory',
+            displayable_vendor_parts,
             '### Select a vehicle for repairs/upgrades',
-            displayable_vehicles
+            displayable_vehicles,
         ])
     )
     embed = df_embed_author(embed, df_state)
@@ -510,7 +543,12 @@ class RemoveConfirmView(discord.ui.View):
 async def scrap_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=scrap_vehicle_menu)  # Add this menu to the back stack
 
-    scrap_check = await api_calls.check_scrap(df_state.vehicle_obj['vehicle_id'])
+    try:
+        scrap_check = await api_calls.check_scrap(df_state.vehicle_obj['vehicle_id'])
+    except RuntimeError as e:
+        await df_state.interaction.response.send_message(content=e, ephemeral=True)
+        return
+    
     scrap_price = scrap_check['salvage_price']
     salvage_part_cargo = scrap_check['salvage_part_cargo']
 

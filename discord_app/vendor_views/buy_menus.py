@@ -36,17 +36,7 @@ async def buy_menu(df_state: DFState):
 
     menu_embed = discord.Embed()
 
-    for cargo in df_state.vendor_obj['cargo_inventory']:
-        if cargo['recipient']:
-            cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
-            cargo['recipient_location'] = next((
-                s['name']
-                for row in df_state.map_obj['tiles']
-                for t in row
-                for s in t['settlements']
-                if s['sett_id'] == cargo['recipient_vendor']['sett_id']
-            ), None)
-    menu_embed.description = await vendor_inv_md(df_state.vendor_obj, verbose=True)
+    menu_embed.description = await vendor_inv_md(df_state, verbose=True)
 
     menu_embed = df_embed_author(menu_embed, df_state)
 
@@ -303,7 +293,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Buy {self.cart_quantity:,.2f}L of {self.resource_type} | ${cart_price:,.0f}',
+            label=f'Buy {self.cart_quantity:,.3f}L of {self.resource_type} | ${cart_price:,.0f}',
             row=row
         )
 
@@ -1033,7 +1023,7 @@ class TopUpButton(discord.ui.Button):
                 # Check if quantity is valid before calling API
                 if quantity <= 0:
                     # Log this unexpected state if possible
-                    print(f'Warning: Skipped buying {resource_type} due to zero quantity in plan.')
+                    # print(f'Warning: Skipped buying {resource_type} due to zero quantity in plan.')
                     continue
 
                 # --- API Call ---
@@ -1053,7 +1043,7 @@ class TopUpButton(discord.ui.Button):
                 # --- Receipt Message Preparation ---
                 meta = self.resource_metadata.get(resource_type, {'emoji': '📦', 'unit': 'unit'}) # Fallback metadata
                 topped_up_details.append(
-                    f'- {meta['emoji']} {quantity:.2f} {resource_type.capitalize()} for '
+                    f'- {meta['emoji']} {quantity:.3f} {resource_type.capitalize()} for '
                     f'${price:,.0f} per {meta['unit']}' # Show per unit price
                 )
 

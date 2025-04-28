@@ -32,7 +32,7 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
     df_state.vendor_obj['vehicle_inventory'] = sorted(df_state.vendor_obj['vehicle_inventory'], key=lambda x: x['name'])
     df_state.vendor_obj['cargo_inventory'] = sorted(df_state.vendor_obj['cargo_inventory'], key=lambda x: x['name'])
 
-    vendor_embed.description = await vendor_inv_md(df_state.vendor_obj)
+    vendor_embed.description = await vendor_inv_md(df_state)
 
     embeds = [vendor_embed]
     embeds = add_tutorial_embed(embeds, df_state)

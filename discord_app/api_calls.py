@@ -736,5 +736,3 @@ async def change_convoy_name(convoy_id: UUID, new_name: str) -> dict:
 
     _check_code(response)
     return response.json()
-
-

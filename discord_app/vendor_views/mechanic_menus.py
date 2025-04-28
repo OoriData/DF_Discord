@@ -247,19 +247,23 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
 
     cargo_inventory = df_state.vendor_obj['cargo_inventory'] if is_vendor else df_state.convoy_obj['all_cargo']
 
-    part_cargos_to_display = []
+    incompatible_part_cargo_strs = []
+    compatible_part_cargo = []
     for cargo in cargo_inventory:
-        if cargo.get('parts'):
-            try:
-                cargo['parts'] = await api_calls.check_part_compatibility(df_state.vehicle_obj['vehicle_id'], cargo['cargo_id'])
+        compatibilities = cargo['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
 
-                part_cargos_to_display.append(cargo)
-            except RuntimeError as e:
-                # print(f'part does not fit: {e}')
-                continue
+        if isinstance(compatibilities, RuntimeError):
+            incompatible_part_cargo_strs.append('\n'.join([
+                f'- {cargo['name']}',
+                f'  - ❌ *{compatibilities!s}*'
+            ]))
+        else:
+            compatible_part_cargo.append(cargo)
 
-    displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part) for part in part_cargos_to_display
+    displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs)
+
+    displayable_compatible_parts = '\n'.join(
+        discord_app.cargo_menus.format_part(part) for part in compatible_part_cargo
     )
 
     embed = discord.Embed()
@@ -268,13 +272,15 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['base_desc']}*',
+        '### Incompatible parts',
+        displayable_incompatible_parts if incompatible_part_cargo_strs else '- None',
         '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
-        displayable_vehicle_parts,
+        displayable_compatible_parts if compatible_part_cargo else '- None',
         '### Stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
-    view = PartSelectView(df_state, part_cargos_to_display)
+    view = PartSelectView(df_state, compatible_part_cargo)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 

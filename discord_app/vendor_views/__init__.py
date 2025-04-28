@@ -33,7 +33,6 @@ def vehicles_md(vehicles, verbose: bool = False):
 
 async def vendor_inv_md(df_state: DFState, *, verbose: bool = False) -> str:
     """ Build the vendor inventory markdown from df_state """
-
     vendor_obj = df_state.vendor_obj
 
     displayable_resources = format_resources(vendor_obj)
@@ -90,7 +89,7 @@ async def format_cargo(df_state: DFState, *, verbose: bool) -> str:
 
         if verbose and cargo.get('parts'):
             await enrich_parts_compatibility(convoy_obj, cargo)
-            cargo_str += format_parts_compatibility(convoy_obj, cargo)
+            cargo_str += format_parts_compatibility(convoy_obj, cargo, verbose=verbose)
 
         cargo_list.append(cargo_str)
 
@@ -178,17 +177,22 @@ async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:
             cargo['compatibilities'][vehicle['vehicle_id']] = e
 
 
-def format_parts_compatibility(convoy_obj: dict, cargo: dict) -> str:
+def format_parts_compatibility(convoy_obj: dict, cargo: dict, verbose: bool = False) -> str:
     """ Format parts compatibility details for vehicles """
     parts_info = ''
     for vehicle in convoy_obj['vehicles']:
-        validated_parts = cargo['compatibilities'].get(vehicle['vehicle_id'])
-        parts_info += f'\n  - {get_vehicle_emoji(vehicle["shape"])} | {vehicle["name"]} | '
+        compatibilities = cargo['compatibilities'].get(vehicle['vehicle_id'])
+        parts_info += f'\n  - {get_vehicle_emoji(vehicle['shape'])} | {vehicle['name']} | '
 
-        if isinstance(validated_parts, RuntimeError):
-            parts_info += f'❌ Incompatible: *{validated_parts}*'
+        if isinstance(compatibilities, RuntimeError):
+            parts_info += '❌ Incompatible'
+            
+            if verbose:
+                parts_info += f': *{compatibilities}*'
+
         else:
-            total_installation_price = sum(vp['installation_price'] for vp in validated_parts)
+            total_installation_price = sum(vp['installation_price'] for vp in compatibilities)
+            
             parts_info += f'✅ Total installation price: *${total_installation_price:,.0f}*'
 
     return parts_info

@@ -28,7 +28,7 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
         '💵 Value': ('value', '**${:,}**', None, 'part_value', ' (${:+})'),
         '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
         '🥊 Weight Class': ('weight_class', '**{}**', None, None, None),
-        '⛽️ Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
+        '🌿 Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
         '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / 100', 'top_speed_add', ' ({:+})'),
         '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
         '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),

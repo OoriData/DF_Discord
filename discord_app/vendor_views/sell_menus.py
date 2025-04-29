@@ -31,16 +31,16 @@ async def sell_menu(df_state: DFState):
 
     resources_list = []
     if df_state.vendor_obj.get('fuel'):
-        resources_list.append(f'- Fuel: {df_state.convoy_obj["fuel"]:,} Liters\n  - *${df_state.vendor_obj["fuel_price"]:,.0f} per Liter*')
+        resources_list.append(f'- Fuel: {df_state.convoy_obj['fuel']:,} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('water'):
-        resources_list.append(f'- Water: {df_state.convoy_obj["water"]:,} Liters\n  - *${df_state.vendor_obj["water_price"]:,.0f} per Liter*')
+        resources_list.append(f'- Water: {df_state.convoy_obj['water']:,} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('food'):
-        resources_list.append(f'- Food: {df_state.convoy_obj["food"]:,} meals\n  - *${df_state.vendor_obj["food_price"]:,.0f} per Serving*')
+        resources_list.append(f'- Food: {df_state.convoy_obj['food']:,} meals\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
     displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
 
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- {vehicle["name"]} | *${vehicle["value"]:,}*'
+        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
         if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
             vehicle_str += '\n  - *contains cargo, cannot be sold*'
         vehicle_list.append(vehicle_str)
@@ -52,33 +52,31 @@ async def sell_menu(df_state: DFState):
             if cargo.get('intrinsic_part_id'):
                 continue  # Skip parts
 
-            if cargo.get('recipient'):
-                # It's delivery cargo
+            if cargo.get('recipient'):  # It's delivery cargo
                 if not cargo.get('recipient_vendor'):
                     cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
 
                 cargo_str = (
-                    f'- {cargo["quantity"]:,} **{cargo["name"]}**(s) | *{vehicle["name"]}*\n'
-                    f'  - Deliver to *{cargo["recipient_vendor"]["name"]}* | '
-                    f'*${cargo["unit_delivery_reward"]:,.0f}* per item'
+                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}*\n'
+                    f'  - Deliver to *{cargo['recipient_vendor']['name']}* | '
+                    f'*${cargo['unit_delivery_reward']:,.0f}* per item'
                 )
 
-            else:
-                # It's normal sellable cargo
+            else:  # It's normal sellable cargo
                 unit_price = wet_price(cargo, df_state.vendor_obj, quantity=1)  # Single unit price
+
                 cargo_str = (
-                    f'- {cargo["quantity"]:,} **{cargo["name"]}**(s) | *{vehicle["name"]}* | '
+                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}* | '
                     f'*${unit_price:,.0f} each*'
                 )
 
             cargo_list.append(cargo_str)
 
-
     displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
 
     embed = discord.Embed()
     embed.description = '\n'.join([
-        f'## {df_state.vendor_obj["name"]}',
+        f'## {df_state.vendor_obj['name']}',
         '### Available to sell from convoy:',
         '**Resources:**',
         f'{displayable_resources}',
@@ -95,7 +93,6 @@ async def sell_menu(df_state: DFState):
     view = SellView(df_state)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
-
 
 class SellView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -192,7 +189,7 @@ class SellCargoSelect(discord.ui.Select):
                 total_price = wet_price(cargo, self.df_state.vendor_obj)
 
                 options.append(discord.SelectOption(
-                    label=f'{cargo["name"]} | {vehicle["name"]} | ${total_price:,.0f}',
+                    label=f'{cargo['name']} | {vehicle['name']} | ${total_price:,.0f}',
                     value=cargo['cargo_id'],
                     emoji=get_cargo_emoji(cargo)
                 ))

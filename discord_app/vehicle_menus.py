@@ -22,18 +22,25 @@ DF_API_HOST = os.environ.get('DF_API_HOST')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 
-def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dict, new_part: dict | None=None):
+def df_embed_vehicle_stats(
+        df_state: DFState,
+        embed: discord.Embed,
+        vehicle: dict,
+        new_part: dict | None=None
+):
     fields = {
-        # FIELD_NAME: ('STAT_KEY', '**BASE_FORMAT**', 'SUFFIX', 'MODIFIER_KEY', 'MODIFIER_FORMAT'),
+        # 'FIELD_NAME': ('STAT_KEY', '**BASE_FORMAT**', 'SUFFIX', 'MODIFIER_KEY', 'MODIFIER_FORMAT'),
         '💵 Value': ('value', '**${:,}**', None, 'part_value', ' (${:+})'),
+        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
         '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
+        '🌿 Efficiency': ('efficiency', '**{:.0f}**', ' / {}', 'fuel_efficiency_add', ' ({:+})'),
+        '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / {}', 'top_speed_add', ' ({:+})'),
+        '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
         '🥊 Weight Class': ('weight_class', '**{}**', None, None, None),
-        '🌿 Efficiency': ('efficiency', '**{:.0f}**', ' / 100', 'fuel_efficiency_add', ' ({:+})'),
-        '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / 100', 'top_speed_add', ' ({:+})'),
-        '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / 100', 'offroad_capability_add', ' ({:+})'),
+        '⌊⌋ Stat Floor': ('hard_stat_floor', '**{}**', None, None, None),
+        '⌈⌉ Stat Soft Cap': ('soft_stat_cap', '**{}**', None, None, None),
         '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
         '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
-        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
     }
 
     # Special-cased "Powered by" field
@@ -73,7 +80,7 @@ def df_embed_vehicle_stats(df_state: DFState, embed: discord.Embed, vehicle: dic
             value_str += mod_format.format(mod_value)
 
         if suffix:
-            value_str += suffix
+            value_str += suffix.format(vehicle['hard_stat_cap'])
 
         if stat_key in raw_stats and base_value is not None:
             raw_value = vehicle.get(raw_stats[stat_key])

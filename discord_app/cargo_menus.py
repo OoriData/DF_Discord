@@ -207,6 +207,7 @@ def format_part(part_cargo: dict):
             f'    - {req.replace('_', ' ').capitalize()}' if req != 'ice' else '    - ICE'
             for req in part.get('requirements')
         ]
+        coupling = part['coupling'].replace('_', ' ').capitalize() if part['coupling'] else None
 
         part_attrs = [
             f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
@@ -231,7 +232,7 @@ def format_part(part_cargo: dict):
             f'  - **{part['water_capacity']}** L (**{water_gal}** gal)' if part.get('water_capacity') else None,
             f'  - **{part['kwh_capacity']}** kWh' if part.get('kwh_capacity') else None,
             f'  - **{part['energy_density']}** Wh/kg' if part.get('energy_density') else None,
-            f'  - **{part['coupling']}**' if part.get('coupling') else None,
+            f'  - **{coupling}**' if coupling else None,
             f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
             f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 

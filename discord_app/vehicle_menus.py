@@ -31,16 +31,16 @@ def df_embed_vehicle_stats(
     fields = {
         # 'FIELD_NAME': ('STAT_KEY', '**BASE_FORMAT**', 'SUFFIX', 'MODIFIER_KEY', 'MODIFIER_FORMAT'),
         '💵 Value': ('value', '**${:,}**', None, 'part_value', ' (${:+})'),
-        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
-        '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
+        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
+        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
         '🌿 Efficiency': ('efficiency', '**{:.0f}**', ' / {}', 'fuel_efficiency_add', ' ({:+})'),
         '🏎️ Top Speed': ('top_speed', '**{:.0f}**', ' / {}', 'top_speed_add', ' ({:+})'),
         '🏔️ Off-road Capability': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
         '🥊 Weight Class': ('weight_class', '**{}**', None, None, None),
         '⌊⌋ Stat Floor': ('hard_stat_floor', '**{}**', None, None, None),
         '⌈⌉ Stat Soft Cap': ('soft_stat_cap', '**{}**', None, None, None),
-        '📦 Cargo Capacity': ('cargo_capacity', '**{:,}**', ' L', 'cargo_capacity_add', ' ({:+} L)'),
-        '🏋️ Weight Capacity': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
+        '🚛 Coupling': ('coupling', '**{}**', None, None, None),
+        '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
 
     # Special-cased "Powered by" field
@@ -113,7 +113,7 @@ async def vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '## Parts',
         displayable_vehicle_parts,
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     vehicle_embed = df_embed_vehicle_stats(df_state, vehicle_embed, df_state.vehicle_obj)
 

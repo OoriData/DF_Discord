@@ -139,7 +139,7 @@ async def mech_vehicle_menu(df_state: DFState):
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
@@ -201,7 +201,7 @@ async def upgrade_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '## Parts',
         displayable_vehicle_parts,
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
@@ -255,6 +255,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
 
     incompatible_part_cargo_strs = []
     compatible_part_cargo = []
+    compatible_parts = []
     for cargo in cargo_inventory:
         compatibilities = cargo['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
 
@@ -265,6 +266,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
             ]))
         else:
             compatible_part_cargo.append(cargo)
+            compatible_parts.extend(compatibilities)
 
     displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs)
 
@@ -282,7 +284,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
         displayable_incompatible_parts if incompatible_part_cargo_strs else '- None',
         '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
         displayable_compatible_parts if compatible_part_cargo else '- None',
-        '### Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
@@ -349,6 +351,8 @@ async def part_install_confirm_menu(df_state: DFState):
         if part['slot'] in [cargo_part['slot'] for cargo_part in df_state.cargo_obj['parts']]:
             current_parts.append(part)
 
+    compatibilities = df_state.cargo_obj['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
@@ -358,8 +362,8 @@ async def part_install_confirm_menu(df_state: DFState):
         '### Current Part',
         discord_app.cargo_menus.format_part(current_parts) if current_parts else '- None',
         '### New Parts',
-        discord_app.cargo_menus.format_part(df_state.cargo_obj),
-        '## Stats'
+        discord_app.cargo_menus.format_part(compatibilities),
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
 
@@ -404,7 +408,7 @@ class InstallConfirmView(discord.ui.View):
             f'*{self.df_state.vehicle_obj['description']}*',
             '## Parts',
             displayable_vehicle_parts,
-            '## Stats'
+            f'### {self.df_state.vehicle_obj['name']} stats'
         ])
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
@@ -430,7 +434,7 @@ async def remove_part_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '## Removable parts',
         displayable_vehicle_parts,
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
@@ -495,7 +499,7 @@ async def part_remove_confirm_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '### Part to remove:',
         discord_app.cargo_menus.format_part(df_state.part_obj),
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
 
@@ -540,7 +544,7 @@ class RemoveConfirmView(discord.ui.View):
             f'*{self.df_state.vehicle_obj['description']}*',
             '## Parts',
             displayable_vehicle_parts,
-            '## Stats'
+            f'### {self.df_state.vehicle_obj['name']} stats'
         ])
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
@@ -584,7 +588,7 @@ async def scrap_vehicle_menu(df_state: DFState):
         f'### Cost to scrap vehicle: ${scrap_price:,.0f}',
         '## Cargo that will be salvaged while scrapping this vehicle',
         scrap_check['displayable'],
-        '## Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 

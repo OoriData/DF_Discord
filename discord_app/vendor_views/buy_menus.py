@@ -628,7 +628,7 @@ async def buy_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '### Parts',
         displayable_vehicle_parts,
-        '### Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     vehicle_buy_confirm_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, vehicle_buy_confirm_embed, df_state.vehicle_obj)
 

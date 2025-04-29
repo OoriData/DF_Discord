@@ -551,7 +551,7 @@ async def sell_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '### Parts',
         displayable_vehicle_parts,
-        '### Stats'
+        f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 

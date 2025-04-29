@@ -40,7 +40,7 @@
 
 
 ## ⛽️ Top-up button improvements
-- Top-up button now respects vehicle weight limits and prioritizes topping up your lowest stock resources first—no more accidental overloads.
+- Top-up button now respects vehicle weight limits and prioritizes topping up lowest stock resources first—no more accidental overloads.
 
 
 ## 🏷️ Sell all cargo button
@@ -48,7 +48,7 @@
 
 
 ## 🔧 Mechanic menu improvements
-- The Mechanic menu now shows part compatabilities much earlier
+- The Mechanic menu now shows part compatibilities much earlier
 - The Mechanic menu now has a section for removing parts
 - The Mechanic menu now has a section for scrapping vehicles
 
@@ -68,6 +68,6 @@
 - Notifications are sometimes duplicated
   - No player mitigation
 - `Scrap {VEHICLE} | ${SCRAP_PRICE}` button is sometimes being disabled when it shouldn't be (eg. no cargo, but still disabled)
-  - Mitigate by refreshing menu by using `Main Menu` button and then navigate back to scrap menu
+  - Mitigate by refreshing menu by using `Main Menu` button and then navigating back to scrap menu
 - Cargo appears to stay in convoy inventory after being manually sold
-  - Mitigate by refreshing menu by using `Main Menu` button and then navigate back to vendor menu
+  - Mitigate by refreshing menu by using `Main Menu` button and then navigating back to vendor menu

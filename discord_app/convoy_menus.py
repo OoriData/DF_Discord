@@ -115,7 +115,7 @@ async def make_convoy_embed(
     convoy_x = df_state.convoy_obj['x']
     convoy_y = df_state.convoy_obj['y']
 
-    if df_state.convoy_obj['journey']:  # If the convoy is in transit
+    if df_state.convoy_obj['journey']:  # If the convoy is in tra`nsit
         extra_embed = discord.Embed(color=discord.Color.from_rgb(*OORI_WHITE))
 
         journey = df_state.convoy_obj['journey']
@@ -138,7 +138,7 @@ async def make_convoy_embed(
                 '### Journey',
                 f'Destination 📍: **{destination['settlements'][0]['name']}**',
                 f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',
-                f'Progress 🏁: **{progress_percent:.2f}%** ({progress_in_miles:.0f} miles)'
+                f'Progress 🏁: **{progress_percent:.1f}%** ({progress_in_miles:.0f} miles)'
             ])
         else:
             extra_embed.add_field(
@@ -154,7 +154,7 @@ async def make_convoy_embed(
             )
             extra_embed.add_field(
                 name='Progress 🏁',
-                value=f'**{progress_percent:.2f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)'
+                value=f'**{progress_percent:.1f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)'
             )
 
         convoy_embed, image_file = await add_map_to_embed(  # Add map to main convoy embed

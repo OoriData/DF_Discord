@@ -138,7 +138,7 @@ async def make_convoy_embed(
                 '### Journey',
                 f'Destination 📍: **{destination['settlements'][0]['name']}**',
                 f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',
-                f'Progress 🚗: **{progress_percent:.0f}%** ({progress_in_miles:.0f} miles)'
+                f'Progress 🏁: **{progress_percent:.2f}%** ({progress_in_miles:.0f} miles)'
             ])
         else:
             extra_embed.add_field(
@@ -153,8 +153,8 @@ async def make_convoy_embed(
                 value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}'
             )
             extra_embed.add_field(
-                name='Progress 🚗',
-                value=f'**{progress_percent:.0f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)'
+                name='Progress 🏁',
+                value=f'**{progress_percent:.2f}%**\n{progress_in_km:.0f} km ({progress_in_miles:.0f} miles)'
             )
 
         convoy_embed, image_file = await add_map_to_embed(  # Add map to main convoy embed

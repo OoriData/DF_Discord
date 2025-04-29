@@ -40,7 +40,7 @@ def df_embed_vehicle_stats(
         '⌊⌋ Stat Floor': ('hard_stat_floor', '**{}**', None, None, None),
         '⌈⌉ Stat Soft Cap': ('soft_stat_cap', '**{}**', None, None, None),
         '🚛 Coupling': ('coupling', '**{}**', None, None, None),
-        '🛡️ AC': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
+        '🛡️ Armor Class': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
 
     # Special-cased "Powered by" field

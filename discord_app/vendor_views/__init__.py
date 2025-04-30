@@ -58,12 +58,18 @@ async def vendor_inv_md(df_state: DFState, *, verbose: bool = False) -> str:
 def format_resources(vendor_obj: dict) -> str:
     """ Format available resources for sale into markdown """
     resources_list = []
+    emoji_map = {'fuel': '⛽️', 'water': '💧', 'food': '🥪'}
+
     for resource in ['fuel', 'water', 'food']:
         if vendor_obj[resource]:
             unit = 'meals' if resource == 'food' else 'Liters'
+            emoji = emoji_map[resource]
+
             resources_list.append(
-                f'- {resource.capitalize()}: {vendor_obj[resource]} {unit}\n  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*'
+                f'- {resource.capitalize()} {emoji}: {vendor_obj[resource]} {unit}\n'
+                f'  - *${vendor_obj[f"{resource}_price"]:,.0f} per {unit[:-1]}*'
             )
+
     return '\n'.join(resources_list) if resources_list else '- None'
 
 
@@ -117,11 +123,31 @@ def is_cargo_invalid(cargo: dict, vendor_obj: dict) -> bool:
 
 def format_basic_cargo(cargo: dict) -> str:
     """ Format basic cargo listing (quantity, price, attached resources) """
-    cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['wet_unit_price']:,.0f} each*'
+    cargo_emoji_map = {'fuel': '🛢️', 'water': '🥤', 'food': '🥡'}     # For (container) cargo
+    resource_emoji_map = {'fuel': '⛽️', 'water': '💧', 'food': '🥪'}  # For resources
+
+    cargo_emoji = ''
+    if cargo.get('recipient'):
+        cargo_emoji = '| 📦'
+    if cargo.get('parts'):
+        cargo_emoji = '| ⚙️'
+
+    resource_str = ''
     for resource in ['fuel', 'water', 'food']:
         if cargo.get(resource):
+            cargo_emoji = f'| {cargo_emoji_map[resource]}'
+            resource_emoji = resource_emoji_map[resource]
+
             unit = ' meals' if resource == 'food' else 'L'
-            cargo_str += f'\n  - {resource.capitalize()}: {cargo['unit_capacity']:,.0f}{unit} each'
+            resource_str = (
+                f'\n  - {resource.capitalize()} {resource_emoji}: '
+                f'{cargo['unit_capacity']:,.0f}{unit} each'
+            )
+            break  # Cargo can only contain one resource
+
+    cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) {cargo_emoji} | *${cargo['wet_unit_price']:,.0f} each*'
+    cargo_str += resource_str
+
     return cargo_str
 
 

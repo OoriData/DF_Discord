@@ -88,6 +88,8 @@ POLITICAL_COLORS = {
     72: '#469c22',    # Orlando
     73: '#469c22',    # Miami
     74: '#469c22',    # New Orleans
+    75: '#469c22',    # Pensacola
+    76: '#469c22',    # Baton Rouge
     79: '#469c22',    # Gulf Cities
     80: '#0d0600',    # Austin
     81: '#0d0600',    # San Antonio
@@ -95,6 +97,7 @@ POLITICAL_COLORS = {
     83: '#0d0600',    # Houston
     85: '#0d0600',    # Oklahoma City
     86: '#0d0600',    # Whichita
+    87: '#0d0600',    # Corpus Cristy
     89: '#0d0600',    # Republic of Texas
     90: '#0A5394',    # Denver
     91: '#0A5394',    # Cheyenne
@@ -131,6 +134,7 @@ POLITICAL_COLORS = {
     148: '#FFF3CC',   # Lincoln
     149: '#FFF3CC',   # Jackson Hole
     150: '#FFF3CC',   # Missoula
+    151: '#FFF3CC',   # Savannah
     170: '#FF0000',   # Badlanders
     171: '#FF0000',   # Badland Outposts
     172: '#FF0000'    # Appalacian Wastelanders

@@ -191,8 +191,9 @@ async def upgrade_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
 
     displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part) for part in df_state.vehicle_obj['parts']
+        discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
     )
+    truncated_vehicle_parts = displayable_vehicle_parts[:3800]
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
@@ -200,9 +201,10 @@ async def upgrade_vehicle_menu(df_state: DFState):
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
         '## Parts',
-        displayable_vehicle_parts,
+        truncated_vehicle_parts,
         f'### {df_state.vehicle_obj['name']} stats'
     ])
+    import logging;logging.critical(embed.description)
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = UpgradeVehicleView(df_state)

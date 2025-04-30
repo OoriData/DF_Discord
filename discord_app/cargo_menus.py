@@ -175,7 +175,7 @@ class MapButton(discord.ui.Button):
         )
 
 
-def format_part(part_cargo: dict):
+def format_part(part_cargo: dict, verbose: bool=True):
     if isinstance(part_cargo, list):
         parts = part_cargo
     elif part_cargo.get('cargo_id'):
@@ -203,49 +203,72 @@ def format_part(part_cargo: dict):
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
 
         slot = part['slot'].replace('_', ' ').capitalize() if part['slot'] != 'ice' else 'ICE'
-        requirements = [
-            f'    - {req.replace('_', ' ').capitalize()}' if req != 'ice' else '    - ICE'
-            for req in part.get('requirements')
-        ]
+        if verbose:
+            requirements = [
+                f'    - {req.replace('_', ' ').capitalize()}' if req != 'ice' else '    - ICE'
+                for req in part.get('requirements')
+            ]
         coupling = part['coupling'].replace('_', ' ').capitalize() if part['coupling'] else None
 
-        part_attrs = [
-            f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
-            f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
-            f'    - {part['wp']} / 10 wear points' if part.get('wp') else None,
+        if verbose:  # Display eeeerrrryyythang
+            part_attrs = [
+                f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
+                f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
+                f'    - {part['wp']} / 10 wear points' if part.get('wp') else None,
 
-            f'  - Max AC: **{ac_add:+.0f}**' if ac_add else None,
-            f'  - Efficiency: **{efficiency_add:+.0f}**' if efficiency_add else None,
-            f'  - Top speed: **{top_speed_add:+.0f}**' if top_speed_add else None,
-            f'  - Offroad capability: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
-            f'  - Cargo capacity add: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
-            f'  - Weight capacity add: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
-            f'  - Weight capacity multi: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
+                f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
+                f'  - Efficiency 🌿: **{efficiency_add:+.0f}**' if efficiency_add else None,
+                f'  - Top speed 🚀: **{top_speed_add:+.0f}**' if top_speed_add else None,
+                f'  - Offroad capability 🏔️: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
+                f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
+                f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
+                f'  - Weight capacity multi 💪: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
 
-            f'  - Minimum weight class: **{part['kwh_capacity']}**' if part.get('weight_class') else None,
-            '  - requirements:' if requirements else None,
-            '\n'.join(requirements) if requirements else None,
+                f'  - Minimum weight class: **{part['weight_class']}**' if part.get('weight_class') else None,
+                '  - requirements:' if requirements else None,
+                '\n'.join(requirements) if requirements else None,
 
-            f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
-            f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,
-            f'  - **{part['fuel_capacity']}** L (**{fuel_gal}** gal)' if part.get('fuel_capacity') else None,
-            f'  - **{part['water_capacity']}** L (**{water_gal}** gal)' if part.get('water_capacity') else None,
-            f'  - **{part['kwh_capacity']}** kWh' if part.get('kwh_capacity') else None,
-            f'  - **{part['energy_density']}** Wh/kg' if part.get('energy_density') else None,
-            f'  - **{coupling}**' if coupling else None,
-            f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
-            f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
+                f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
+                f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,
+                f'  - **{part['fuel_capacity']}** L ⛽️ (**{fuel_gal}** gal)' if part.get('fuel_capacity') else None,
+                f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
+                f'  - **{part['energy_density']}** Wh/kg' if part.get('energy_density') else None,
+                f'  - **{part['water_capacity']}** L 💧 (**{water_gal}** gal)' if part.get('water_capacity') else None,
+                f'  - **{coupling}**' if coupling else None,
+                f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
+                f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 
-            '  - **critical**' if part.get('critical') else None,
-            '  - **removable**' if part.get('removable') else None,
-            '  - **salvagable**' if part.get('salvagable') else None,
-            '  - **bolt-on**' if part.get('bolt_on') else None,
+                '  - **critical**' if part.get('critical') else None,
+                '  - **removable**' if part.get('removable') else None,
+                '  - **salvagable**' if part.get('salvagable') else None,
+                '  - **bolt-on**' if part.get('bolt_on') else None,
 
-            f'  - *{part['description']}*' if part.get('description') else None,
-            f'    - Part value: **${part['value']}**' if part.get('value') else None,
-            f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') is not None else None,
-            f'    - Total price: **${part['value'] + part['installation_price']}**' if part.get('value') and part.get('installation_price') is not None else None,
-        ]
+                f'  - *{part['description']}*' if part.get('description') else None,
+                f'    - Part value: **${part['value']}**' if part.get('installation_price') else None,
+                f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') is not None else None,
+                f'    - Total price: **${part['value'] + part['installation_price']}**' if part.get('value') and part.get('installation_price') is not None else None,
+            ]
+        else:
+            # Only display slot, name, base 7 multipliers (without alt display), capacities, removable, and salvagable
+            part_attrs = [
+                f'- {slot}',
+                f'  - **{part['name']}**',
+
+                f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
+                f'  - Efficiency 🌿: **{efficiency_add:+.0f}**' if efficiency_add else None,
+                f'  - Top speed 🚀: **{top_speed_add:+.0f}**' if top_speed_add else None,
+                f'  - Offroad capability 🏔️: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
+                f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L' if cargo_capacity_add else None,
+                f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg' if weight_capacity_add else None,
+                f'  - Weight capacity multi 🏋️: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
+
+                f'  - **{part['fuel_capacity']}** L ⛽️' if part.get('fuel_capacity') else None,
+                f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
+                f'  - **{part['water_capacity']}** L 💧' if part.get('water_capacity') else None,
+
+                '  - **removable**' if part.get('removable') else None,
+                '  - **salvagable**' if part.get('salvagable') else None,
+            ]
 
         part_strs.append('\n'.join(attr for attr in part_attrs if attr))
 

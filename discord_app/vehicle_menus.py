@@ -104,7 +104,7 @@ async def vehicle_menu(df_state: DFState):
     displayable_vehicle_parts = '\n'.join(
         discord_app.cargo_menus.format_part(part, verbose=False) for part in sorted_parts
     )
-    truncated_vehicle_parts = displayable_vehicle_parts[:3800]
+    truncated_vehicle_parts = displayable_vehicle_parts[:3750]
 
     vehicle_embed = discord.Embed()
     vehicle_embed = df_embed_author(vehicle_embed, df_state)

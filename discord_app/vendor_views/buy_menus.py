@@ -31,8 +31,14 @@ async def buy_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_menu)  # Add this menu to the back stack
 
-    df_state.vendor_obj['vehicle_inventory'] = sorted(df_state.vendor_obj['vehicle_inventory'], key=lambda x: x['name'])
-    df_state.vendor_obj['cargo_inventory'] = sorted(df_state.vendor_obj['cargo_inventory'], key=lambda x: x['name'])
+    df_state.vendor_obj['vehicle_inventory'] = sorted(
+        df_state.vendor_obj['vehicle_inventory'],
+        key=lambda x: x['value']
+    )
+    df_state.vendor_obj['cargo_inventory'] = sorted(
+        df_state.vendor_obj['cargo_inventory'],
+        key=lambda x: x['unit_price']
+    )
 
     menu_embed = discord.Embed()
 
@@ -139,10 +145,10 @@ class BuyVehicleSelect(discord.ui.Select):
             disabled = True
             options=[discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
+        # sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Alr sorted by menu that calls this select
         super().__init__(
             placeholder=placeholder,
-            options=sorted_options,
+            options=options,
             disabled=disabled,
             custom_id='select_vehicle',
             row=row
@@ -208,10 +214,10 @@ class BuyCargoSelect(discord.ui.Select):
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
+        # sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Alr sorted by menu that calls this select
         super().__init__(
             placeholder=placeholder,
-            options=sorted_options,
+            options=options,
             disabled=disabled,
             custom_id='select_cargo',
             row=row

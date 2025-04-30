@@ -29,8 +29,14 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
     vendor_embed = discord.Embed()
     vendor_embed = df_embed_author(vendor_embed, df_state)
 
-    df_state.vendor_obj['vehicle_inventory'] = sorted(df_state.vendor_obj['vehicle_inventory'], key=lambda x: x['name'])
-    df_state.vendor_obj['cargo_inventory'] = sorted(df_state.vendor_obj['cargo_inventory'], key=lambda x: x['name'])
+    df_state.vendor_obj['vehicle_inventory'] = sorted(
+        df_state.vendor_obj['vehicle_inventory'],
+        key=lambda x: x['value']
+    )
+    df_state.vendor_obj['cargo_inventory'] = sorted(
+        df_state.vendor_obj['cargo_inventory'],
+        key=lambda x: x['unit_price']
+    )
 
     vendor_embed.description = await vendor_inv_md(df_state)
 

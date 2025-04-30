@@ -209,9 +209,6 @@ class DesolateCog(commands.Cog):
                         seen_this_round = set()  # Ephemeral deduplication per user per run
 
                         if unseen_dialogue_dicts:
-                            ping = f'<@{discord_user.id}>'
-                            await notification_channel.send(ping)
-                            
                             notifications = []
                             for dialogue in unseen_dialogue_dicts:
                                 for message in dialogue['messages']:
@@ -227,6 +224,7 @@ class DesolateCog(commands.Cog):
                                         'message_metadata': dialogue
                                     })
 
+                            embeds_to_send = []
                             for notification in notifications:
                                 # embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
                                 embed = discord.Embed(description=notification['message_content'][:4096])  # Embed descriptions can be a maximum of 4096 chars
@@ -242,8 +240,10 @@ class DesolateCog(commands.Cog):
 
                                 # await notification_channel.send(embed=embed, view=view)
 
-                                await notification_channel.send(embed=embed)
-
+                                embeds_to_send.append(embed)
+                            
+                            ping = f'<@{discord_user.id}>'
+                            await notification_channel.send(content=ping, embeds=embeds_to_send)
                             logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
                             # Mark dialogue as seen after sending notification

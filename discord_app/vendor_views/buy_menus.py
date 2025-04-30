@@ -623,7 +623,7 @@ async def buy_vehicle_menu(df_state: DFState):
             part_list.append(f'- {part['slot'].replace('_', ' ').capitalize()}\n  - None')
             continue
 
-        part_list.append(discord_app.cargo_menus.format_part(part))
+        part_list.append(discord_app.cargo_menus.format_part(part, verbose=False))
     displayable_vehicle_parts = '\n'.join(part_list)
 
     vehicle_buy_confirm_embed = discord.Embed()

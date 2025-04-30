@@ -202,28 +202,30 @@ class DesolateCog(commands.Cog):
 
                 if discord_user:
                     logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
-                    try:
-                        # Fetch unseen dialogue for the DF user
+                    try:  # Fetch unseen dialogue for the DF user
                         unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
                         logger.debug(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+
+                        seen_this_round = set()  # Ephemeral deduplication per user per run
 
                         if unseen_dialogue_dicts:
                             ping = f'<@{discord_user.id}>'
                             await notification_channel.send(ping)
-
-                            # Compile message content from unseen dialogues
-                            # notifications = [
-                            #     message['content']
-                            #     for dialogue in unseen_dialogue_dicts
-                            #     for message in dialogue['messages']
-                            # ]
                             
                             notifications = []
                             for dialogue in unseen_dialogue_dicts:
-                                notification = {'message_content': None, 'message_metadata': dialogue}  # TODO: unpack 'dialogue' object later rather than storing message content and message metadata separately
                                 for message in dialogue['messages']:
-                                    notification['message_content'] = message['content']
-                                    notifications.append(notification)
+                                    content = message['content'].strip()
+
+                                    if not content or content in seen_this_round:
+                                        logger.error(ansi_color('Got duplicate notification, skipping...', 'red'))
+                                        continue
+
+                                    seen_this_round.add(content)
+                                    notifications.append({
+                                        'message_content': content,
+                                        'message_metadata': dialogue
+                                    })
 
                             for notification in notifications:
                                 # embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars

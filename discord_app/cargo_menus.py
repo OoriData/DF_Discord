@@ -239,7 +239,7 @@ def format_part(part_cargo: dict, verbose: bool=True):
                 f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 
                 '  - **critical**' if part.get('critical') else None,
-                '  - **removable** 🫥' if part.get('removable') else None,
+                '  - **removable** ↩️' if part.get('removable') else None,
                 '  - **salvagable** ♻️' if part.get('salvagable') else None,
                 '  - **bolt-on**' if part.get('bolt_on') else None,
 
@@ -266,7 +266,7 @@ def format_part(part_cargo: dict, verbose: bool=True):
                 f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
                 f'  - **{part['water_capacity']}** L 💧' if part.get('water_capacity') else None,
 
-                '  - **removable** 🫥' if part.get('removable') else None,
+                '  - **removable** ↩️' if part.get('removable') else None,
                 '  - **salvagable** ♻️' if part.get('salvagable') else None,
             ]
 

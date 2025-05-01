@@ -58,7 +58,7 @@ async def mechanic_menu(df_state: DFState):
 
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- **{vehicle['name']}** | *${vehicle['value']}*'
+        vehicle_str = f'- **{vehicle['name']}** | *${vehicle['value']:,.0f}*'
         vehicle_list.append(vehicle_str)
     displayable_vehicles = '\n'.join(vehicle_list)
 

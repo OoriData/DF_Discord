@@ -446,14 +446,11 @@ class CargoConfirmSellButton(discord.ui.Button):
 
         await interaction.response.edit_message(embed=embed, view=view)
 
-
-
 class SellAllCargoButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int = 1):
         self.df_state = df_state
 
-        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
-            # Delivery cargo
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:  # Delivery cargo
             self.sell_list = [
                 cargo
                 for cargo in self.df_state.convoy_obj['all_cargo']
@@ -465,8 +462,7 @@ class SellAllCargoButton(discord.ui.Button):
                 cargo['quantity'] * cargo['unit_delivery_reward']
                 for cargo in self.sell_list
             )
-        else:
-            # Normal cargo
+        else:  # Normal cargo
             self.sell_list = [
                 cargo
                 for cargo in self.df_state.convoy_obj['all_cargo']
@@ -480,7 +476,7 @@ class SellAllCargoButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell all {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) across convoy | ${self.sale_price:,.0f}',
+            label=f'Sell all {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) across convoy | ${self.sale_price:,.0f}',
             row=row
         )
 
@@ -502,12 +498,12 @@ class SellAllCargoButton(discord.ui.Button):
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
-        desc = [f'## {self.df_state.vendor_obj["name"]}']
+        desc = [f'## {self.df_state.vendor_obj['name']}']
 
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
-            desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) for ${self.sale_price:,.0f}')
+            desc.append(f'Delivered {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${self.sale_price:,.0f}')
         else:
-            desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) for ${self.sale_price:,.0f}')
+            desc.append(f'Sold {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) for ${self.sale_price:,.0f}')
 
         embed.description = '\n'.join(desc)
         view = PostSellView(self.df_state)

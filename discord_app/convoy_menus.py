@@ -777,6 +777,8 @@ async def route_menu(
 
             # Get required charge for this vehicle for the journey
             required_kwh = prospective_journey_plus_misc.get('kwh_expenses', {}).get(vehicle['vehicle_id'], 0)
+
+            required_kwh = fuzz(required_kwh)  # Fuzz the required amount
           
             recommended_kwh = 2 * required_kwh  # Recommended charge is double the required
 

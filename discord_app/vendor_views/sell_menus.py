@@ -8,8 +8,7 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji,
-    remove_items_pending_deletion
+    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji
 )
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus

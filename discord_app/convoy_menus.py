@@ -207,7 +207,7 @@ async def make_convoy_embed(
                     f'{prospective_journey_plus_misc['kwh_expenses'][vehicle['vehicle_id']]:.3f}'
                 )
         logger.debug(ansi_color(text=expenses_print, font_color='yellow'))
-        
+
         # Fuzz the expenses
         fuzzed_fuel_expense = fuzz(sum(prospective_journey_plus_misc['fuel_expenses'].values()))
         fuzzed_water_expense = fuzz(prospective_journey_plus_misc['water_expense'])
@@ -779,7 +779,7 @@ async def route_menu(
             required_kwh = prospective_journey_plus_misc.get('kwh_expenses', {}).get(vehicle['vehicle_id'], 0)
 
             required_kwh = fuzz(required_kwh)  # Fuzz the required amount
-          
+
             recommended_kwh = 2 * required_kwh  # Recommended charge is double the required
 
             resource_name = f'{vehicle['name']} (kWh)'  # Use vehicle name for clarity in warnings
@@ -1038,7 +1038,7 @@ class ConfirmJourneyButton(discord.ui.Button):
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        
+
         await convoy_menu(self.df_state)
 
     async def on_timeout(self):

@@ -305,7 +305,7 @@ class NewBannerModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.df_state.interaction = interaction
-        
+
         try:
             self.df_state.user_obj = await api_calls.new_banner(
                 user_id=self.df_state.user_obj['user_id'],

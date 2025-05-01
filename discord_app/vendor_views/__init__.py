@@ -216,13 +216,13 @@ def format_parts_compatibility(convoy_obj: dict, cargo: dict, verbose: bool = Fa
 
         if isinstance(compatibilities, RuntimeError):
             parts_info += '❌ Incompatible'
-            
+
             if verbose:
                 parts_info += f': *{compatibilities}*'
 
         else:
             total_installation_price = sum(vp['installation_price'] for vp in compatibilities)
-            
+
             parts_info += f'✅ Total installation price: *${total_installation_price:,.0f}*'
 
     return parts_info

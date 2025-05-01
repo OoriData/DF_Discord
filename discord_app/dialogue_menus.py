@@ -164,7 +164,7 @@ class RespondToConvoyView(discord.ui.View):
         super().__init__(timeout=600)
 
         self.df_state = DFState(user_discord_id=self.user_discord_id)
-    
+
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='Respond')
     async def respond_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
@@ -173,7 +173,7 @@ class RespondToConvoyView(discord.ui.View):
         self.df_state.user_cache = self.user_cache
 
         self.df_state.interaction = interaction
-        
+
         await validate_interaction(interaction=interaction, df_state=self.df_state)
 
         await dialogue_menu(

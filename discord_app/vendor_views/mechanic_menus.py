@@ -566,7 +566,7 @@ async def scrap_vehicle_menu(df_state: DFState):
     except RuntimeError as e:
         await df_state.interaction.response.send_message(content=e, ephemeral=True)
         return
-    
+
     scrap_price = scrap_check['salvage_price']
     salvage_part_cargo = scrap_check['salvage_part_cargo']
 

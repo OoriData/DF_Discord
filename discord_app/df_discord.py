@@ -86,7 +86,7 @@ class DesolateCog(commands.Cog):
         if not self.cache_ready.is_set():
             await interaction.response.send_message('-# Still booting up! Please try again in a few seconds.', ephemeral=True)
             return
-        
+
         # ENTITLEMENTS CHECKER MECHANISM
         # user_entitlements = [entitlement async for entitlement in self.bot.entitlements(user=interaction.user)]
         # import pprint;pprint.pprint(user_entitlements)
@@ -241,7 +241,7 @@ class DesolateCog(commands.Cog):
                                 # await notification_channel.send(embed=embed, view=view)
 
                                 embeds_to_send.append(embed)
-                            
+
                             ping = f'<@{discord_user.id}>'
                             await notification_channel.send(content=ping, embeds=embeds_to_send)
                             logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))

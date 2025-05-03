@@ -64,20 +64,30 @@ def df_embed_vehicle_stats(
         'offroad_capability': 'raw_offroad_capability'
     }
 
+    weight_class_descriptions = {0: 'Passenger Vehicle', 1: 'Light-Duty', 2: 'Light-Duty',
+                                 3: 'Medium-Duty', 4: 'Medium-Duty', 5: 'Medium-Duty', 6: 'Heavy-Duty', 7: 'Heavy-Duty',
+                                 8: 'Tractor', 9: 'Super-Heavy'}
+
     for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
         base_value = vehicle.get(stat_key)
         base_value = None if base_value == '' else base_value  # Normalize empty strings to None
 
         if base_value is None:
-            value_str = 'N/A'
+            value_str = 'None'
         else:
             try:
                 value_str = base_format.format(base_value)
             except Exception:
                 value_str = str(base_value)
 
+        # Add weight class description if applicable
+        if stat_key == 'weight_class' and value_str != 'None':
+            class_num = int(base_value)
+            if class_num in weight_class_descriptions:
+                value_str += f': (*{weight_class_descriptions[class_num]}*)'
+
         mod_value = new_part.get(mod_key) if new_part and mod_key else None
-        if mod_value is not None and value_str != 'N/A' and mod_format:
+        if mod_value is not None and value_str != 'None' and mod_format:
             value_str += mod_format.format(mod_value)
 
         if suffix:

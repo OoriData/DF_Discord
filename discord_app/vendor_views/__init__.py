@@ -213,9 +213,8 @@ def format_clearance_info(cargo: dict) -> str:
             # Calculate how many days past the shelf life it is
             days_overdue = (now - cargo_age) - shelf_life
             # Calculate discount: 20% per full day overdue, capped at 40% (for day 7)
-            # Add 1 because the first day *after* shelf_life (day 6) is the first discount day
-            discount_percentage = min((days_overdue.days + 1) * 20, 40)
-            return f'\n  - Clearance! {discount_percentage}% off! 🏷️'
+            discount_percentage = min(days_overdue.days * 20, 40)
+            return f'\n  - *Clearance! {discount_percentage}% off!* 🏷️'  # + f' `CARGO IS {(now - cargo_age).days} DAYS OLD`'
     except (ValueError, TypeError):
         # Handle potential errors during date parsing/comparison gracefully
         return '' # Don't add clearance info if dates are problematic

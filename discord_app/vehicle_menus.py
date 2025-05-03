@@ -40,6 +40,7 @@ def df_embed_vehicle_stats(
         'Stat Floor ⌊⌋': ('hard_stat_floor', '**{}**', None, None, None),
         'Stat Soft Cap ⌈⌉': ('soft_stat_cap', '**{}**', None, None, None),
         'Coupling 🚛': ('coupling', '**{}**', None, None, None),
+        'Passenger Seats 🪑': ('passenger_seats', '**{}**', None, None, None),
         'Armor Class 🛡️': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
 
@@ -53,7 +54,7 @@ def df_embed_vehicle_stats(
 
     fields = {
         **fields,
-        '⚙️ Powertrain': ('_powertrain', '**{}**', None, None, None)
+        'Powertrain ⚙️': ('_powertrain', '**{}**', None, None, None)
     }
     vehicle = {**vehicle, '_powertrain': powered_by}
 

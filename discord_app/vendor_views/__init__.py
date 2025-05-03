@@ -93,7 +93,8 @@ async def format_cargo(df_state: DFState, *, verbose: bool, vendor: bool = False
             if verbose and cargo.get('recipient_vendor'):
                 cargo_str += format_delivery_info(cargo)
 
-        cargo_str += format_clearance_info(cargo, vendor)
+        if vendor:
+            cargo_str += format_clearance_info(cargo)
 
         # Add parts info if applicable and verbose
         if verbose and cargo.get('parts'):
@@ -197,11 +198,8 @@ def format_delivery_info(cargo: dict) -> str:
     return ''.join(delivery_info)
 
 
-def format_clearance_info(cargo: dict, vendor: bool) -> str:
-    """ Check if cargo is on clearance and return a notification string if so. """
-    if not vendor:
-        return ''
-
+def format_clearance_info(cargo: dict) -> str:
+    """ Check if cargo is on clearance and return a discount string if so. """
     try:
         creation_date_str = cargo.get('creation_date')
         if not creation_date_str:

@@ -204,7 +204,7 @@ async def upgrade_vehicle_menu(df_state: DFState):
         truncated_vehicle_parts,
         f'### {df_state.vehicle_obj['name']} stats'
     ])
-    import logging;logging.critical(embed.description)
+
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
     view = UpgradeVehicleView(df_state)

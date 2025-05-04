@@ -71,3 +71,5 @@
   - Mitigate by refreshing menu by using `Main Menu` button and then navigating back to scrap menu
 - Cargo appears to stay in convoy inventory after being manually sold
   - Mitigate by refreshing menu by using `Main Menu` button and then navigating back to vendor menu
+- Vendors with lots of cargo sometimes has that the display for that cargo cut off early
+  - No player mitigation

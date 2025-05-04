@@ -833,7 +833,7 @@ async def route_menu(
             else:  # Field format for desktop
                 embed.add_field(
                     name=display_name,
-                    value=f'**{available:.0f}** {unit}\n *{threshold_type}: {threshold:.0f}*',
+                    value=f'**{available:.3f}** {unit}\n *{threshold_type}: {threshold:.0f}*',
                 )
 
         embed.description = '\n'.join(description_lines)
@@ -871,7 +871,7 @@ async def route_menu(
             title=f'# {safety_margin_emoji} Insufficient reserves for safe travel!',
             header=f'**{df_state.convoy_obj['name']} does not have enough emergency supplies for this journey!**',
             subheader=(
-                'It is recommended to carry **double** the required resources.\n'
+                'It is recommended to carry at least **double** the required resources for a safe journey.\n'
                 '## Resources below recommended reserves:'
             ),
             threshold_type='recommended',

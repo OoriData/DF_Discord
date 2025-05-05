@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: UNLICENSED
 'Vendor Menus'
 import                  math
+from datetime           import datetime, timezone, timedelta
 
 from discord_app import api_calls, DFState, get_vehicle_emoji
 
@@ -37,7 +38,7 @@ async def vendor_inv_md(df_state: DFState, *, verbose: bool = False) -> str:
 
     displayable_resources = format_resources(vendor_obj)
     displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
-    displayable_cargo = await format_cargo(df_state, verbose=verbose)
+    displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
 
     md = '\n'.join([
         f'## {vendor_obj['name']}',
@@ -73,7 +74,7 @@ def format_resources(vendor_obj: dict) -> str:
     return '\n'.join(resources_list) if resources_list else '- None'
 
 
-async def format_cargo(df_state: DFState, *, verbose: bool) -> str:
+async def format_cargo(df_state: DFState, *, verbose: bool, vendor: bool = False) -> str:
     """ Format the vendor's cargo inventory into markdown """
     vendor_obj = df_state.vendor_obj
     convoy_obj = df_state.convoy_obj
@@ -89,10 +90,13 @@ async def format_cargo(df_state: DFState, *, verbose: bool) -> str:
 
         if cargo['recipient']:
             await enrich_delivery_info(df_state, cargo, verbose)
-
             if verbose and cargo.get('recipient_vendor'):
                 cargo_str += format_delivery_info(cargo)
 
+        if vendor:
+            cargo_str += format_clearance_info(cargo)
+
+        # Add parts info if applicable and verbose
         if verbose and cargo.get('parts'):
             await enrich_parts_compatibility(convoy_obj, cargo)
             cargo_str += format_parts_compatibility(convoy_obj, cargo, verbose=verbose)
@@ -192,6 +196,29 @@ def format_delivery_info(cargo: dict) -> str:
     delivery_info.append(f'\n  - Volume/Weight: {cargo['unit_volume']:,}L / {cargo['unit_weight']:,.2f}kg *each*')
 
     return ''.join(delivery_info)
+
+
+def format_clearance_info(cargo: dict) -> str:
+    """ Check if cargo is on clearance and return a discount string if so. """
+    try:
+        creation_date_str = cargo.get('creation_date')
+        if not creation_date_str:
+            return '' # No date to check against
+
+        cargo_age = datetime.fromisoformat(creation_date_str).replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        shelf_life = timedelta(days=5)
+
+        if cargo_age < now - shelf_life:
+            # Calculate how many days past the shelf life it is
+            days_overdue = (now - cargo_age) - shelf_life
+            # Calculate discount: 20% per full day overdue, capped at 40% (for day 7)
+            discount_percentage = min(days_overdue.days * 20, 40)
+            return f'\n  - *Clearance! {discount_percentage}% off!* 🏷️'  # + f' `CARGO IS {(now - cargo_age).days} DAYS OLD`'
+    except (ValueError, TypeError):
+        # Handle potential errors during date parsing/comparison gracefully
+        return '' # Don't add clearance info if dates are problematic
+    return ''
 
 
 async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:

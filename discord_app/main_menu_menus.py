@@ -464,17 +464,11 @@ class OptionsView(discord.ui.View):
         # Add the referral button dynamically
         self.add_item(ReferralButton(df_state, disabled=is_disabled))
 
-        self.add_item(
-            AppModeButton(df_state)
-        )
+        self.add_item(AppModeButton(df_state))
 
-        self.add_item(
-            ChangeUsernameButton(df_state, disabled=False)
-        )
+        self.add_item(ChangeUsernameButton(df_state))
 
-        self.add_item(
-            ChangeConvoyNameButton(df_state, disabled=is_disabled)
-        )
+        self.add_item(ChangeConvoyNameButton(df_state, disabled=is_disabled))
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -484,14 +478,13 @@ class OptionsView(discord.ui.View):
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
 
 class ChangeUsernameButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, disabled: bool, row=2):
+    def __init__(self, df_state: DFState, row=2):
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label='Change Your Username',
             custom_id='change_username',
             emoji='🖊️',
             row=row,
-            disabled=disabled  # Correctly setting the disabled state
         )
         self.df_state = df_state  # Store df_state so it can be used in callback
 
@@ -499,11 +492,7 @@ class ChangeUsernameButton(discord.ui.Button):
         await validate_interaction(interaction=interaction, df_state=self.df_state)
         self.df_state.interaction = interaction
 
-        # Check the expiration date again just to be sure
-        df_exp = datetime.strptime(self.df_state.user_obj['df_plus'].strip(), "%Y-%m-%d").date()  # XXX: this should prob use a timezone
-
-        if df_exp > datetime.now().date():  # XXX: this should prob use a timezone, eg. datetime.now(timezone.utc)
-            await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
+        await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
 
 class ChangeUsernameModal(discord.ui.Modal):
     def __init__(self, df_state: DFState):

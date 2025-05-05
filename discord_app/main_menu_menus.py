@@ -469,7 +469,7 @@ class OptionsView(discord.ui.View):
         )
 
         self.add_item(
-            ChangeUsernameButton(df_state, disabled=is_disabled)
+            ChangeUsernameButton(df_state, disabled=False)
         )
 
         self.add_item(

@@ -8,7 +8,7 @@ import                                  discord
 from discord                     import app_commands, HTTPException
 from discord.ext                 import commands, tasks
 
-from httpx                       import ConnectError
+from httpx                       import ConnectError, ConnectTimeout
 
 from utiloori.ansi_color         import ansi_color
 
@@ -50,6 +50,9 @@ class DesolateCog(commands.Cog):
                 self.df_map_obj = await api_calls.get_map()
             except ConnectError as e:
                 logger.error(ansi_color(f'Error connecting to DF API: {e}', 'red'))
+                await asyncio.sleep(3)  # Wait 3 seconds before trying again
+            except ConnectTimeout as e:
+                logger.error(ansi_color(f'Timeout connecting to DF API: {e}', 'red'))
                 await asyncio.sleep(3)  # Wait 3 seconds before trying again
 
         for row in self.df_map_obj['tiles']:

@@ -8,6 +8,8 @@ import                                  discord
 from discord                     import app_commands, HTTPException
 from discord.ext                 import commands, tasks
 
+from httpx                       import ConnectError
+
 from utiloori.ansi_color         import ansi_color
 
 from discord_app                 import DF_DISCORD_LOGO as API_BANNER
@@ -42,7 +44,14 @@ class DesolateCog(commands.Cog):
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
         self.settlements_cache = []
-        self.df_map_obj = await api_calls.get_map()
+        self.df_map_obj = None
+        while not self.df_map_obj:  # Retry logic for bootup
+            try:
+                self.df_map_obj = await api_calls.get_map()
+            except ConnectError as e:
+                logger.error(ansi_color(f'Error connecting to DF API: {e}', 'red'))
+                await asyncio.sleep(3)  # Wait 3 seconds before trying again
+
         for row in self.df_map_obj['tiles']:
             for sett in row:
                 self.settlements_cache.extend(sett['settlements'])

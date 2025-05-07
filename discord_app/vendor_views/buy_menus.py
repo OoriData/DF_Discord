@@ -43,6 +43,7 @@ async def buy_menu(df_state: DFState):
     menu_embed = discord.Embed()
 
     menu_embed.description = await vendor_inv_md(df_state, verbose=True)
+    menu_embed.description = menu_embed.description[:4096]
 
     menu_embed = df_embed_author(menu_embed, df_state)
 

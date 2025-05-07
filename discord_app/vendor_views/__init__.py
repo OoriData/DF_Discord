@@ -179,7 +179,7 @@ def format_delivery_info(cargo: dict) -> str:
     vendor_obj = cargo['recipient_vendor']
     vendor_location = cargo['recipient_location']
     delivery_info = [
-        f'\n  - Deliver to *{vendor_location}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each*'
+        f'\n  - Deliver to *{vendor_location}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each on delivery*'
     ]
 
     margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)

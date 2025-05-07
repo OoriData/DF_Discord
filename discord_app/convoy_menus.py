@@ -395,7 +395,11 @@ class ConvoyView(discord.ui.View):
             recipient_vendor = await api_calls.get_vendor(cargo['recipient'])
 
             # Grab destination name to display to user
-            deliveries.append(f'- {cargo['name']}\n  - Deliver to **{recipient_vendor['name']}**\n  - ${cargo['delivery_reward'] * cargo['quantity']} total delivery reward')
+            deliveries.append('\n'.join([
+                f'- {cargo['name']}',
+                f'  - Deliver to **{recipient_vendor['name']}**',
+                f'  - ${cargo['delivery_reward']} total delivery reward',
+            ]))
 
             # And recipient_coords for map rendering
             recipient_coords.append((recipient_vendor['x'], recipient_vendor['y']))

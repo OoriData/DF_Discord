@@ -186,6 +186,8 @@ class DesolateCog(commands.Cog):
             "-# If you have any questions, feel free to message Choccy or any of the other yellow names! We're happy to help :)",
         ]))
 
+        asyncio.sleep(6)  # Wait a few seconds to not pre-empt the discord built-in welcome message
+
         try:
             await welcome_channel.send(content=member.mention, embed=welcome_embed)
             logger.info(ansi_color(f'Sent welcome message for {member.name} ({member.id}) to #{welcome_channel.name}', 'green'))

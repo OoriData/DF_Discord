@@ -14,9 +14,15 @@ from discord_app.df_state   import DFState
 
 DF_GUILD_ID = int(os.environ['DF_GUILD_ID'])
 DF_CHANNEL_ID = int(os.environ['DF_CHANNEL_ID'])
+
 WASTELANDER_ROLE = int(os.environ['WASTELANDER_ROLE'])
 ALPHA_ROLE = int(os.environ['ALPHA_ROLE'])
 BETA_ROLE = int(os.environ['BETA_ROLE'])
+
+DF_WELCOME_CHANNEL_ID = int(os.environ['DF_WELCOME_CHANNEL_ID'])
+DF_GAMEPLAY_CHANNEL_1_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_1_ID'])
+DF_GAMEPLAY_CHANNEL_2_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_2_ID'])
+DF_GAMEPLAY_CHANNEL_3_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_3_ID'])
 
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 

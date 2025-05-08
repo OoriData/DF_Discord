@@ -13,7 +13,13 @@ from httpx                       import ConnectError, ConnectTimeout
 from utiloori.ansi_color         import ansi_color
 
 from discord_app                 import DF_DISCORD_LOGO as API_BANNER
-from discord_app                 import DF_GUILD_ID, DF_CHANNEL_ID, WASTELANDER_ROLE, ALPHA_ROLE, BETA_ROLE
+from discord_app                 import (
+    DF_GUILD_ID,
+    DF_CHANNEL_ID, DF_WELCOME_CHANNEL_ID,
+    WASTELANDER_ROLE, ALPHA_ROLE, BETA_ROLE,
+    DF_GAMEPLAY_CHANNEL_1_ID, DF_GAMEPLAY_CHANNEL_2_ID, DF_GAMEPLAY_CHANNEL_3_ID,
+    DF_LOGO_EMOJI,
+)
 from discord_app                 import TimeoutView, api_calls, DF_HELP
 from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
@@ -40,6 +46,10 @@ class DesolateCog(commands.Cog):
         await self.bot.tree.sync()
 
         logger.info(ansi_color(f'Bot/App: {self.bot.user.name}', 'purple'))
+        logger.info(ansi_color(f'Welcome channel: #{self.bot.get_channel(DF_WELCOME_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 1: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 2: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_2_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 3: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID).name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
@@ -158,6 +168,31 @@ class DesolateCog(commands.Cog):
     @app_commands.command(name='redeem_free_days', description="Redeem available free days")
     async def redeem_free_days(self, interaction: discord.Interaction):
         return  # Ignore commands
+    
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        """ Sends a welcome message to new members. """
+        if member.bot:  # Ignore bots
+            return
+
+        welcome_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_WELCOME_CHANNEL_ID)
+        gameplay_channel_1: discord.guild.GuildChannel = self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID)
+        gameplay_channel_2: discord.guild.GuildChannel = self.bot.get_channel(DF_GAMEPLAY_CHANNEL_2_ID)
+        gameplay_channel_3: discord.guild.GuildChannel = self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID)
+
+        welcome_embed = discord.Embed(description='\n'.join([
+            f"## Welcome to the {DF_LOGO_EMOJI} Desolate Frontiers server, {member.mention}!",
+            f"We're glad to have you! Use the `/desolate_frontiers` command in one of the gameplay channels ({gameplay_channel_1.jump_url}, {gameplay_channel_2.jump_url}, or {gameplay_channel_3.jump_url}) to get started.",
+            "-# If you have any questions, feel free to message Choccy or any of the other yellow names! We're happy to help :)",
+        ]))
+
+        try:
+            await welcome_channel.send(embed=welcome_embed)
+            logger.info(ansi_color(f'Sent welcome message for {member.name} ({member.id}) to #{welcome_channel.name}', 'green'))
+        except discord.Forbidden:  # This might occur if the bot doesn't have send permissions in the welcome_channel
+            logger.warning(ansi_color(f'Could not send welcome message to #{welcome_channel.name}. Bot might lack permissions.', 'yellow'))
+        except Exception as e:
+            logger.error(ansi_color(f'Failed to send welcome message for {member.name} ({member.id}) to #{welcome_channel.name}: {e}', 'red'))
 
     @tasks.loop(minutes=5)
     async def update_user_cache(self):
@@ -206,8 +241,8 @@ class DesolateCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def notifier(self):
         if isinstance(self.df_users_cache, dict):  # If the cache has been initialized
-            notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
             guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
+            notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
 
             for discord_user_id, df_id in self.df_users_cache.items():
                 discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID

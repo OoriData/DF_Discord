@@ -187,7 +187,7 @@ class DesolateCog(commands.Cog):
         ]))
 
         try:
-            await welcome_channel.send(embed=welcome_embed)
+            await welcome_channel.send(content=member.mention, embed=welcome_embed)
             logger.info(ansi_color(f'Sent welcome message for {member.name} ({member.id}) to #{welcome_channel.name}', 'green'))
         except discord.Forbidden:  # This might occur if the bot doesn't have send permissions in the welcome_channel
             logger.warning(ansi_color(f'Could not send welcome message to #{welcome_channel.name}. Bot might lack permissions.', 'yellow'))

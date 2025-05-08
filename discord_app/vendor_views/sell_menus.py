@@ -352,7 +352,7 @@ class CargoSellQuantityEmbed(discord.Embed):
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:  # Delivery
             unit_reward = self.df_state.cargo_obj['unit_delivery_reward']
             sale_price = self.sale_quantity * unit_reward
-            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${unit_reward:,} per item')
+            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${unit_reward:,.0f} per item')
         else:  # Normal sale
             unit_sale_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj)
             sale_price = self.sale_quantity * unit_sale_price
@@ -362,7 +362,7 @@ class CargoSellQuantityEmbed(discord.Embed):
             f'*{self.df_state.cargo_obj['base_desc']}*',
             f'- Sale volume: {sale_volume:,}L',
             f'- Sale weight: {sale_weight:,} kg',
-            f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'
+            f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,.0f}'
         ])
 
         self.description = '\n'.join(desc)

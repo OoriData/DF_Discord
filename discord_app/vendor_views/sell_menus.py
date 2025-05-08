@@ -248,9 +248,9 @@ class ResourceSellQuantityEmbed(discord.Embed):
         convoy_resource_amount = self.df_state.convoy_obj.get(self.resource_type, 0)
 
         self.description = '\n'.join([
-            f'## {self.df_state.vendor_obj["name"]}',
+            f'## {self.df_state.vendor_obj['name']}',
             f'### Selling {self.resource_type.capitalize()} for ${unit_price:,.0f} per Liter/Meal',
-            f'{self.df_state.convoy_obj["name"]}\'s {self.resource_type.capitalize()}: {convoy_resource_amount:,.3f} Liters/Meals',
+            f'{self.df_state.convoy_obj['name']}\'s {self.resource_type.capitalize()}: {convoy_resource_amount:,.3f} Liters/Meals',
             f'### Sale: {self.sale_quantity:,.3f} Liters/Meals | ${sale_price:,.0f}'
         ])
 
@@ -347,33 +347,31 @@ class CargoSellQuantityEmbed(discord.Embed):
         sale_volume = self.sale_quantity * self.df_state.cargo_obj['unit_volume']
         sale_weight = self.sale_quantity * self.df_state.cargo_obj['unit_weight']
 
-        desc = [f'## {self.df_state.vendor_obj["name"]}']
+        desc = [f'## {self.df_state.vendor_obj['name']}']
 
-        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
-            # Delivery
+        if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:  # Delivery
             unit_reward = self.df_state.cargo_obj['unit_delivery_reward']
-            desc.append(f'### Delivering {self.df_state.cargo_obj["name"]} for a reward of ${unit_reward:,} per item')
             sale_price = self.sale_quantity * unit_reward
-        else:
-            # Normal sale
-            total_sale_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj)
-            desc.append(f'### Selling {self.df_state.cargo_obj["name"]}')
-            sale_price = total_sale_price
+            desc.append(f'### Delivering {self.df_state.cargo_obj['name']} for a reward of ${unit_reward:,} per item')
+        else:  # Normal sale
+            unit_sale_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj)
+            sale_price = self.sale_quantity * unit_sale_price
+            desc.append(f'### Selling {self.df_state.cargo_obj['name']}')
 
         desc.extend([
-            f'*{self.df_state.cargo_obj["base_desc"]}*',
+            f'*{self.df_state.cargo_obj['base_desc']}*',
             f'- Sale volume: {sale_volume:,}L',
-            f'- Sale weight: {sale_weight:,}kg',
-            f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) | ${sale_price:,}'
+            f'- Sale weight: {sale_weight:,} kg',
+            f'### Sale: {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) | ${sale_price:,}'
         ])
 
         self.description = '\n'.join(desc)
 
         if get_user_metadata(df_state, 'mobile'):
             self.description += '\n' + '\n'.join([
-                f'- Inventory: {self.df_state.cargo_obj["quantity"]}',
-                f'- Volume (per unit): {self.df_state.cargo_obj["unit_volume"]}L',
-                f'- Weight (per unit): {self.df_state.cargo_obj["unit_weight"]}kg'
+                f'- Inventory: {self.df_state.cargo_obj['quantity']}',
+                f'- Volume (per unit): {self.df_state.cargo_obj['unit_volume']}L',
+                f'- Weight (per unit): {self.df_state.cargo_obj['unit_weight']}kg'
             ])
         else:
             self.add_field(name='Inventory', value=self.df_state.cargo_obj['quantity'])

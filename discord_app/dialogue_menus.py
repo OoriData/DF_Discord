@@ -70,7 +70,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='◀', custom_id='prev_dialogue', row=1)
     async def dialogue_prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         page = self.page - 1
@@ -84,7 +85,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='▶', custom_id='next_dialogue', row=1)
     async def dialogue_next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         page = self.page + 1
@@ -99,7 +101,8 @@ class DialogueView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.green, label='Send Message', custom_id='send_message_modal', emoji='💬', row=2)
     async def send_message_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         dialogue_obj = await api_calls.get_dialogue_by_char_ids(self.char_a_id, self.char_b_id)
@@ -149,7 +152,6 @@ class SendMessageModal(discord.ui.Modal):
 
         await dialogue_menu(self.df_state, self.char_a_id, self.char_b_id)
 
-
 class RespondToConvoyView(discord.ui.View):
     def __init__(
             self,
@@ -167,14 +169,14 @@ class RespondToConvoyView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.blurple, label='Respond')
     async def respond_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
+
         self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
         self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)  # TODO: implement 'next' pattern to fetch this out of user_obj
         self.df_state.map_obj = await api_calls.get_map()
         self.df_state.user_cache = self.user_cache
-
-        self.df_state.interaction = interaction
-
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
 
         await dialogue_menu(
             df_state=self.df_state,

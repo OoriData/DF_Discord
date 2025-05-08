@@ -107,7 +107,8 @@ class BuyResourceButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await buy_resource_menu(self.df_state, self.resource_type)
@@ -156,7 +157,8 @@ class BuyVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -225,7 +227,8 @@ class BuyCargoSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.cargo_obj = next((
@@ -305,7 +308,8 @@ class ResourceConfirmBuyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         try:
@@ -468,7 +472,8 @@ class CargoConfirmBuyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         try:
@@ -595,7 +600,8 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
         return False
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.cart_quantity += self.button_quantity  # Update cart quantity
@@ -685,7 +691,8 @@ class BuyVehicleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         try:
@@ -796,7 +803,7 @@ class TopUpButton(discord.ui.Button):
             button_label, button_disabled = self._determine_button_state(
                 planned_resources=planned_resources,
                 total_cost=self.total_top_up_cost,
-                has_vendors=True # We know vendors exist if we got this far
+                has_vendors=True  # We know vendors exist if we got this far
             )
         else:
             # Determine button state when prerequisites aren't met (no settlement/vendors)
@@ -811,7 +818,7 @@ class TopUpButton(discord.ui.Button):
             style=discord.ButtonStyle.blurple,
             label=button_label,
             disabled=button_disabled,
-            custom_id='top_up_button', # Make sure this ID is unique if multiple buttons exist
+            custom_id='top_up_button',  # Make sure this ID is unique if multiple buttons exist
             emoji='🛒',
             row=row
         )
@@ -822,7 +829,7 @@ class TopUpButton(discord.ui.Button):
         return bool(
             self.df_state.sett_obj and
             'vendors' in self.df_state.sett_obj and
-            self.df_state.sett_obj['vendors'] # Ensure the list isn't empty
+            self.df_state.sett_obj['vendors']  # Ensure the list isn't empty
         )
 
     def _get_resource_priority_order(self) -> list[str]:
@@ -834,7 +841,7 @@ class TopUpButton(discord.ui.Button):
 
         def fill_percentage(resource_type: str) -> float:
             current = convoy.get(resource_type, 0)
-            maximum = max(convoy.get(f'max_{resource_type}', 1), 1) # Avoid division by zero
+            maximum = max(convoy.get(f'max_{resource_type}', 1), 1)  # Avoid division by zero
             return current / maximum
 
         # Sort resource types by their fill percentage (ascending)
@@ -845,11 +852,11 @@ class TopUpButton(discord.ui.Button):
         price_key = f'{resource_type}_price'
         valid_vendors = [
             v for v in self.df_state.sett_obj.get('vendors', [])
-            if v.get(price_key) is not None # Check if vendor sells this resource
+            if v.get(price_key) is not None  # Check if vendor sells this resource
         ]
 
         if not valid_vendors:
-            return None # No vendor sells this resource
+            return None  # No vendor sells this resource
 
         # Find the vendor with the minimum price for this resource
         return min(valid_vendors, key=lambda v: v[price_key])
@@ -877,13 +884,13 @@ class TopUpButton(discord.ui.Button):
         # Variables to store the plan details
         planned_resources = []
         total_cost = 0
-        resource_purchase_details = {} # Replaces self.resource_vendors during calculation
+        resource_purchase_details = {}  # Replaces self.resource_vendors during calculation
 
         # Iterate through resources by priority
         for resource_type in sorted_resource_types:
             # Check if we still have capacity
             if remaining_weight <= 0:
-                break # Stop if convoy is full by weight
+                break  # Stop if convoy is full by weight
 
             # Calculate how much of the resource the convoy needs
             current_amount = convoy.get(resource_type, 0)
@@ -897,11 +904,11 @@ class TopUpButton(discord.ui.Button):
             # Find the best vendor for this resource
             cheapest_vendor = self._find_cheapest_vendor_for_resource(resource_type)
             if not cheapest_vendor:
-                continue # Skip if no vendor sells this resource
+                continue  # Skip if no vendor sells this resource
 
             # Determine purchase limits based on weight
-            weight_per_unit = weights.get(resource_type, 1.0) # Default weight if not specified
-            if weight_per_unit <= 0: # Avoid division by zero or infinite purchase
+            weight_per_unit = weights.get(resource_type, 1.0)  # Default weight if not specified
+            if weight_per_unit <= 0:  # Avoid division by zero or infinite purchase
                 weight_per_unit = 1.0
 
             max_units_by_weight = math.floor(remaining_weight / weight_per_unit)
@@ -918,13 +925,13 @@ class TopUpButton(discord.ui.Button):
             cost_for_resource = actual_quantity_to_buy * price
 
             # Add to plan if cost is positive (don't add free items if logic changes)
-            if cost_for_resource >= 0: # Allow free items if price is 0
+            if cost_for_resource >= 0:  # Allow free items if price is 0
                 total_cost += cost_for_resource
                 planned_resources.append(resource_type)
                 resource_purchase_details[resource_type] = {
                     'vendor_id': cheapest_vendor['vendor_id'],
                     'price': price,
-                    'quantity': actual_quantity_to_buy # Use 'quantity' for clarity
+                    'quantity': actual_quantity_to_buy  # Use 'quantity' for clarity
                 }
 
                 # Update remaining weight capacity
@@ -958,13 +965,13 @@ class TopUpButton(discord.ui.Button):
         if planned_resources and total_cost > 0:
             # Case 1: Resources can be bought, and they cost something.
             label = f'Top up {", ".join(planned_resources)} | ${total_cost:,.0f}'
-            disabled = not can_afford # Disable if cannot afford
+            disabled = not can_afford  # Disable if cannot afford
             if disabled:
-                 label += ' (Insufficient Funds)' # Add reason if disabled
+                label += ' (Insufficient Funds)'  # Add reason if disabled
         elif planned_resources and total_cost == 0:
             # Case 2: Resources can be 'bought' (potentially free?), convoy has space.
-            label = f'Top up {", ".join(planned_resources)} | $0' # Indicate free top-up
-            disabled = False # Always enable if free and possible
+            label = f'Top up {", ".join(planned_resources)} | $0'  # Indicate free top-up
+            disabled = False  # Always enable if free and possible
         elif total_cost == 0 and not planned_resources:
             # Case 3: Nothing to buy, cost is zero. Implies convoy is full of needed resources.
             label = 'Convoy is already topped up'
@@ -1004,7 +1011,9 @@ class TopUpButton(discord.ui.Button):
         # Use the provided validation function. Ensure it handles state checks if needed.
         # If validate_interaction could modify df_state, consider its placement carefully.
         # await validate_interaction(interaction=interaction, df_state=self.df_state) # Uncomment if needed
-        self.df_state.interaction = interaction # Store interaction for potential use
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
 
         # Defer the interaction response immediately to prevent timeouts,
         # especially as API calls can take time.
@@ -1012,14 +1021,14 @@ class TopUpButton(discord.ui.Button):
             await interaction.response.defer()
 
         # --- Check if there's anything to buy ---
-        if not self.resource_vendors or self.total_top_up_cost < 0: # Cost < 0 check as safeguard
+        if not self.resource_vendors or self.total_top_up_cost < 0:  # Cost < 0 check as safeguard
             # This should ideally not happen if the button wasn't disabled, but good practice.
             await interaction.followup.send('Nothing to top up or an error occurred in planning.', ephemeral=True)
             return
 
         # --- Execute Purchases ---
         try:
-            topped_up_details = [] # For building the receipt message
+            topped_up_details = []  # For building the receipt message
 
             # Iterate through the pre-calculated plan
             for resource_type, purchase_info in self.resource_vendors.items():
@@ -1048,10 +1057,10 @@ class TopUpButton(discord.ui.Button):
                 self.df_state.convoy_obj = updated_convoy_obj
 
                 # --- Receipt Message Preparation ---
-                meta = self.resource_metadata.get(resource_type, {'emoji': '📦', 'unit': 'unit'}) # Fallback metadata
+                meta = self.resource_metadata.get(resource_type, {'emoji': '📦', 'unit': 'unit'})  # Fallback metadata
                 topped_up_details.append(
                     f'- {meta['emoji']} {quantity:.0f} {resource_type.capitalize()} for '
-                    f'${price:,.0f} per {meta['unit']}' # Show per unit price
+                    f'${price:,.0f} per {meta['unit']}'  # Show per unit price
                 )
 
             # --- Success Feedback ---
@@ -1069,11 +1078,11 @@ class TopUpButton(discord.ui.Button):
             # Pass the updated df_state and the receipt embed.
             await self.menu(
                 df_state=self.df_state,
-                follow_on_embeds=[receipt_embed], # Use a consistent kwarg name
+                follow_on_embeds=[receipt_embed],  # Use a consistent kwarg name
                 **self.menu_args
             )
 
-        except RuntimeError as e: # Catch specific errors from api_calls if possible
+        except RuntimeError as e:  # Catch specific errors from api_calls if possible
             # --- Error Handling ---
             error_embed = discord.Embed(
                 color=discord.Color.red(),
@@ -1086,7 +1095,7 @@ class TopUpButton(discord.ui.Button):
             # to show the potentially unchanged state, depending on UX preference.
             # await self.menu(df_state=self.df_state, **self.menu_args)
 
-        except Exception as e: # Catch unexpected errors
+        except Exception as e:  # Catch unexpected errors
             # Log the full error for debugging
             # print(f'An unexpected error occurred during top-up callback: {e}')
             # Inform the user generically

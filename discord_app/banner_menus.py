@@ -194,7 +194,9 @@ class BannerView(discord.ui.View):
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+
         self.df_state.interaction = interaction
 
         await discord_app.main_menu_menus.main_menu(
@@ -219,7 +221,8 @@ class BannerButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await banner_inspect_menu(self.df_state, self.banner_obj)
@@ -236,7 +239,8 @@ class ProspectiveBannerButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         try:
@@ -261,7 +265,8 @@ class NewSyndicateBannerButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await self.df_state.interaction.response.send_modal(NewBannerModal(self.df_state))
@@ -481,7 +486,8 @@ class BannerInspectView(discord.ui.View):
 
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.gray, row=0)
     async def banner_inspect_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await banner_menu(self.df_state)
@@ -539,7 +545,8 @@ class LeaderboardInspectView(discord.ui.View):
 
     @discord.ui.button(label='⬅ Back', style=discord.ButtonStyle.gray, row=0)
     async def leaderboard_inspect_back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await banner_inspect_menu(self.df_state, self.banner)

@@ -101,6 +101,10 @@ async def validate_interaction(interaction: discord.Interaction, df_state: DFSta
             edit=False
         )
 
+        return False  # Do not continue
+    
+    return True  # Continue
+
 
 async def get_image_as_discord_file(url: str) -> discord.File:
     async with httpx.AsyncClient() as client:

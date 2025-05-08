@@ -198,21 +198,24 @@ class MainMenuView(discord.ui.View):
 
     @discord.ui.button(label='Sign Up', style=discord.ButtonStyle.blurple, emoji = '🖊️')
     async def register_user_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(MainMenuUsernameModal(self.df_state))
 
     @discord.ui.button(label='Create a new convoy', style=discord.ButtonStyle.blurple, emoji='➕')
     async def create_convoy_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(MainMenuConvoyNameModal(self.df_state))
 
     @discord.ui.button(label='Options', style=discord.ButtonStyle.gray, emoji='⚙️', row=0)
     async def user_options_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await options_menu(self.df_state)
@@ -286,7 +289,8 @@ class MainMenuBannerButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await banner_menus.banner_menu(self.df_state)
@@ -332,7 +336,8 @@ class MainMenuWarehouseSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.warehouse_obj = await api_calls.get_warehouse(self.values[0])
@@ -359,7 +364,8 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
@@ -391,7 +397,8 @@ class MainMenuConvoySelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = next((
@@ -430,7 +437,7 @@ async def options_menu(df_state: DFState, edit: bool=True):
         referral_code_text = f'\n\nInvite your friends to subscribe to DF+ to get 14 days for free!\n'
     if df_state.user_obj['free_days']:
         free_days = df_state.user_obj['free_days']
-    else: 
+    else:
         free_days = 0
     referral_code_text += f'\nYou currently have **{free_days}** free day(s) of DF+\nUse /redeem_free_days on Oori ledger to Claim '
     if df_exp and df_exp >= datetime.now().date():
@@ -472,7 +479,8 @@ class OptionsView(discord.ui.View):
 
     @discord.ui.button(label='Return to Main Menu', style=discord.ButtonStyle.gray, row=0)
     async def main_menu_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache, edit=False)
@@ -489,7 +497,8 @@ class ChangeUsernameButton(discord.ui.Button):
         self.df_state = df_state  # Store df_state so it can be used in callback
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await interaction.response.send_modal(ChangeUsernameModal(self.df_state))
@@ -551,7 +560,9 @@ class ConvoySelectBeforeRename(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
 
         # Store the selected convoy in df_state
         selected_convoy = next(
@@ -576,7 +587,9 @@ class ChangeConvoyNameButton(discord.ui.Button):
         self.df_state = df_state
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
 
         view = discord.ui.View()
         view.add_item(ConvoySelectBeforeRename(self.df_state))
@@ -634,7 +647,8 @@ class ReferralButton(discord.ui.Button):
         self.df_state = df_state  # Store df_state so it can be used in callback
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         # Check the expiration date again just to be sure
@@ -666,7 +680,8 @@ class AppModeButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
@@ -718,4 +733,8 @@ class CancelButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
+
         await interaction.response.edit_message(content='Action cancelled.', view=None)

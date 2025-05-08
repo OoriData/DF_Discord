@@ -156,7 +156,8 @@ class WarehouseButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         local_warehouse = next((
@@ -182,7 +183,8 @@ class SettBannerButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await discord_app.banner_menus.banner_menu(self.df_state)
@@ -240,7 +242,8 @@ class VendorSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.vendor_obj = next((

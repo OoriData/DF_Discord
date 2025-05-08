@@ -90,7 +90,8 @@ class MechVehicleDropdownView(discord.ui.View):
 
     @discord.ui.button(label='Repair wear and AP for all vehicles', style=discord.ButtonStyle.green, custom_id='repair_all', row=1, disabled=True)
     async def repair_all_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         # await interaction.response.send_message('this don\'t do nothin yet!')
@@ -119,7 +120,8 @@ class VehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.vehicle_obj = next((
@@ -156,7 +158,8 @@ class MechView(discord.ui.View):
 
     @discord.ui.button(label='Repair', style=discord.ButtonStyle.green, custom_id='repair', row=1, disabled=True)
     async def repair_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         # await interaction.response.send_message('this don\'t do nothin yet!')
@@ -164,21 +167,24 @@ class MechView(discord.ui.View):
 
     @discord.ui.button(label='Upgrade', style=discord.ButtonStyle.blurple, custom_id='upgrade', row=1)
     async def upgrade_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await upgrade_vehicle_menu(self.df_state)
 
     @discord.ui.button(label='Remove Part', style=discord.ButtonStyle.blurple, custom_id='remove', row=1)
     async def remove_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await remove_part_vehicle_menu(self.df_state)
 
     @discord.ui.button(label='Scrap', style=discord.ButtonStyle.red, custom_id='scrap', row=1)
     async def scrap_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await scrap_vehicle_menu(self.df_state)
@@ -228,14 +234,16 @@ class UpgradeVehicleView(discord.ui.View):
 
     @discord.ui.button(label='Install part from Convoy inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_convoy', row=1)
     async def install_part_from_convoy_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await part_inventory_menu(self.df_state, is_vendor=False)
 
     @discord.ui.button(label='Install part from Vendor inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_vendor', row=1)
     async def install_part_from_vendor_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         await part_inventory_menu(self.df_state, is_vendor=True)
@@ -333,7 +341,8 @@ class UpgradePartSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         all_inventories = self.df_state.vendor_obj['cargo_inventory'] + self.df_state.convoy_obj['all_cargo']
@@ -382,7 +391,8 @@ class InstallConfirmView(discord.ui.View):
 
     @discord.ui.button(label='Install part', style=discord.ButtonStyle.green, custom_id='confirm_install_part', row=1)
     async def confirm_install_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = await api_calls.add_part(
@@ -479,7 +489,8 @@ class RemovePartSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.part_obj = next((
@@ -518,7 +529,8 @@ class RemoveConfirmView(discord.ui.View):
 
     @discord.ui.button(label='Remove part', style=discord.ButtonStyle.red, custom_id='confirm_remove_part', row=1)
     async def confirm_install_button(self, interaction: discord.Interaction, button: discord.Button):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         self.df_state.convoy_obj = await api_calls.remove_part(
@@ -634,7 +646,8 @@ class ScrapVehicleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         try:

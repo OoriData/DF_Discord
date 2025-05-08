@@ -109,7 +109,8 @@ class MoveCargoVehicleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
         self.df_state.interaction = interaction
 
         dest_vehicle = next((
@@ -141,7 +142,9 @@ class MapButton(discord.ui.Button):
         self.recipient_obj = recipient_obj
 
     async def callback(self, interaction: discord.Interaction):
-        await validate_interaction(interaction=interaction, df_state=self.df_state)
+        if not await validate_interaction(interaction=interaction, df_state=self.df_state):
+            return
+        self.df_state.interaction = interaction
 
         await interaction.response.defer()
 

@@ -84,6 +84,7 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         guild_banner_info = '- N/a'
 
     if df_state.user_obj['syndicate_allegiance']:
+        import pprint;print(pprint.pformat(df_state.user_obj['syndicate_allegiance']), flush=True)
         syndicate_allegiance = next(
             a for a in df_state.user_obj['allegiances']
             if a['allegiance_id'] == df_state.user_obj['syndicate_allegiance']['allegiance_id']

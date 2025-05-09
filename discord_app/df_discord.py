@@ -183,6 +183,7 @@ class DesolateCog(commands.Cog):
         welcome_embed = discord.Embed(description='\n'.join([
             f"## Welcome to the {DF_LOGO_EMOJI} Desolate Frontiers server, {member.mention}!",
             f"We're glad to have you! Use the `/desolate_frontiers` command in one of the gameplay channels ({gameplay_channel_1.jump_url}, {gameplay_channel_2.jump_url}, or {gameplay_channel_3.jump_url}) to get started.",
+            "After you finish the tutorial, several more channels in this server open up.",
             "-# If you have any questions, feel free to message Choccy or any of the other yellow names! We're happy to help :)",
         ]))
 

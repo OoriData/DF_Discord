@@ -204,21 +204,39 @@ def format_clearance_info(cargo: dict) -> str:
         creation_date_str = cargo.get('creation_date')
         if not creation_date_str:
             return '' # No date to check against
-
-        cargo_age = datetime.fromisoformat(creation_date_str).replace(tzinfo=timezone.utc)
+        
+        cargo_creation_dt = datetime.fromisoformat(creation_date_str).replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
-        shelf_life = timedelta(days=5)
 
-        if cargo_age < now - shelf_life:
-            # Calculate how many days past the shelf life it is
-            days_overdue = (now - cargo_age) - shelf_life
-            # Calculate discount: 20% per full day overdue, capped at 40% (for day 7)
-            discount_percentage = min(days_overdue.days * 20, 40)
+        # Define constants for clarity
+        MSRP_DURATION = timedelta(days=5)
+        # Clearance sale starts if cargo is older than MSRP_DURATION by more than this grace period.
+        # Original logic: sale if age > MSRP_DURATION + timedelta(days=1)
+        CLEARANCE_SALE_GRACE_PERIOD = timedelta(days=1)
+
+        DAILY_DISCOUNT_RATE = 20  # Percent per day
+        MAX_DISCOUNT_PERCENTAGE = 40
+
+        cargo_actual_age = now - cargo_creation_dt
+        
+        # Calculate how long ago the MSRP duration ended for this cargo.
+        # If positive, MSRP duration has passed. If negative, still within MSRP.
+        time_since_msrp_ended = cargo_actual_age - MSRP_DURATION
+
+        # Check if cargo is old enough to be on clearance sale.
+        # Sale starts if cargo_actual_age > MSRP_DURATION + CLEARANCE_SALE_GRACE_PERIOD
+        if time_since_msrp_ended > CLEARANCE_SALE_GRACE_PERIOD:
+            # Cargo is on clearance. Discount is based on the number of full days past MSRP_DURATION.
+            # e.g., if time_since_msrp_ended is (1 day + 1 sec), discount_basis_days = 1 -> 20% discount.
+            # e.g., if time_since_msrp_ended is (2 days), discount_basis_days = 2 -> 40% discount.
+            discount_basis_days = time_since_msrp_ended.days
+            
+            discount_percentage = min(discount_basis_days * DAILY_DISCOUNT_RATE, MAX_DISCOUNT_PERCENTAGE)
             return f'\n  - *Clearance! {discount_percentage}% off!* 🏷️'  # + f' `CARGO IS {(now - cargo_age).days} DAYS OLD`'
     except (ValueError, TypeError):
         # Handle potential errors during date parsing/comparison gracefully
         return '' # Don't add clearance info if dates are problematic
-    return ''
+    return '' # Not on sale or an error occurred
 
 
 async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:

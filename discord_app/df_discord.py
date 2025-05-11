@@ -52,7 +52,7 @@ class DesolateCog(commands.Cog):
         logger.info(ansi_color(f'Gameplay channel 3: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID).name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
-        logger.debug(ansi_color('Initializing settlements cache...', 'yellow'))
+        logger.debug(ansi_color('Initializing settlements cache…', 'yellow'))
         self.settlements_cache = []
         self.df_map_obj = None
         while not self.df_map_obj:  # Retry logic for bootup
@@ -71,7 +71,7 @@ class DesolateCog(commands.Cog):
 
         self.find_roles()
 
-        logger.debug(ansi_color('Initializing users cache...', 'yellow'))
+        logger.debug(ansi_color('Initializing users cache…', 'yellow'))
         self.df_users_cache = None
         self.update_user_cache.start()
         await self.cache_ready.wait()  # Wait until cache is initialized
@@ -82,7 +82,7 @@ class DesolateCog(commands.Cog):
         df_notification_channel = self.bot.get_channel(DF_CHANNEL_ID)
         logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
 
-        logger.debug(ansi_color('Initializing notification loop...', 'yellow'))
+        logger.debug(ansi_color('Initializing notification loop…', 'yellow'))
         self.notifier.start()
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
@@ -265,7 +265,7 @@ class DesolateCog(commands.Cog):
                                     content = message['content'].strip()
 
                                     if not content or content in seen_this_round:
-                                        logger.error(ansi_color('Got duplicate notification, skipping...', 'red'))
+                                        logger.error(ansi_color('Got duplicate notification, skipping…', 'red'))
                                         continue
 
                                     seen_this_round.add(content)

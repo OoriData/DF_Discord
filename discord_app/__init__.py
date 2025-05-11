@@ -65,7 +65,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
         )
 
     async def callback(self, interaction):
-        new_message = await interaction.channel.send(content='-# Loading...')
+        new_message = await interaction.channel.send(content='-# Loading…')
 
         import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
         await discord_app.main_menu_menus.main_menu(
@@ -250,7 +250,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
             ])
         case 6:
             tutorial_embed.description = '\n'.join([
-                "### Finishing this ~~fight~~ delivery... 🚛",
+                "### Finishing this ~~fight~~ delivery… 🚛",
                 f"1. Gray `{df_state.sett_obj['name']}` button",
                 "- `Top up fuel | $XXX` button to refill your resources",
                 "- Gray `Convoy` button",
@@ -261,7 +261,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
             ])
         case 7:
             tutorial_embed.description = '\n'.join([
-                "### ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱",
+                "### …and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱",
                 "If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.",
             ])
         case _:
@@ -308,7 +308,7 @@ This thing's just out of Alpha, so things *will* break and the game *is not* fin
 - Now that you have a vehicle, prepared resources, and a delivery to fulfill, you're ready to get on the road! 🛣️
   - Use the gray `Convoy` button, hit `Embark on new Journey`, and select the destination of the cargo you just bought.
   - Your convoy will present you the path it will take to get there and how many resources you'll use in the process; hit `Embark upon Journey` to send them on their way!
-- ...and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱
+- …and now you wait! Desolate Frontiers is an idle game; you'll get a ping when your convoy arrives. 📱
   - If you're curious about its progress, you can use **`/desolate-frontiers`** to check up on it.
 
 Happy trails! The game will be updated frequently, and we will be listening closely for any feedback you've got. Have fun!

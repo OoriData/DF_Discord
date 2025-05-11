@@ -757,7 +757,7 @@ class TopUpButton(discord.ui.Button):
         menu (callable): The function to call to refresh or display the parent menu after the action is performed.
         menu_args (dict): Arguments to pass to the menu function.
         resource_vendors (dict): Stores the details of vendors and quantities for each resource planned for purchase.
-                                 Structure: { 'resource_type': {'vendor_id': ..., 'price': ..., 'quantity': ...} }
+                                 Structure: { 'resource_type': {'vendor_id': …, 'price': …, 'quantity': …} }
         total_top_up_cost (int): The total calculated cost for topping up resources.
     """
     def __init__(self, df_state: DFState, menu: callable, menu_args: dict | None = None, row: int = 1):
@@ -872,7 +872,7 @@ class TopUpButton(discord.ui.Button):
             - int: The total calculated cost of the top-up plan.
             - dict: A dictionary detailing the vendor, price, and quantity for each
                     resource in the plan. Structure:
-                    { 'resource_type': {'vendor_id': ..., 'price': ..., 'quantity': ...} }
+                    { 'resource_type': {'vendor_id': …, 'price': …, 'quantity': …} }
         """
         convoy = self.df_state.convoy_obj
         weights = self.df_state.misc.get('resource_weights', {})

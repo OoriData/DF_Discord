@@ -357,7 +357,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                 if 3 < spot['leaderboard_position'] <= 5:
                     condensed_internal_leaderboard.append(user_id)
         else:
-            condensed_internal_leaderboard.append('...')  # Add ellipsis
+            condensed_internal_leaderboard.append('…')  # Add ellipsis
             for user_id, spot in internal_leaderboard_data.items():  # Add the users around allegiance position
                 if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
                     condensed_internal_leaderboard.append(user_id)
@@ -372,7 +372,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
         for user_id, spot in internal_leaderboard_data.items():  # First pass - process actual user entries
             if user_id in condensed_allegiance_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
-                if '...' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
+                if '…' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
                     internal_formatted_output.append('-# •••')
                     added_ellipsis = True
 
@@ -412,7 +412,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
                 if 3 < spot['leaderboard_position'] <= 5:
                     condensed_global_leaderboard.append(banner_id)
         else:
-            condensed_global_leaderboard.append('...')  # Add ellipsis
+            condensed_global_leaderboard.append('…')  # Add ellipsis
             for banner_id, spot in global_leaderboard_data.items():  # Add the banners around allegiance position
                 if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
                     condensed_global_leaderboard.append(banner_id)
@@ -427,7 +427,7 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
         for banner_id, spot in global_leaderboard_data.items():  # First pass - process actual banner entries
             if banner_id in condensed_banner_ids:
                 # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
-                if '...' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
+                if '…' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
                     global_leaderboard_string.append('•••')
                     added_ellipsis = True
 

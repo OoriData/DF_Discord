@@ -92,7 +92,7 @@ async def main_menu(
                     eta = convoy['journey']['eta']
                     convoy_descs.extend([
                         f'## {convoy['name']} 🛣️\n'
-                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.1f}%** (ETA: {discord_timestamp(eta, 't')})',
+                        f'In transit to **{destination['settlements'][0]['name']}**: **{progress_percent:.1f}%** (ETA: {discord_timestamp(eta, 'f')})',
                         '\n'.join([f'- {vehicle['name']} {get_vehicle_emoji(vehicle['shape'])}' for vehicle in convoy['vehicles']])
                     ])
                 else:

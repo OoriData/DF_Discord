@@ -25,7 +25,7 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, pag
     display_messages = []
     for message in dialogue_obj['messages']:
         # display_messages.append(f'**{message['role']}**:\n{message['content']}')
-        timestamp = discord_timestamp(format_letter='f', formatted_time=message['timestamp'])
+        timestamp = discord_timestamp(formatted_time=message['timestamp'], format_letter='f')
         display_messages.append(f'## {timestamp}:\n{message['content']}')
     if not display_messages:
         display_messages = ['Nobody\'s spoken here yet.']

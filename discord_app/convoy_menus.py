@@ -137,7 +137,7 @@ async def make_convoy_embed(
             extra_embed.description = '\n' + '\n'.join([
                 '### Journey',
                 f'Destination 📍: **{destination['settlements'][0]['name']}**',
-                f'ETA ⏰: **{discord_timestamp(eta, 'R')}** ({discord_timestamp(eta, 't')})',
+                f'ETA ⏰: **{discord_timestamp(eta, 'f')}**',
                 f'Progress 🏁: **{progress_percent:.1f}%** ({progress_in_miles:.0f} miles)'
             ])
         else:
@@ -150,7 +150,7 @@ async def make_convoy_embed(
             )
             extra_embed.add_field(
                 name='ETA ⏰',
-                value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 't')}'
+                value=f'**{discord_timestamp(eta, 'R')}**\n{discord_timestamp(eta, 'f')}'
             )
             extra_embed.add_field(
                 name='Progress 🏁',
@@ -187,7 +187,7 @@ async def make_convoy_embed(
         )
         eta_discord_time = discord_timestamp(
             formatted_time=datetime.now(timezone.utc) + timedelta(minutes=prospective_journey_plus_misc['delta_t']),
-            format_letter='t'
+            format_letter='f'
         )
 
         distance_km = 50 * len(prospective_journey_plus_misc['journey']['route_x'])

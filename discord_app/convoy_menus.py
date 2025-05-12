@@ -302,16 +302,16 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
             if verbose:
                 vehicle_str += '\n'.join([
                     f'- AP: **{vehicle['ap']:.0f}** / {vehicle['max_ap']}',
-                    f'- Efficiency: **{vehicle['efficiency']:.0f}** / 100',
-                    f'- Top Speed: **{vehicle['top_speed']:.0f}** / 100',
-                    f'- Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
+                    f'- Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
+                    f'- Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
+                    f'- Offroad Capability 🏔️: **{vehicle['offroad_capability']:.0f}** / 100',
                     ''
                 ])
 
             if vehicle['electric']:
                 battery = next(c for c in vehicle['cargo'] if c.get('kwh') is not None)
                 battery_emoji = '🔋' if battery['kwh'] > (battery['capacity'] * 0.2) else '🪫'
-                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.2f}** / {battery['capacity']} kWh\n'
+                vehicle_str += f'- Charge {battery_emoji}: **{battery['kwh']:.3f}** / {battery['capacity']} kWh\n'
 
             vehicle_str += f'- Cargo load: **{vehicle['total_cargo_volume']:,.0f}** / {vehicle['cargo_capacity']:,.0f} liters'
             vehicle_str += f' & **{vehicle['total_cargo_weight']:,.0f}** / {vehicle['weight_capacity']:,.0f} kg'
@@ -330,8 +330,8 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
         total_cargo_weight = sum(vehicle['total_cargo_weight'] for vehicle in vehicles)
         total_weight_capacity = sum(vehicle['weight_capacity'] for vehicle in vehicles)
 
-        vehicles_str += f'\n**Total space across convoy**: **{total_cargo_volume:,.2f}** / {total_volume_capacity} liters'
-        vehicles_str += f' & **{total_cargo_weight:,.2f}** / {total_weight_capacity} kg'
+        vehicles_str += f'\n**Total convoy cargo load**: **{total_cargo_volume:,.0f}** / {total_volume_capacity} liters'
+        vehicles_str += f' & **{total_cargo_weight:,.0f}** / {total_weight_capacity} kg'
 
     else:
         vehicles_str = '*No vehicles in convoy. Buy one at the dealership.*'

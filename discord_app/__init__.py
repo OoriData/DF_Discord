@@ -204,7 +204,7 @@ def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discor
                 f"1. Gray `{df_state.sett_obj['name']}` button to check out the vendors",
                 f"- Use the `Select vendor to visit` dropdown menu to select {DF_LOGO_EMOJI}` {df_state.sett_obj['name']} dealership`",
                 "- Blurple `Buy (Resources, Vehicles, Cargo)` button",
-                f"- Select from the `Vehicle Inventory` dropdown. Vehicles you can afford are marked with {DF_LOGO_EMOJI}",
+                "- Select a vehicle to buy from the `Vehicle Inventory` dropdown",
                 "- The block will update, allowing you to inspect the chosen vehicle. If it suits you, hit the green `Buy Vehicle| $X,XXX` button.",
                 "  - To inspect a different vehicle, hit the gray `⬅ Back` button",
             ])

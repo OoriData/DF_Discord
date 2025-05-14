@@ -3,6 +3,7 @@
 """ Discord Frontend """
 from __future__             import annotations
 from datetime               import datetime
+from zoneinfo               import ZoneInfo
 import                             io
 import                             os
 
@@ -23,6 +24,7 @@ DF_WELCOME_CHANNEL_ID = int(os.environ['DF_WELCOME_CHANNEL_ID'])
 DF_GAMEPLAY_CHANNEL_1_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_1_ID'])
 DF_GAMEPLAY_CHANNEL_2_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_2_ID'])
 DF_GAMEPLAY_CHANNEL_3_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_3_ID'])
+DF_LEADERBOARD_CHANNEL_ID = int(os.environ['DF_LEADERBOARD_CHANNEL_ID'])
 
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 
@@ -32,6 +34,8 @@ DF_TEXT_LOGO_URL = 'https://www.oori.dev/assets/branding/df_TextLogo_FullColor.p
 OORI_WHITE = (219, 226, 233)
 OORI_YELLOW = (243, 213, 78)
 OORI_RED = (138, 43, 43)
+
+MOUNTAIN_TIME = ZoneInfo('America/Denver')
 
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
@@ -335,7 +339,6 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
         '🚙': {
             'SUV', 'long_SUV', 'CUV',
             '4x4', '4x4_APC',
-            'minivan', 'cabover_minivan',
         },
         '🏎️': {'2-door_sedan', 'convertible', 'dune_buggy', 'tracked_vehicle'},
         '🛻': {
@@ -346,8 +349,8 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
             '2-door_UTV', '4-door_UTV',
         },
         '🚐': {
+            'minivan', 'cabover_minivan',
             'van', 'cargo_van',
-            'cabover_minivan',
         },
         '🚌': {'bus', 'coach',},
         '🚚': {

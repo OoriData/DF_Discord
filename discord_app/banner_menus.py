@@ -385,13 +385,14 @@ def format_global_leaderboard_for_display(global_leaderboard_data: dict, condens
     return global_leaderboard_string
 
 
-def format_top_n_global_leaderboard(leaderboard_data: dict, top_n: int = 10) -> list[str]:
+def format_top_n_global_leaderboard(leaderboard_data: dict, top_n: int = 10, source_stats_from_archive: bool = False) -> list[str]:
     """
     Formats a global leaderboard to display the top N entries.
     Assumes leaderboard_data is a dict {banner_id: {'leaderboard_position': int, 'name': str, 'stats': ...}}.
+    If source_stats_from_archive is True, it will attempt to use the latest stats from entry['stats']['archive'].
     """
     if not leaderboard_data:
-        return ["-# No data available."]
+        return ['-# No data available.']
 
     valid_entries = [entry for entry in leaderboard_data.values() if 'leaderboard_position' in entry and 'name' in entry]
     
@@ -404,27 +405,41 @@ def format_top_n_global_leaderboard(leaderboard_data: dict, top_n: int = 10) -> 
     for i, entry in enumerate(sorted_entries):
         if i >= top_n:
             if len(sorted_entries) > top_n:
-                output_lines.append("-# ...and more!")
+                output_lines.append('-# ...and more!')
             break
 
         pos = entry['leaderboard_position']
         name = entry['name']
-        stats = entry.get('stats', {})
-
-        line = f"{pos}. {name}"
-        if pos == 1: line += " 🥇"
-        elif pos == 2: line += " 🥈"
-        elif pos == 3: line += " 🥉"
         
+        # Determine which stats dictionary to use
+        stats_to_use = {}
+        raw_stats_field = entry.get('stats') or {}  # Ensure raw_stats_field is a dict, even if entry['stats'] is None
+
+        if source_stats_from_archive:
+            archive_data = raw_stats_field.get('archive', {})
+            if archive_data:
+                # Assuming date keys are sortable (e.g., "YYYY-MM-DD")
+                latest_date = max(archive_data.keys(), default=None)
+                if latest_date:
+                    stats_to_use = archive_data[latest_date]
+        # Use the raw_stats_field directly if not sourcing from archive,
+        # or if archive sourcing was attempted but yielded no specific stats.
+        elif not stats_to_use:  # Fallback if archive sourcing didn't populate
+            stats_to_use = raw_stats_field
+
+        line = f'{pos}. {name}'
+        if pos == 1: line += ' 🥇'
+        elif pos == 2: line += ' 🥈'
+        elif pos == 3: line += ' 🥉'
         output_lines.append(line)
         
-        volume_moved = stats.get('total_volume_moved', 0)
-        output_lines.append(f"  - Total volume moved: **{volume_moved:,}L**")
+        volume_moved = stats_to_use.get('total_volume_moved', 0)
+        output_lines.append(f'  - Total volume moved: **{volume_moved:,}L**')
 
     if not output_lines and leaderboard_data:
-        return ["-# Leaderboard data found, but could not be formatted (check structure)."]
+        return ['-# Leaderboard data found, but could not be formatted (check structure).']
     if not output_lines and not leaderboard_data:
-        return ["-# No data available."]
+        return ['-# No data available.']
         
     return output_lines
 

@@ -84,7 +84,6 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         guild_banner_info = '- N/a'
 
     if df_state.user_obj['syndicate_allegiance']:
-        import pprint;print(pprint.pformat(df_state.user_obj['syndicate_allegiance']), flush=True)
         syndicate_allegiance = next(
             a for a in df_state.user_obj['allegiances']
             if a['allegiance_id'] == df_state.user_obj['syndicate_allegiance']['allegiance_id']
@@ -132,6 +131,303 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
             await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
         await df_state.interaction.followup.send(embed=embed, view=view)
+
+# --- LEADERBOARD UTILITY FUNCTIONS ---
+
+def create_condensed_internal_leaderboard(internal_leaderboard_data: dict, allegiance_id: str) -> list[str]:
+    """
+    Creates a condensed list of user IDs for an internal banner leaderboard display.
+    Highlights top 3, and the area around the specified allegiance's user.
+    """
+    condensed_internal_leaderboard = []
+    allegiance_pos = None
+
+    # Sort by leaderboard_position to ensure consistent processing
+    sorted_spots = sorted(internal_leaderboard_data.items(), key=lambda item: item[1]['leaderboard_position'])
+
+    for user_id, spot in sorted_spots:  # Find allegiance position
+        if spot['allegiance']['allegiance_id'] == allegiance_id:
+            allegiance_pos = spot['leaderboard_position']
+            break
+
+    if allegiance_pos is None: # Should not happen if allegiance_id is valid
+        # Fallback: just take top 5 if user not found for some reason
+        return [user_id for user_id, spot in sorted_spots[:5]]
+
+    # Collect user_ids for display
+    processed_user_ids = set()
+
+    # Add top 3
+    for user_id, spot in sorted_spots:
+        if spot['leaderboard_position'] <= 3:
+            condensed_internal_leaderboard.append(user_id)
+            processed_user_ids.add(user_id)
+        else:
+            break # Already sorted, so we can break
+
+    if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5 and not already added
+        for user_id, spot in sorted_spots:
+            if 3 < spot['leaderboard_position'] <= 5 and user_id not in processed_user_ids:
+                condensed_internal_leaderboard.append(user_id)
+                processed_user_ids.add(user_id)
+    else: # Allegiance is outside top 5
+        # Check if there's a gap between top 3 and user's surrounding positions
+        # Ensure condensed_internal_leaderboard is not empty before accessing its last element
+        if condensed_internal_leaderboard:
+            last_top_pos = internal_leaderboard_data[condensed_internal_leaderboard[-1]]['leaderboard_position']
+            if allegiance_pos -1 > last_top_pos + 1:
+                condensed_internal_leaderboard.append('…')
+        elif allegiance_pos > 1: # If top 3 was empty and user is not #1, ellipsis might be needed
+             condensed_internal_leaderboard.append('…')
+
+
+        for user_id, spot in sorted_spots:  # Add the users around allegiance position
+            if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1] and \
+               user_id not in processed_user_ids:
+                condensed_internal_leaderboard.append(user_id)
+                processed_user_ids.add(user_id)
+
+    # Ensure unique entries while preserving order for '…'
+    final_list = []
+    seen = set()
+    for item in condensed_internal_leaderboard:
+        if item == '…':
+            if 'ellipsis' not in seen: # Allow only one ellipsis
+                final_list.append(item)
+                seen.add('ellipsis')
+        elif item not in seen:
+            final_list.append(item)
+            seen.add(item)
+    return final_list
+
+
+def format_internal_leaderboard_for_display(internal_leaderboard_data: dict, condensed_user_ids: list[str], user_id_to_highlight: str) -> list[str]:
+    """ Formats the condensed internal leaderboard data for display, highlighting a specific user. """
+    internal_formatted_output = []
+    
+    # Create a map of position to user_id for easier lookup from condensed_user_ids
+    # This assumes condensed_user_ids contains actual user_ids and potentially '...'
+    display_order_map = {uid: internal_leaderboard_data[uid] for uid in condensed_user_ids if uid != '…' and uid in internal_leaderboard_data}
+    
+    # Sort the spots to be displayed by their actual leaderboard position
+    sorted_display_spots = sorted(display_order_map.values(), key=lambda x: x['leaderboard_position'])
+
+    last_pos = 0
+    # Determine if an ellipsis should be displayed based on its presence in condensed_user_ids
+    # and the positions of the surrounding actual entries.
+    
+    processed_ellipsis = False
+    temp_output = []
+
+    for spot_data in sorted_display_spots:
+        user_id = next((uid for uid, data in display_order_map.items() if data == spot_data), None)
+        if not user_id: continue
+
+        current_pos = spot_data['leaderboard_position']
+
+        # Check if '...' should be inserted before this entry
+        if '…' in condensed_user_ids and not processed_ellipsis:
+            # Find index of '...' and current user_id in original condensed_user_ids
+            try:
+                ellipsis_idx = condensed_user_ids.index('…')
+                user_idx_in_condensed = condensed_user_ids.index(user_id)
+                # If '...' comes before this user_id in condensed_user_ids and creates a visual gap
+                if ellipsis_idx < user_idx_in_condensed and current_pos > last_pos + 1 and last_pos != 0:
+                    temp_output.append('-# •••')
+                    processed_ellipsis = True
+            except ValueError:  # user_id might not be in condensed_user_ids if list is malformed
+                pass
+
+        position_line = (
+            f'{spot_data['leaderboard_position']}. **{spot_data['username']}**'
+            if user_id == user_id_to_highlight
+            else f'{spot_data['leaderboard_position']}. {spot_data['username']}'
+        )
+        match spot_data['leaderboard_position']:
+            case 1: position_line += '🥇'
+            case 2: position_line += '🥈'
+            case 3: position_line += '🥉'
+        volume_line = f'  - Total volume moved: **{spot_data['allegiance']['stats'].get('total_volume_moved', 0)}L**'
+        temp_output.extend([position_line, volume_line])
+        last_pos = current_pos
+
+    # If '...' was intended to be at the end (e.g., after top 3, and user is far below)
+    if '…' in condensed_user_ids and not processed_ellipsis and condensed_user_ids[-1] == '…':
+        temp_output.append('-# •••')
+
+    internal_formatted_output = temp_output
+    return internal_formatted_output
+
+
+def create_condensed_global_leaderboard(global_leaderboard_data: dict, allegiance_banner_id: str) -> list[str]:
+    """ Creates a condensed list of banner IDs for a global leaderboard display, focusing on a specific banner. """
+    # This is a direct port of the logic from banner_menus, assuming it's sufficient.
+    condensed_global_leaderboard = []
+    allegiance_pos = None
+    
+    sorted_banners = sorted(global_leaderboard_data.items(), key=lambda item: item[1]['leaderboard_position'])
+
+    for banner_id, spot in sorted_banners:
+        if banner_id == allegiance_banner_id:
+            allegiance_pos = spot['leaderboard_position']
+        if spot['leaderboard_position'] <= 3:
+            if banner_id not in condensed_global_leaderboard:  # Avoid duplicates if allegiance banner is in top 3
+                condensed_global_leaderboard.append(banner_id)
+
+    if allegiance_pos is None:
+        return []  # Allegiance banner not found
+
+    if allegiance_pos <= 5:
+        for banner_id, spot in sorted_banners:
+            if 3 < spot['leaderboard_position'] <= 5 and banner_id not in condensed_global_leaderboard:
+                condensed_global_leaderboard.append(banner_id)
+    else: # Allegiance banner is outside top 5
+        # Check if ellipsis is needed
+        last_top_pos = 0
+        if condensed_global_leaderboard: # If top 3 were added
+            # Get the position of the last banner added from top 3
+            last_top_banner_id = condensed_global_leaderboard[-1]
+            if last_top_banner_id in global_leaderboard_data:
+                 last_top_pos = global_leaderboard_data[last_top_banner_id]['leaderboard_position']
+        
+        if allegiance_pos -1 > last_top_pos + 1 :  # If there's a gap
+            condensed_global_leaderboard.append('…')
+
+        for banner_id, spot in sorted_banners:
+            if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1] and \
+               banner_id not in condensed_global_leaderboard:
+                condensed_global_leaderboard.append(banner_id)
+    
+    # Ensure unique entries while preserving order for '…'
+    final_list = []
+    seen_items = set()
+    # Sort by original position before final processing to maintain visual order
+    # Need a way to sort '...' appropriately or handle its insertion carefully.
+    # For now, rely on the construction logic for order.
+    
+    # Re-sort based on actual position for items that are not '...'
+    # This is tricky because '...' breaks direct sorting.
+    # The create_condensed logic should ideally place '...' correctly.
+    
+    # Simple uniqueness filter, assuming create_condensed handles order
+    for item in condensed_global_leaderboard:
+        if item == '…':
+            if 'ellipsis' not in seen_items:
+                final_list.append(item)
+                seen_items.add('ellipsis')  # Use a generic key for ellipsis
+        elif item not in seen_items:
+            final_list.append(item)
+            seen_items.add(item)
+            
+    return final_list
+
+
+def format_global_leaderboard_for_display(global_leaderboard_data: dict, condensed_banner_ids: list[str], banner_id_to_highlight: str) -> list[str]:
+    """Formats the condensed global leaderboard data for display, highlighting a specific banner."""
+    global_leaderboard_string = []
+    last_pos = 0
+    processed_ellipsis = False
+
+    # Filter out '...' for sorting, then re-insert based on condensed_banner_ids logic
+    actual_banner_ids_to_display = [bid for bid in condensed_banner_ids if bid != '…' and bid in global_leaderboard_data]
+    
+    # Sort these actual banner IDs by their leaderboard position
+    sorted_banner_spots_data = sorted(
+        [global_leaderboard_data[bid] for bid in actual_banner_ids_to_display],
+        key=lambda x: x['leaderboard_position']
+    )
+
+    # Iterate based on the original condensed_banner_ids to respect '...' placement
+    current_sorted_idx = 0
+    for item_in_condensed_list in condensed_banner_ids:
+        if item_in_condensed_list == '…':
+            if not processed_ellipsis : # Add ellipsis only once if multiple were somehow added
+                # Check if this ellipsis is logically placed (i.e., creates a visual gap)
+                # This is hard to do perfectly without knowing the next actual item's position from condensed_banner_ids
+                # A simpler rule: if '...' is present, and we haven't added it, add it.
+                # The create_condensed function should be responsible for placing '...' correctly.
+                global_leaderboard_string.append('•••')
+                processed_ellipsis = True
+            continue
+
+        # Find the spot data for the current banner_id from the sorted list
+        # This assumes item_in_condensed_list is an actual banner_id here
+        if current_sorted_idx < len(sorted_banner_spots_data):
+            spot = next((s for s in sorted_banner_spots_data if global_leaderboard_data.get(item_in_condensed_list) == s), None)
+            if not spot: # Should not happen if condensed_banner_ids are valid
+                # Try to find by matching banner_id if spot object comparison fails due to dict nuances
+                if item_in_condensed_list in global_leaderboard_data:
+                    spot = global_leaderboard_data[item_in_condensed_list]
+                else:
+                    continue # Skip if banner_id from condensed list is not in global_leaderboard_data
+
+            # Ensure we are processing in sorted order from sorted_banner_spots_data
+            # This loop structure is a bit complex due to '...'. A simpler way might be to iterate sorted_banner_spots_data
+            # and decide when to print '...' based on gaps and its presence in condensed_banner_ids.
+            # For now, let's use the current spot.
+
+            current_banner_id = item_in_condensed_list # This is the banner_id we are processing
+
+            position_line = (
+                f"{spot['leaderboard_position']}. **{spot['name']}**"
+                if current_banner_id == banner_id_to_highlight
+                else f"{spot['leaderboard_position']}. {spot['name']}"
+            )
+            match spot['leaderboard_position']:
+                case 1: position_line += '🥇'
+                case 2: position_line += '🥈'
+                case 3: position_line += '🥉'
+            volume_line = f"  - Total volume moved: **{spot['stats'].get('total_volume_moved', 0)}L**"
+            global_leaderboard_string.extend([position_line, volume_line])
+            last_pos = spot['leaderboard_position']
+            current_sorted_idx += 1 # Move to the next item in the pre-sorted list
+        
+    return global_leaderboard_string
+
+
+def format_top_n_global_leaderboard(leaderboard_data: dict, top_n: int = 10) -> list[str]:
+    """
+    Formats a global leaderboard to display the top N entries.
+    Assumes leaderboard_data is a dict {banner_id: {'leaderboard_position': int, 'name': str, 'stats': ...}}.
+    """
+    if not leaderboard_data:
+        return ["-# No data available."]
+
+    valid_entries = [entry for entry in leaderboard_data.values() if 'leaderboard_position' in entry and 'name' in entry]
+    
+    sorted_entries = sorted(
+        valid_entries,
+        key=lambda x: x['leaderboard_position']
+    )
+
+    output_lines = []
+    for i, entry in enumerate(sorted_entries):
+        if i >= top_n:
+            if len(sorted_entries) > top_n:
+                output_lines.append("-# ...and more!")
+            break
+
+        pos = entry['leaderboard_position']
+        name = entry['name']
+        stats = entry.get('stats', {})
+
+        line = f"{pos}. {name}"
+        if pos == 1: line += " 🥇"
+        elif pos == 2: line += " 🥈"
+        elif pos == 3: line += " 🥉"
+        
+        output_lines.append(line)
+        
+        volume_moved = stats.get('total_volume_moved', 0)
+        output_lines.append(f"  - Total volume moved: **{volume_moved:,}L**")
+
+    if not output_lines and leaderboard_data:
+        return ["-# Leaderboard data found, but could not be formatted (check structure)."]
+    if not output_lines and not leaderboard_data:
+        return ["-# No data available."]
+        
+    return output_lines
+
 
 class BannerView(discord.ui.View):
     def __init__(self, df_state: DFState, server_banner: dict):
@@ -339,126 +635,17 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
         if a['banner']['banner_id'] == banner['banner_id']
     ), None)
 
-    def create_condensed_internal_leaderboard(internal_leaderboard_data, allegiance_id):
-        condensed_internal_leaderboard = []
-        allegiance_pos = None
-
-        for user_id, spot in internal_leaderboard_data.items():  # Find allegiance position and collect top 3 users
-            if spot['allegiance']['allegiance_id'] == allegiance_id:  # Find the allegiance (and therefor user) we're looking for
-                allegiance_pos = spot['leaderboard_position']
-            if spot['leaderboard_position'] <= 3:
-                condensed_internal_leaderboard.append(user_id)  # Add top 3 user IDs
-
-        if allegiance_pos is None:
-            return []  # Return empty if allegiance not found
-
-        if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
-            for user_id, spot in internal_leaderboard_data.items():
-                if 3 < spot['leaderboard_position'] <= 5:
-                    condensed_internal_leaderboard.append(user_id)
-        else:
-            condensed_internal_leaderboard.append('…')  # Add ellipsis
-            for user_id, spot in internal_leaderboard_data.items():  # Add the users around allegiance position
-                if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
-                    condensed_internal_leaderboard.append(user_id)
-
-        return condensed_internal_leaderboard
-
-    def format_internal_leaderboard_for_display(internal_leaderboard_data, condensed_allegiance_ids):
-        internal_formatted_output = []
-        last_pos = 0
-        added_ellipsis = False
-
-        for user_id, spot in internal_leaderboard_data.items():  # First pass - process actual user entries
-            if user_id in condensed_allegiance_ids:
-                # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
-                if '…' in condensed_allegiance_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
-                    internal_formatted_output.append('-# •••')
-                    added_ellipsis = True
-
-                position_line = (
-                    f'{spot['leaderboard_position']}. **{spot['username']}**'
-                    if user_id == allegiance['user_id']
-                    else f'{spot['leaderboard_position']}. {spot['username']}'
-                )  # Bold the name if it's the current user
-                match spot['leaderboard_position']:
-                    case 1:
-                        position_line += '🥇'
-                    case 2:
-                        position_line += '🥈'
-                    case 3:
-                        position_line += '🥉'
-                volume_line = f'  - Total volume moved: **{spot['allegiance']['stats'].get('total_volume_moved', 0)}L**'
-                internal_formatted_output.extend([position_line, volume_line])
-                last_pos = spot['leaderboard_position']
-
-        return internal_formatted_output
-
-    def create_condensed_global_leaderboard(global_leaderboard_data, allegiance_banner_id):
-        condensed_global_leaderboard = []
-        allegiance_pos = None
-
-        for banner_id, spot in global_leaderboard_data.items():  # Find allegiance position and collect top 3 banners
-            if banner_id == allegiance_banner_id:
-                allegiance_pos = spot['leaderboard_position']
-            if spot['leaderboard_position'] <= 3:
-                condensed_global_leaderboard.append(banner_id)  # Add top 3 banner IDs
-
-        if allegiance_pos is None:
-            return []  # Return empty if allegiance not found
-
-        if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5
-            for banner_id, spot in global_leaderboard_data.items():
-                if 3 < spot['leaderboard_position'] <= 5:
-                    condensed_global_leaderboard.append(banner_id)
-        else:
-            condensed_global_leaderboard.append('…')  # Add ellipsis
-            for banner_id, spot in global_leaderboard_data.items():  # Add the banners around allegiance position
-                if spot['leaderboard_position'] in [allegiance_pos - 1, allegiance_pos, allegiance_pos + 1]:
-                    condensed_global_leaderboard.append(banner_id)
-
-        return condensed_global_leaderboard
-
-    def format_global_leaderboard_for_display(global_leaderboard_data, condensed_banner_ids):
-        global_leaderboard_string = []
-        last_pos = 0
-        added_ellipsis = False
-
-        for banner_id, spot in global_leaderboard_data.items():  # First pass - process actual banner entries
-            if banner_id in condensed_banner_ids:
-                # If we haven't added ellipsis yet and we're jumping from ≤3 to >3
-                if '…' in condensed_banner_ids and last_pos <= 3 and spot['leaderboard_position'] > 3 and not added_ellipsis:
-                    global_leaderboard_string.append('•••')
-                    added_ellipsis = True
-
-                position_line = (
-                    f'{spot['leaderboard_position']}. **{spot['name']}**'
-                    if banner_id == allegiance['banner']['banner_id']
-                    else f'{spot['leaderboard_position']}. {spot['name']}'
-                )  # Bold the name if it's the allegiance banner
-                match spot['leaderboard_position']:
-                    case 1:
-                        position_line += '🥇'
-                    case 2:
-                        position_line += '🥈'
-                    case 3:
-                        position_line += '🥉'
-                volume_line = f'  - Total volume moved: **{spot['stats'].get('total_volume_moved', 0)}L**'
-                global_leaderboard_string.extend([position_line, volume_line])
-                last_pos = spot['leaderboard_position']
-
-        return global_leaderboard_string
-
     embed.description = '\n'.join([
         f'# {banner['name']}',
         f'*{banner['description']}*',
         '### Internal Player leaderboard',
         '\n'.join(format_internal_leaderboard_for_display(
             internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
-            condensed_allegiance_ids=create_condensed_internal_leaderboard(
+            condensed_user_ids=create_condensed_internal_leaderboard(
                 internal_leaderboard_data=allegiance['banner']['internal_leaderboard'],
                 allegiance_id=allegiance['allegiance_id']
-            )
+            ),
+            user_id_to_highlight=allegiance['user_id']
         )),
         '### Global Banner leaderboard',
         '\n'.join(format_global_leaderboard_for_display(
@@ -466,7 +653,8 @@ async def banner_inspect_menu(df_state: DFState, banner: dict):
             condensed_banner_ids=create_condensed_global_leaderboard(
                 global_leaderboard_data=allegiance['banner']['global_leaderboard'],
                 allegiance_banner_id=allegiance['banner']['banner_id']
-            )
+            ),
+            banner_id_to_highlight=allegiance['banner']['banner_id']
         )),
     ])
 

@@ -157,8 +157,8 @@ class MapButton(discord.ui.Button):
         embed = discord.Embed(
             description='\n'.join([
                 f'## {self.df_state.cargo_obj['name']}',
-                '🟨 - Your convoy\'s location'
-                '🟦 - Recipient vendor\'s location'
+                '🟨 - Your convoy\'s location',
+                '🟦 - Recipient vendor\'s location',
             ])
         )
 

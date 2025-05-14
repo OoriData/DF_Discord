@@ -39,7 +39,7 @@ def df_embed_vehicle_stats(
         'Weight Class 🥊': ('weight_class', '**{}**', None, None, None),
         'Stat Floor ⌊⌋': ('hard_stat_floor', '**{}**', None, None, None),
         'Stat Soft Cap ⌈⌉': ('soft_stat_cap', '**{}**', None, None, None),
-        'Coupling 🚛': ('coupling', '**{}**', None, None, None),
+        'Coupling 🚛': ('couplings', '**{}**', None, None, None),
         'Passenger Seats 🪑': ('passenger_seats', '**{}**', None, None, None),
         'Armor Class 🛡️': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
@@ -70,7 +70,13 @@ def df_embed_vehicle_stats(
 
     for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
         base_value = vehicle.get(stat_key)
-        base_value = None if base_value == '' else base_value  # Normalize empty strings to None
+        if isinstance(base_value, list):
+            base_value = ', '.join(  # Normalize lists as a single string
+                val.replace('_', ' ').capitalize()
+                for val in base_value
+            )
+        elif base_value == '':
+            base_value = None  # Normalize empty strings to None
 
         if base_value is None:
             value_str = 'None'

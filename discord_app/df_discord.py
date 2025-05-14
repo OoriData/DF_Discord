@@ -3,6 +3,7 @@
 import                                  os
 import                                  asyncio
 import                                  logging
+from datetime                    import datetime, timezone, timedelta
 
 import                                  discord
 from discord                     import app_commands, HTTPException
@@ -20,7 +21,8 @@ from discord_app                 import (
     DF_GAMEPLAY_CHANNEL_1_ID, DF_GAMEPLAY_CHANNEL_2_ID, DF_GAMEPLAY_CHANNEL_3_ID,
     DF_LOGO_EMOJI,
 )
-from discord_app                 import TimeoutView, api_calls, DF_HELP
+from discord_app                 import TimeoutView, api_calls, DF_HELP, discord_timestamp
+from discord_app.banner_menus    import format_top_n_global_leaderboard # Import the new utility
 from discord_app.map_rendering   import add_map_to_embed
 from discord_app.main_menu_menus import main_menu
 from discord_app.dialogue_menus  import RespondToConvoyView
@@ -31,6 +33,11 @@ DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
 
 logger = logging.getLogger('DF_Discord')
 logging.basicConfig(format='%(levelname)s:%(name)s: %(message)s', level=LOG_LEVEL)
+
+TESTTIMES = [
+    (datetime.now(timezone.utc) + timedelta(seconds=30 * i)).time()
+    for i in range(100)
+]
 
 
 class DesolateCog(commands.Cog):
@@ -84,6 +91,9 @@ class DesolateCog(commands.Cog):
 
         logger.debug(ansi_color('Initializing notification loop…', 'yellow'))
         self.notifier.start()
+
+        logger.debug(ansi_color('Initializing leaderboards loop…', 'yellow'))
+        self.post_leaderboards.start()
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
@@ -304,6 +314,56 @@ class DesolateCog(commands.Cog):
                         continue
                 else:
                     logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
+
+    # @tasks.loop(time=TESTTIMES)
+    # async def post_leaderboards(self):
+    #     logger.info(ansi_color('Posting leaderboards...', 'purple'))
+
+    #     today = datetime.now(timezone.utc)
+    #     monday_of_current_week = today - timedelta(days=today.weekday())
+    #     # Sunday of the *previous* week is one day before the Monday of the current week
+    #     end_of_last_week = monday_of_current_week - timedelta(days=1)
+    #     # Monday of the *previous* week is 6 days before the Sunday of the previous week
+    #     start_of_last_week = end_of_last_week - timedelta(days=6)
+
+    #     last_week_timestamp = f'{discord_timestamp(start_of_last_week, 'D')} - {discord_timestamp(end_of_last_week, 'D')}'
+    #     top_n_display = 10  # How many top entries to show
+
+    #     try:
+    #         civic_leaderboard_data = await api_calls.get_global_civic_leaderboard()
+    #         syndicate_leaderboard_data = await api_calls.get_global_syndicate_leaderboard()
+    #     except Exception as e:
+    #         logger.error(ansi_color(f'Error fetching leaderboards: {e}', 'red'))
+    #         return
+        
+    #     civic_leaderboard_last_week_stats = 
+
+    #     civic_desc_lines = format_top_n_global_leaderboard(
+    #         leaderboard_data=civic_leaderboard_data,
+    #         top_n=top_n_display
+    #     )
+    #     syndicate_desc_lines = format_top_n_global_leaderboard(
+    #         leaderboard_data=syndicate_leaderboard_data,
+    #         top_n=top_n_display
+    #     )
+
+    #     civic_embed = discord.Embed(
+    #         title=f'{DF_LOGO_EMOJI} Civic Leaderboard for {last_week_timestamp}',
+    #         description='\n'.join(civic_desc_lines)[:3000],  # Ensure description length limit
+    #         color=discord.Color.blue()
+    #     )
+    #     syndicate_embed = discord.Embed(
+    #         title=f'{DF_LOGO_EMOJI} Syndicate Leaderboard for {last_week_timestamp}',
+    #         description='\n'.join(syndicate_desc_lines)[:3000],  # Ensure description length limit
+    #         color=discord.Color.purple()
+    #     )
+
+    #     notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
+    #     if notification_channel:
+    #         await notification_channel.send(embeds=[civic_embed, syndicate_embed])
+    #         logger.info(ansi_color(f'Posted Top {top_n_display} leaderboards', 'green'))
+    #     else:
+    #         logger.error(ansi_color(f'Notification channel {DF_CHANNEL_ID} not found for leaderboards.', 'red'))
 
 
 def main():

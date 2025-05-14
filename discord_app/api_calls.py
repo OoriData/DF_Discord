@@ -710,6 +710,22 @@ async def form_allegiance(user_id: UUID, banner_id: UUID) -> dict:
     return response.json()
 
 
+async def get_global_civic_leaderboard() -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(url=f'{DF_API_HOST}/banner/leaderboard/civic/all')
+
+    _check_code(response)
+    return response.json()
+
+
+async def get_global_syndicate_leaderboard() -> dict:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(url=f'{DF_API_HOST}/banner/leaderboard/syndicate/all')
+
+    _check_code(response)
+    return response.json()
+
+
 async def change_username(user_id, new_name) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(

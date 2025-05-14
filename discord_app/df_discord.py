@@ -312,10 +312,11 @@ class DesolateCog(commands.Cog):
                 else:
                     logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
 
-    @tasks.loop(time=time(hour=10, minute=0, tzinfo=MOUNTAIN_TIME))  # 10AM Mountain Time
+    # @tasks.loop(time=time(hour=10, minute=0, tzinfo=MOUNTAIN_TIME))  # 10AM Mountain Time
+    @tasks.loop(seconds=10)
     async def post_leaderboards(self):
-        if datetime.now(tz=MOUNTAIN_TIME).weekday() != 0:  # datetime.weekday(): Monday is 0 and Sunday is 6.
-            return  # Not a Monday, skip!
+        # if datetime.now(tz=MOUNTAIN_TIME).weekday() != 0:  # datetime.weekday(): Monday is 0 and Sunday is 6.
+        #     return  # Not a Monday, skip!
         logger.info(ansi_color('Posting leaderboards...', 'purple'))
 
         # Determine the dates for the start and end of the previous week
@@ -370,6 +371,8 @@ class DesolateCog(commands.Cog):
             logger.info(ansi_color(f'Posted Top {top_n_display} leaderboards', 'green'))
         else:
             logger.error(ansi_color(f'Notification channel {DF_LEADERBOARD_CHANNEL_ID} not found for leaderboards.', 'red'))
+
+        # XXX: Leaderboard posting for syndicate banners here
 
 
 def main():

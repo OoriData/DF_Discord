@@ -75,7 +75,7 @@ def df_embed_vehicle_stats(
                 val.replace('_', ' ').capitalize()
                 for val in base_value
             )
-        elif base_value == '':
+        if base_value == '':
             base_value = None  # Normalize empty strings to None
 
         if base_value is None:

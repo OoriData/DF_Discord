@@ -403,15 +403,35 @@ class CargoConfirmSellButton(discord.ui.Button):
         self.df_state = df_state
         self.sale_quantity = sale_quantity
 
+        cargo_name_original = self.df_state.cargo_obj['name']
+        qty_str = str(self.sale_quantity)
+
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
             sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_delivery_reward']
         else:
             unit_sale_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, quantity=1)
             sale_price = self.sale_quantity * unit_sale_price
+        price_str = f'{sale_price:,.0f}'
+
+        # Truncate cargo name if label is too long
+        prefix = f'Sell {qty_str} '
+        suffix = f'(s) | ${price_str}'
+        available_length_for_name = 80 - (len(prefix) + len(suffix))
+
+        if len(cargo_name_original) > available_length_for_name:
+            # Ensure there's space for "..." if truncating
+            if available_length_for_name < 3: # Not enough space for "..."
+                truncated_name = cargo_name_original[:max(0, available_length_for_name)]
+            else:
+                truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."
+        else:
+            truncated_name = cargo_name_original
+        
+        final_label = f'{prefix}{truncated_name}{suffix}'
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) | ${sale_price:,.0f}',
+            label=final_label,
             row=row
         )
 
@@ -476,9 +496,29 @@ class SellAllCargoButton(discord.ui.Button):
                 for cargo in self.sell_list
             )
 
+        # Truncate cargo name if label is too long
+        cargo_name_original = self.df_state.cargo_obj['name']
+        qty_str = str(self.sale_quantity)
+        price_str = f'{self.sale_price:,.0f}'
+
+        prefix = f'Sell all {qty_str} '
+        suffix = f'(s) across convoy | ${price_str}'
+        available_length_for_name = 80 - (len(prefix) + len(suffix))
+
+        if len(cargo_name_original) > available_length_for_name:
+            # Ensure there's space for "..." if truncating
+            if available_length_for_name < 3: # Not enough space for "..."
+                truncated_name = cargo_name_original[:max(0, available_length_for_name)]
+            else:
+                truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."
+        else:
+            truncated_name = cargo_name_original
+
+        final_label = f'{prefix}{truncated_name}{suffix}'
+
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell all {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) across convoy | ${self.sale_price:,.0f}',
+            label=final_label,
             row=row
         )
 

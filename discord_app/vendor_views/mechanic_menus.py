@@ -605,6 +605,7 @@ async def scrap_vehicle_menu(df_state: DFState):
         f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed.description = embed.description[:3600]  # Band-aid fix to truncate this
 
     view = ScrapVehicleView(df_state, scrap_check)
 

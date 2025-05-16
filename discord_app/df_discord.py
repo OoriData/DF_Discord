@@ -49,11 +49,15 @@ class DesolateCog(commands.Cog):
         """ Called when the bot is ready to start taking commands """
         await self.bot.tree.sync()
 
+        df_guild = self.bot.get_guild(DF_GUILD_ID)
+        logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
         logger.info(ansi_color(f'Bot/App: {self.bot.user.name}', 'purple'))
-        logger.info(ansi_color(f'Welcome channel: #{self.bot.get_channel(DF_WELCOME_CHANNEL_ID).name}', 'purple'))
         logger.info(ansi_color(f'Gameplay channel 1: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID).name}', 'purple'))
         logger.info(ansi_color(f'Gameplay channel 2: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_2_ID).name}', 'purple'))
         logger.info(ansi_color(f'Gameplay channel 3: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Notification channel: #{self.bot.get_channel(DF_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Leaderboard channel: #{self.bot.get_channel(DF_LEADERBOARD_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Welcome channel: #{self.bot.get_channel(DF_WELCOME_CHANNEL_ID).name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache…', 'yellow'))
@@ -80,11 +84,6 @@ class DesolateCog(commands.Cog):
         self.update_user_cache.start()
         await self.cache_ready.wait()  # Wait until cache is initialized
         self.bot.add_view(TimeoutView(self.df_users_cache))
-
-        df_guild = self.bot.get_guild(DF_GUILD_ID)
-        logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
-        df_notification_channel = self.bot.get_channel(DF_CHANNEL_ID)
-        logger.info(ansi_color(f'Notifications channel: #{df_notification_channel.name}', 'purple'))
 
         logger.debug(ansi_color('Initializing notification loop…', 'yellow'))
         self.notifier.start()
@@ -312,11 +311,10 @@ class DesolateCog(commands.Cog):
                 else:
                     logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
 
-    # @tasks.loop(time=time(hour=10, minute=0, tzinfo=MOUNTAIN_TIME))  # 10AM Mountain Time
-    @tasks.loop(seconds=10)
+    @tasks.loop(time=time(hour=10, minute=0, tzinfo=MOUNTAIN_TIME))  # 10AM Mountain Time
     async def post_leaderboards(self):
-        # if datetime.now(tz=MOUNTAIN_TIME).weekday() != 0:  # datetime.weekday(): Monday is 0 and Sunday is 6.
-        #     return  # Not a Monday, skip!
+        if datetime.now(tz=MOUNTAIN_TIME).weekday() != 0:  # datetime.weekday(): Monday is 0 and Sunday is 6.
+            return  # Not a Monday, skip!
         logger.info(ansi_color('Posting leaderboards...', 'purple'))
 
         # Determine the dates for the start and end of the previous week

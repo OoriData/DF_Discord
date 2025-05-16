@@ -790,36 +790,43 @@ class TopUpButton(discord.ui.Button):
         self.resource_vendors: dict[str, dict] = {}
         self.total_top_up_cost: int = 0
         # Default button state
-        button_label = 'Cannot top up: No vendors'
+        button_label = 'Cannot top up: No vendors'  # Fallback label
         button_disabled = True
+        button_style = discord.ButtonStyle.blurple
+        button_emoji = '🛒'
 
         # --- Core Logic Execution ---
         # Check prerequisites for topping up
         if self._can_attempt_top_up():
             # Calculate the top-up plan (which vendors, how much, cost)
             planned_resources, self.total_top_up_cost, self.resource_vendors = self._calculate_top_up_plan()
-
             # Determine the button's final label and enabled/disabled state based on the plan
-            button_label, button_disabled = self._determine_button_state(
+            button_label, button_disabled, button_style, button_emoji = self._determine_button_state(
                 planned_resources=planned_resources,
                 total_cost=self.total_top_up_cost,
                 has_vendors=True  # We know vendors exist if we got this far
             )
         else:
             # Determine button state when prerequisites aren't met (no settlement/vendors)
-            button_label, button_disabled = self._determine_button_state(
+            # Accurately determine if vendors are present even if _can_attempt_top_up is false for other reasons
+            current_has_vendors = bool(
+                self.df_state.sett_obj and
+                'vendors' in self.df_state.sett_obj and
+                self.df_state.sett_obj['vendors']
+            )
+            button_label, button_disabled, button_style, button_emoji = self._determine_button_state(
                 planned_resources=[],
                 total_cost=0,
-                has_vendors=bool(self.df_state.sett_obj and 'vendors' in self.df_state.sett_obj)
+                has_vendors=current_has_vendors
             )
 
         # --- Final Button Setup ---
         super().__init__(
-            style=discord.ButtonStyle.blurple,
+            style=button_style,
             label=button_label,
             disabled=button_disabled,
             custom_id='top_up_button',  # Make sure this ID is unique if multiple buttons exist
-            emoji='🛒',
+            emoji=button_emoji,
             row=row
         )
 
@@ -944,7 +951,7 @@ class TopUpButton(discord.ui.Button):
             planned_resources: list[str],
             total_cost: int,
             has_vendors: bool
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, bool, discord.ButtonStyle, str]:
         """
         Determines the button's label and enabled/disabled state based on the
         calculated top-up plan and convoy status.
@@ -958,46 +965,65 @@ class TopUpButton(discord.ui.Button):
             A tuple containing:
             - str: The button label.
             - bool: The button disabled state (True for disabled, False for enabled).
+            - discord.ButtonStyle: The button style.
+            - str: The button emoji.
         """
         convoy = self.df_state.convoy_obj
         can_afford = total_cost <= convoy.get('money', 0)
 
-        if planned_resources and total_cost > 0:
+        # Default style and emoji
+        style = discord.ButtonStyle.blurple
+        emoji = '🛒'
+        disabled = False  # Default to false, specific cases will set to true
+
+        if not has_vendors:
+            # Case 0: No vendors available in the settlement.
+            label = 'No vendors available for top up'
+            disabled = True
+        elif planned_resources and total_cost > 0:
             # Case 1: Resources can be bought, and they cost something.
-            label = f'Top up {", ".join(planned_resources)} | ${total_cost:,.0f}'
+            label = f'Top up {', '.join(planned_resources)} | ${total_cost:,.0f}'
             disabled = not can_afford  # Disable if cannot afford
             if disabled:
                 label += ' (Insufficient Funds)'  # Add reason if disabled
         elif planned_resources and total_cost == 0:
-            # Case 2: Resources can be 'bought' (potentially free?), convoy has space.
-            label = f'Top up {", ".join(planned_resources)} | $0'  # Indicate free top-up
+            # Case 2: Resources can be 'bought' (free), convoy has space and weight.
+            label = f'Top up {', '.join(planned_resources)} | $0'  # Indicate free top-up
             disabled = False  # Always enable if free and possible
         elif total_cost == 0 and not planned_resources:
-            # Case 3: Nothing to buy, cost is zero. Implies convoy is full of needed resources.
-            label = 'Convoy is already topped up'
-            disabled = True
-        elif not has_vendors:
-            # Case 4: No vendors available in the settlement.
-            label = 'No vendors available for top up'
-            disabled = True
-        # Note: The original code had a check for `remaining_weight <= 0` leading to "Convoy is full".
-        # This case is now implicitly handled. If remaining_weight was 0 initially or became 0,
-        # `planned_resources` might be empty or incomplete. If it's empty, Case 3 applies.
-        # If it's incomplete but > 0 cost, Case 1 applies. If it's empty because needs were met
-        # before running out of weight, Case 3 applies. A specific "Convoy is full" message
-        # might be less informative than "Already topped up" or showing what *can* be bought.
-        # If you specifically need "Convoy is full" when weight is the sole limiter even if
-        # needs aren't met, more complex state tracking from _calculate_top_up_plan is needed.
-        else:
-            # Case 5: Fallback - Cannot top up for other reasons (e.g., needs met,
-            # but weight full before considering all items, or specific items unavailable).
-            # This state might be reached if weight is full but *some* resources are still needed
-            # but cannot be bought due to weight, and no other resources were plannable.
-            # Or if vendors only sell items the convoy doesn't need.
-            label = 'Cannot top up' # General unavailability
-            disabled = True
+            # Case 3: Nothing planned for purchase, and total cost is zero.
+            # This implies vendors exist (due to `has_vendors` check above).
+            # Reasons:
+            #   a) Convoy is genuinely topped up (no volumetric need or no weight capacity).
+            #   b) Convoy needs resources by volume, but is critically weight-limited.
+            #   c) Convoy needs resources, has weight, but vendors don't sell those specific items.
 
-        return label, disabled
+            any_resource_needed_by_volume = False
+            for resource_type in self.resource_types:  # self.resource_types is accessible
+                # Use a small epsilon for float comparison to check for genuine need
+                if convoy.get(f'max_{resource_type}', 0) - convoy.get(resource_type, 0) > 0.001:
+                    any_resource_needed_by_volume = True
+                    break
+            
+            # Check if convoy is effectively out of weight capacity
+            is_fully_weight_limited = convoy.get('total_remaining_capacity', 0) <= 0.001
+
+            if any_resource_needed_by_volume and is_fully_weight_limited:
+                # Subcase 3b: Convoy needs resources by volume but has no weight capacity.
+                label = 'Top up (Overload!) | $0'  # planned_resources is empty here
+                style = discord.ButtonStyle.red
+                emoji = '⚠️'
+                disabled = True  # Informative state, cannot proceed with $0 top-up if it overloads
+            else:
+                # Subcase 3a or 3c: Convoy is genuinely topped up, or needs items vendors don't have.
+                label = 'Convoy is already topped up'
+                disabled = True
+        else:
+            # Case 4: Fallback - Should ideally not be reached if logic above is comprehensive.
+            # e.g. total_cost > 0 but planned_resources is empty.
+            label = 'Cannot top up'  # General unavailability
+            disabled = True
+        return label, disabled, style, emoji
 
     async def callback(self, interaction: discord.Interaction):
         """
@@ -1010,7 +1036,7 @@ class TopUpButton(discord.ui.Button):
         # --- Interaction Validation and Deferral ---
         # Use the provided validation function. Ensure it handles state checks if needed.
         # If validate_interaction could modify df_state, consider its placement carefully.
-        # await validate_interaction(interaction=interaction, df_state=self.df_state) # Uncomment if needed
+        # await validate_interaction(interaction=interaction, df_state=self.df_state)  # Uncomment if needed
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction

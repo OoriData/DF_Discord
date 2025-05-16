@@ -215,8 +215,8 @@ def format_part(part_cargo: dict, verbose: bool=True):
 
         if verbose:  # Display eeeerrrryyythang
             part_attrs = [
-                f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
-                f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
+                f'- **{part['name']}** (Original Equipment)' if part.get('oe') else f'  - **{part['name']}**',
+                f'  - Slot: **{slot}**',
                 f'    - {part['wp']} / 10 wear points' if part.get('wp') else None,
 
                 f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
@@ -241,21 +241,20 @@ def format_part(part_cargo: dict, verbose: bool=True):
                 f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
                 f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
 
-                '  - **critical**' if part.get('critical') else None,
-                '  - **removable** ↩️' if part.get('removable') else None,
-                '  - **salvagable** ♻️' if part.get('salvagable') else None,
-                '  - **bolt-on**' if part.get('bolt_on') else None,
+                '  - **Critical**' if part.get('critical') else None,
+                '  - **Removable** ↩️' if part.get('removable') else None,
+                '  - **Salvagable** ♻️' if part.get('salvagable') else None,
+                '  - **Bolt-on**' if part.get('bolt_on') else None,
 
                 f'  - *{part['description']}*' if part.get('description') else None,
                 f'    - Part value: **${part['value']}**' if part.get('installation_price') else None,
                 f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') is not None else None,
                 f'    - Total price: **${part['value'] + part['installation_price']}**' if part.get('value') and part.get('installation_price') is not None else None,
             ]
-        else:
-            # Only display slot, name, base 7 multipliers (without alt display), capacities, removable, and salvagable
+        else:  # Only display slot, name, base 7 multipliers (without alt display), capacities, removable, and salvagable
             part_attrs = [
-                f'- {slot}',
-                f'  - **{part['name']}**',
+                f'- **{part['name']}**',
+                f'  - Slot: **{slot}**',
 
                 f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
                 f'  - Efficiency 🌿: **{efficiency_add:+.0f}**' if efficiency_add else None,
@@ -269,8 +268,8 @@ def format_part(part_cargo: dict, verbose: bool=True):
                 f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
                 f'  - **{part['water_capacity']}** L 💧' if part.get('water_capacity') else None,
 
-                '  - **removable** ↩️' if part.get('removable') else None,
-                '  - **salvagable** ♻️' if part.get('salvagable') else None,
+                '  - **Removable** ↩️' if part.get('removable') else None,
+                '  - **Salvagable** ♻️' if part.get('salvagable') else None,
             ]
 
         part_strs.append('\n'.join(attr for attr in part_attrs if attr))

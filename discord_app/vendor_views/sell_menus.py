@@ -554,7 +554,7 @@ class SellAllCargoButton(discord.ui.Button):
         await interaction.response.edit_message(embed=embed, view=view)
 
 def calculate_total_cargo_price(cargo: dict, vendor_obj: dict) -> float:
-    """Calculate the sale price for a single cargo item including resource values."""
+    """ Calculate the sale price for a single cargo item including resource values. """
     base_price = cargo.get('unit_price', 0)
     extra_price = 0
 

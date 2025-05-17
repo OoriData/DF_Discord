@@ -280,7 +280,7 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
 
     displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs)
 
-    displayable_compatible_parts = '\n'.join(
+    displayable_compatible_parts = '\n\n'.join(
         discord_app.cargo_menus.format_part(part) for part in compatible_part_cargo
     )
 

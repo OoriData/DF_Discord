@@ -256,49 +256,62 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
     df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor})  # Add this menu to the back stack
 
     if is_vendor:
-        cargo_inventory = df_state.vendor_obj['cargo_inventory']
+        source_inventory = df_state.vendor_obj['cargo_inventory']
     else:
-        cargo_inventory = [
-            c for c in df_state.convoy_obj['all_cargo']
-            if c.get('parts')
-        ]
+        # Filter for parts cargo from convoy's all_cargo
+        source_inventory = [c for c in df_state.convoy_obj['all_cargo'] if c.get('parts')]
 
     incompatible_part_cargo_strs = []
-    compatible_part_cargo = []
-    compatible_parts = []
-    for cargo in cargo_inventory:
-        compatibilities = cargo['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
+    compatible_part_cargo_list = []  # Stores cargo dicts that are compatible
 
-        if isinstance(compatibilities, RuntimeError):
+    for current_cargo_item in source_inventory:
+        # For vendor inventory, ensure it's a part. Convoy inventory is pre-filtered.
+        if is_vendor and not current_cargo_item.get('parts'):
+            continue
+
+        # Ensure 'compatibilities' key is present by calling enrich_parts_compatibility.
+        # This modifies 'current_cargo_item' in-place.
+        await enrich_parts_compatibility(df_state.convoy_obj, current_cargo_item)
+
+        # Get the compatibility result for the currently selected vehicle
+        vehicle_specific_compatibilities = current_cargo_item['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
+
+        if isinstance(vehicle_specific_compatibilities, RuntimeError):
             incompatible_part_cargo_strs.append('\n'.join([
-                f'- {cargo['name']}',
-                f'  - ❌ *{compatibilities!s}*'
+                f'- {current_cargo_item['name']}',
+                f'  - ❌ *{vehicle_specific_compatibilities!s}*'
             ]))
+        elif vehicle_specific_compatibilities:  # Check if the list of configurations is not empty
+            compatible_part_cargo_list.append(current_cargo_item)
         else:
-            compatible_part_cargo.append(cargo)
-            compatible_parts.extend(compatibilities)
+            # No compatible configurations for this specific vehicle
+            incompatible_part_cargo_strs.append('\n'.join([
+                f'- {current_cargo_item['name']}',
+                f'  - ❌ *No compatible configurations for {df_state.vehicle_obj['name']}*'
+            ]))
 
-    displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs)
+    displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs) if incompatible_part_cargo_strs else '- None'
 
     displayable_compatible_parts = '\n\n'.join(
-        discord_app.cargo_menus.format_part(part) for part in compatible_part_cargo
+        discord_app.cargo_menus.format_part(c_cargo) for c_cargo in compatible_part_cargo_list
     )
+
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj.get('description', '')}*',
         '### Incompatible parts',
         displayable_incompatible_parts if incompatible_part_cargo_strs else '- None',
         '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
-        displayable_compatible_parts if compatible_part_cargo else '- None',
+        displayable_compatible_parts if compatible_part_cargo_list else '- None',
         f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
-    view = PartSelectView(df_state, compatible_part_cargo)
+    view = PartSelectView(df_state, compatible_part_cargo_list)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 

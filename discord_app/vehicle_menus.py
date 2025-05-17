@@ -39,7 +39,7 @@ def df_embed_vehicle_stats(
         'Weight Class 🥊': ('weight_class', '**{}**', None, None, None),
         'Stat Floor ⌊⌋': ('hard_stat_floor', '**{}**', None, None, None),
         'Stat Soft Cap ⌈⌉': ('soft_stat_cap', '**{}**', None, None, None),
-        'Coupling 🚛': ('couplings', '**{}**', None, None, None),
+        'Couplings 🚛': ('couplings', '**{}**', None, None, None),
         'Passenger Seats 🪑': ('passenger_seats', '**{}**', None, None, None),
         'Armor Class 🛡️': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
@@ -51,7 +51,6 @@ def df_embed_vehicle_stats(
         powered_by = 'fuel ⛽️'
     elif vehicle.get('electric'):
         powered_by = 'electric 🔋'
-
     fields = {
         **fields,
         'Powertrain ⚙️': ('_powertrain', '**{}**', None, None, None)
@@ -73,7 +72,7 @@ def df_embed_vehicle_stats(
         if isinstance(base_value, list):
             base_value = ', '.join(  # Normalize lists as a single string
                 val.replace('_', ' ').capitalize()
-                for val in base_value
+                for val in set(base_value)  # Use a set to ensure only unique values
             )
         if base_value == '':
             base_value = None  # Normalize empty strings to None

@@ -436,6 +436,7 @@ class InstallConfirmView(discord.ui.View):
             f'### {self.df_state.vehicle_obj['name']} stats'
         ])
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
+        embed.description = embed.description[:3600]  # Limit length blehhhh
 
         view = PostMechView(self.df_state)
 

@@ -83,7 +83,7 @@ async def make_convoy_embed(
             f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
             f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
-            f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
+            f'Offroad Capability 🥾: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
         ])
     else:
         convoy_embed.add_field(
@@ -108,7 +108,7 @@ async def make_convoy_embed(
             value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/ 100'
         )
         convoy_embed.add_field(
-            name='Offroad Capability 🏔️',
+            name='Offroad Capability 🥾',
             value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/ 100'
         )
 
@@ -297,14 +297,14 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     if sorted_vehicles:
         for vehicle in sorted_vehicles:
             vehicle_str = f'**{vehicle['name']}** {get_vehicle_emoji(vehicle['shape'])}'
-            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
+            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🥾 {vehicle['offroad_capability']}'
             vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
                     f'- AP: **{vehicle['ap']:.0f}** / {vehicle['max_ap']}',
                     f'- Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
                     f'- Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
-                    f'- Offroad Capability 🏔️: **{vehicle['offroad_capability']:.0f}** / 100',
+                    f'- Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
                     ''
                 ])
 

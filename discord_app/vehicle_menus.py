@@ -35,7 +35,7 @@ def df_embed_vehicle_stats(
         'Weight Capacity 🏋️': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
         'Efficiency 🌿': ('efficiency', '**{:.0f}**', ' / {}', 'fuel_efficiency_add', ' ({:+})'),
         'Top Speed 🚀': ('top_speed', '**{:.0f}**', ' / {}', 'top_speed_add', ' ({:+})'),
-        'Off-road Capability 🏔️': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
+        'Off-road Capability 🥾': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
         'Weight Class 🥊': ('weight_class', '**{}**', None, None, None),
         'Stat Floor ⌊⌋': ('hard_stat_floor', '**{}**', None, None, None),
         'Stat Soft Cap ⌈⌉': ('soft_stat_cap', '**{}**', None, None, None),

@@ -240,7 +240,7 @@ def format_part(part_cargo: dict, verbose: bool=True):
         if top_speed_add:
             lines.append(f'  - Top speed 🚀: **{top_speed_add:+.0f}**')
         if offroad_capability_add:
-            lines.append(f'  - Offroad capability 🏔️: **{offroad_capability_add:+.0f}**')
+            lines.append(f'  - Offroad capability 🥾: **{offroad_capability_add:+.0f}**')
         if cargo_capacity_add:
             if verbose:
                 lines.append(f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)')

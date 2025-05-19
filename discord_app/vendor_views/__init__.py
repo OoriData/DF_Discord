@@ -19,13 +19,22 @@ def vehicles_md(vehicles, verbose: bool = False):
         vehicle_str = f'- {get_vehicle_emoji(vehicle['shape'])} | **{vehicle['name']}** | {powered_by_emoji} | *${vehicle['value']:,}*'
 
         if verbose:
+            if vehicle['couplings']:
+                couplings = ', '.join(  # Normalize lists as a single string
+                    val.replace('_', ' ').capitalize()
+                    for val in set(vehicle['couplings'])  # Use a set to ensure only unique values
+                )
+            else:
+                couplings = None
+
             vehicle_str += '\n' + '\n'.join([
                 f'  - *{vehicle['make_model']}*',
-                f'  - Top Speed: **{vehicle['top_speed']:.0f}** / 100',
-                f'  - Efficiency: **{vehicle['efficiency']:.0f}** / 100',
-                f'  - Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
-                f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L',
-                f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg'
+                f'  - Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
+                f'  - Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
+                f'  - Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
+                f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L' if vehicle.get('cargo_capacity') else None,
+                f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg',
+                f'  - Coupling: **{couplings}**' if couplings else None,
             ])
 
         vehicle_list.append(vehicle_str)

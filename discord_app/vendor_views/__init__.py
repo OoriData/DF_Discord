@@ -28,14 +28,16 @@ def vehicles_md(vehicles, verbose: bool = False):
                 couplings = None
 
             vehicle_str += '\n' + '\n'.join([
-                f'  - *{vehicle['make_model']}*',
-                f'  - Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
-                f'  - Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
-                f'  - Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
-                f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L' if vehicle.get('cargo_capacity') else None,
-                f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg',
-                f'  - Coupling: **{couplings}**' if couplings else None,
-            ])
+                line for line in [
+                    f'  - *{vehicle['make_model']}*',
+                    f'  - Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
+                    f'  - Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
+                    f'  - Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
+                    f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L' if vehicle.get('cargo_capacity') else None,
+                    f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg',
+                    f'  - Coupling: **{couplings}**' if couplings else None,
+                ] if line is not None]
+            )
 
         vehicle_list.append(vehicle_str)
     return '\n'.join(vehicle_list) if vehicle_list else '- None'

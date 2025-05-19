@@ -11,7 +11,6 @@ from discord_app               import (
     api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
 )
 from discord_app.vendor_views  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
-from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
 import discord_app.cargo_menus
@@ -395,26 +394,56 @@ async def part_install_confirm_menu(df_state: DFState):
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 
-class InstallConfirmView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+class ConfirmInstallButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, row: int = 1):
         self.df_state = df_state
-        super().__init__(timeout=600)
+        self.part_to_install = df_state.cargo_obj # The cargo item selected for installation
 
-        discord_app.nav_menus.add_nav_buttons(self, df_state)
+        # Determine if the part is from the vendor's stock
+        self.is_from_vendor_stock = any(
+            c['cargo_id'] == self.part_to_install['cargo_id']
+            for c in self.df_state.vendor_obj['cargo_inventory']
+        )
 
-    @discord.ui.button(label='Install part', style=discord.ButtonStyle.green, custom_id='confirm_install_part', row=1)
-    async def confirm_install_button(self, interaction: discord.Interaction, button: discord.Button):
+        self.install_cost = 0
+        if self.is_from_vendor_stock:
+            self.install_cost = self.part_to_install.get('unit_price', 0)
+
+        can_afford = self.df_state.convoy_obj['money'] >= self.install_cost
+        
+        label = f'Install {self.part_to_install['name']}'
+        if self.install_cost > 0:
+            label += f' | ${self.install_cost:,.0f}'
+        
+        disabled = False
+        if self.install_cost > 0 and not can_afford:
+            disabled = True
+        elif self.install_cost == 0:  # Part from convoy inventory, installation is free
+            disabled = False
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=label,
+            disabled=disabled,
+            custom_id='confirm_install_part',  # Keep original custom_id for consistency
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
 
-        self.df_state.convoy_obj = await api_calls.add_part(
-            vendor_id=self.df_state.vendor_obj['vendor_id'],
-            convoy_id=self.df_state.convoy_obj['convoy_id'],
-            vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
-            part_cargo_id=self.df_state.cargo_obj['cargo_id']
-        )
-        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
+        try:
+            self.df_state.convoy_obj = await api_calls.add_part(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                part_cargo_id=self.part_to_install['cargo_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         self.df_state.vehicle_obj = next((  # Get the updated vehicle from the returned convoy obj
             v for v in self.df_state.convoy_obj['vehicles']
@@ -427,7 +456,7 @@ class InstallConfirmView(discord.ui.View):
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
-        embed.description = '\n'.join([
+        description_str = '\n'.join([
             f'# {self.df_state.vendor_obj['name']}',
             f'## {self.df_state.vehicle_obj['name']}',
             f'*{self.df_state.vehicle_obj['description']}*',
@@ -435,12 +464,20 @@ class InstallConfirmView(discord.ui.View):
             displayable_vehicle_parts,
             f'### {self.df_state.vehicle_obj['name']} stats'
         ])
+        embed.description = description_str[:3600]  # Limit length
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
-        embed.description = embed.description[:3600]  # Limit length blehhhh
 
         view = PostMechView(self.df_state)
 
         await interaction.response.edit_message(embed=embed, view=view)
+
+class InstallConfirmView(discord.ui.View):
+    def __init__(self, df_state: DFState):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        discord_app.nav_menus.add_nav_buttons(self, df_state)
+        self.add_item(ConfirmInstallButton(df_state, row=1))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)

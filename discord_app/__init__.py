@@ -39,10 +39,21 @@ MOUNTAIN_TIME = ZoneInfo('America/Denver')
 
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
-    if df_state.interaction.message:
-        dead_message = await df_state.interaction.channel.fetch_message(df_state.interaction.message.id)
-    else:
-        dead_message = None
+    import logging
+    logging.critical(df_state.interaction.channel.type)
+    logging.critical(df_state.interaction.channel.type == 'text')
+    logging.critical(df_state.interaction.channel.type == discord.ChannelType.text)
+    match df_state.interaction.channel.type:
+        case discord.ChannelType.text:  # Server Text Channel
+            dead_message = message
+        case discord.ChannelType.public_thread:  # Server Public Thread
+            dead_message = message
+        case discord.ChannelType.private_thread:  # Server Private Thread
+            dead_message = message
+        case _:
+            dead_message = None
+
+    
 
     if message:
         await message.edit(
@@ -74,14 +85,14 @@ class TimeoutView(discord.ui.View):
                 if interaction.guild:
                     self.add_item(discord.ui.Button(
                         style=discord.ButtonStyle.gray,
-                        label='Add the DF App to this server to',
+                        label='Add the DF App to this server to enable',
                         disabled=True,
                         custom_id='disabled_timed_out_main_menu_button_explaination_1',
                         row=2
                     ))
                     self.add_item(discord.ui.Button(
                         style=discord.ButtonStyle.gray,
-                        label='enable the timeout main menu button',
+                        label='the Timed Out | Main Menu button',
                         disabled=True,
                         custom_id='disabled_timed_out_main_menu_button_explaination_2',
                         row=3

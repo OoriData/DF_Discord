@@ -167,7 +167,6 @@ class MainMenuView(discord.ui.View):
     def __init__(self, df_state: DFState, message: discord.Message=None):
         self.df_state = df_state
         self.message = message
-
         super().__init__(timeout=600)
 
         self.clear_items()

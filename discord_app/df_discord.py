@@ -83,7 +83,8 @@ class DesolateCog(commands.Cog):
         self.df_users_cache = None
         self.update_user_cache.start()
         await self.cache_ready.wait()  # Wait until cache is initialized
-        self.bot.add_view(TimeoutView(self.df_users_cache))
+
+        self.bot.add_view(TimeoutView(self.df_users_cache, None))
 
         logger.debug(ansi_color('Initializing notification loop…', 'yellow'))
         self.notifier.start()
@@ -92,6 +93,10 @@ class DesolateCog(commands.Cog):
         self.post_leaderboards.start()
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        logger.log(1337, ansi_color('goodbye.', 'red', 'white'))
 
     def find_roles(self):
         """ Cache player roles """

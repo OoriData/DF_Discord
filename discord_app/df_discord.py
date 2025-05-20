@@ -94,10 +94,6 @@ class DesolateCog(commands.Cog):
 
         logger.log(1337, ansi_color('\n\n' + API_BANNER + '\n', 'green', 'black'))  # Display the cool DF banner
 
-    @commands.Cog.listener()
-    async def on_disconnect(self):
-        logger.log(1337, ansi_color('goodbye.', 'red', 'white'))
-
     def find_roles(self):
         """ Cache player roles """
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
@@ -183,8 +179,10 @@ class DesolateCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """ Sends a welcome message to new members. """
-        if member.bot:  # Ignore bots
-            return
+        if member.bot:
+            return  # Ignore bots
+        if member.guild.id != DF_GUILD_ID:
+            return  # Ignore joins to other servers
 
         welcome_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_WELCOME_CHANNEL_ID)
         gameplay_channel_1: discord.guild.GuildChannel = self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID)

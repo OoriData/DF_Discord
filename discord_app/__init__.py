@@ -41,26 +41,59 @@ MOUNTAIN_TIME = ZoneInfo('America/Denver')
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
     if message:
         await message.edit(
-            view=TimeoutView(df_state.user_cache)
+            view=TimeoutView(df_state.user_cache, prev_interaction=df_state.interaction)
         )
 
     else:
         await df_state.interaction.edit_original_response(
-            view=TimeoutView(df_state.user_cache)
+            view=TimeoutView(df_state.user_cache, prev_interaction=df_state.interaction)
         )
     
 class TimeoutView(discord.ui.View):
-    def __init__(self, user_cache):
+    def __init__(self, user_cache, prev_interaction: discord.Interaction=None):
         super().__init__(timeout=None)
 
         self = add_external_URL_buttons(self)  # Add external link buttons
 
-        self.add_item(TimedOutMainMenuButton(user_cache))
+        if prev_interaction:
+            if prev_interaction.app_permissions.send_messages:
+                self.add_item(TimedOutMainMenuButton(user_cache))
+            elif prev_interaction.channel.type in (discord.ChannelType.private, discord.ChannelType.group):
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.blurple,
+                    label='Interaction timed out',
+                    disabled=True,
+                    custom_id='disabled_timed_out_button',
+                    row=1
+                ))
+            else:
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.blurple,
+                    label='Interaction timed out | Main Menu',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button',
+                    row=1
+                ))
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.gray,
+                    label='Add the DF App to this server to enable',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button_explaination_1',
+                    row=2
+                ))
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.gray,
+                    label='the "timed out | Main Menu" button',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button_explaination_2',
+                    row=3
+                ))
+                
 
 class TimedOutMainMenuButton(discord.ui.Button):
     def __init__(self, user_cache: DFState):
         self.user_cache = user_cache
-
+  
         super().__init__(
             style=discord.ButtonStyle.blurple,
             label='Interaction timed out | Main Menu',

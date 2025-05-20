@@ -39,79 +39,37 @@ MOUNTAIN_TIME = ZoneInfo('America/Denver')
 
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
-    import logging
-    logging.critical(df_state.interaction.channel.type)
-    logging.critical(df_state.interaction.channel.type == 'text')
-    logging.critical(df_state.interaction.channel.type == discord.ChannelType.text)
-    match df_state.interaction.channel.type:
-        case discord.ChannelType.text:  # Server Text Channel
-            dead_message = message
-        case discord.ChannelType.public_thread:  # Server Public Thread
-            dead_message = message
-        case discord.ChannelType.private_thread:  # Server Private Thread
-            dead_message = message
-        case _:
-            dead_message = None
-
-    
-
     if message:
         await message.edit(
-            view=TimeoutView(df_state.user_cache, dead_message, interaction=df_state.interaction)
+            view=TimeoutView(df_state.user_cache)
         )
+
     else:
         await df_state.interaction.edit_original_response(
-            view=TimeoutView(df_state.user_cache, dead_message, interaction=df_state.interaction)
+            view=TimeoutView(df_state.user_cache)
         )
     
-
 class TimeoutView(discord.ui.View):
-    def __init__(self, user_cache, dead_message: discord.Message, interaction: discord.Interaction=None):
+    def __init__(self, user_cache):
         super().__init__(timeout=None)
 
         self = add_external_URL_buttons(self)  # Add external link buttons
 
-        if dead_message:
-            self.add_item(TimedOutMainMenuButton(user_cache, dead_message))
-        else:
-            self.add_item(discord.ui.Button(
-                style=discord.ButtonStyle.blurple,
-                label='Interaction timed out | Main Menu',
-                disabled=True,
-                custom_id='disabled_timed_out_main_menu_button',
-                row=1
-            ))
-            if interaction:
-                if interaction.guild:
-                    self.add_item(discord.ui.Button(
-                        style=discord.ButtonStyle.gray,
-                        label='Add the DF App to this server to enable',
-                        disabled=True,
-                        custom_id='disabled_timed_out_main_menu_button_explaination_1',
-                        row=2
-                    ))
-                    self.add_item(discord.ui.Button(
-                        style=discord.ButtonStyle.gray,
-                        label='the Timed Out | Main Menu button',
-                        disabled=True,
-                        custom_id='disabled_timed_out_main_menu_button_explaination_2',
-                        row=3
-                    ))
+        self.add_item(TimedOutMainMenuButton(user_cache))
 
 class TimedOutMainMenuButton(discord.ui.Button):
-    def __init__(self, user_cache: DFState, dead_message: discord.Message):
+    def __init__(self, user_cache: DFState):
         self.user_cache = user_cache
-        self.dead_message = dead_message
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Interaction timed out | Main Menu',
+            label='Interaction timed out; Main Menu',
             custom_id='timed_out_main_menu_button',
             row=1
         )
 
     async def callback(self, interaction):
-        new_message = await self.dead_message.reply(content='-# Loading…')
+        new_message = await interaction.channel.send(content='-# Loading…')
 
         import discord_app.main_menu_menus  # XXX: This sucks i wanna put it at the top
         await discord_app.main_menu_menus.main_menu(
@@ -123,6 +81,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
 
         if not interaction.response.is_done():
             await interaction.response.pong()
+
 
 def add_external_URL_buttons(view: discord.ui.View) -> discord.ui.View:
     view.add_item(URLButton('Join the DF Server', 'https://discord.gg/nS7NVC7PaK'))

@@ -63,7 +63,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Interaction timed out; Main Menu',
+            label='Interaction timed out | Main Menu',
             custom_id='timed_out_main_menu_button',
             row=1
         )

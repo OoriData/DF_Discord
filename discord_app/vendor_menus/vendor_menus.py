@@ -9,11 +9,11 @@ from utiloori.ansi_color                     import ansi_color
 
 from discord_app                             import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction
 from discord_app.map_rendering               import add_map_to_embed
-from discord_app.vendor_views.mechanic_menus import MechVehicleDropdownView
-from discord_app.vendor_views                import vendor_inv_md
-import                                              discord_app.vendor_views.mechanic_menus
-import                                              discord_app.vendor_views.buy_menus
-import                                              discord_app.vendor_views.sell_menus
+from discord_app.vendor_menus.mechanic_menus import MechVehicleDropdownView
+from discord_app.vendor_menus                import vendor_inv_embeds
+import                                              discord_app.vendor_menus.mechanic_menus
+import                                              discord_app.vendor_menus.buy_menus
+import                                              discord_app.vendor_menus.sell_menus
 import                                              discord_app.nav_menus
 
 from discord_app.df_state                    import DFState
@@ -26,9 +26,6 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 async def vendor_menu(df_state: DFState, edit: bool=True):
     df_state.append_menu_to_back_stack(func=vendor_menu)  # Add this menu to the back stack
 
-    vendor_embed = discord.Embed()
-    vendor_embed = df_embed_author(vendor_embed, df_state)
-
     df_state.vendor_obj['vehicle_inventory'] = sorted(
         df_state.vendor_obj['vehicle_inventory'],
         key=lambda x: x['value']
@@ -38,9 +35,12 @@ async def vendor_menu(df_state: DFState, edit: bool=True):
         key=lambda x: x['unit_price']
     )
 
-    vendor_embed.description = await vendor_inv_md(df_state)
+    vendor_embed = discord.Embed()
+    vendor_embed = df_embed_author(vendor_embed, df_state)
+    vendor_embed.description = f'## {df_state.vendor_obj['name']}'
 
-    embeds = [vendor_embed]
+    embeds = await vendor_inv_embeds(df_state, [vendor_embed])
+
     embeds = add_tutorial_embed(embeds, df_state)
 
     vendor_view = VendorView(df_state)
@@ -110,7 +110,7 @@ class BuyButton(discord.ui.Button):
             return
         self.df_state.interaction = interaction
 
-        await discord_app.vendor_views.buy_menus.buy_menu(self.df_state)
+        await discord_app.vendor_menus.buy_menus.buy_menu(self.df_state)
 
 class MechanicButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
@@ -123,7 +123,7 @@ class MechanicButton(discord.ui.Button):
 
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Mechanic',
+            label='Mechanic (Upgrades, Repairs, Scrap)',
             disabled=disabled,
             custom_id='mech_button',
             emoji='🔧',
@@ -135,7 +135,7 @@ class MechanicButton(discord.ui.Button):
             return
         self.df_state.interaction = interaction
 
-        await discord_app.vendor_views.mechanic_menus.mechanic_menu(self.df_state)
+        await discord_app.vendor_menus.mechanic_menus.mechanic_menu(self.df_state)
 
 class SellButton(discord.ui.Button):
     def __init__(self, df_state: DFState):
@@ -154,4 +154,4 @@ class SellButton(discord.ui.Button):
             return
         self.df_state.interaction = interaction
 
-        await discord_app.vendor_views.sell_menus.sell_menu(self.df_state)
+        await discord_app.vendor_menus.sell_menus.sell_menu(self.df_state)

@@ -13,9 +13,9 @@ from discord_app               import (
     DF_LOGO_EMOJI, get_cargo_emoji, get_vehicle_emoji
 )
 from discord_app.map_rendering import add_map_to_embed
-from discord_app.vendor_views  import vendor_inv_md, wet_price
+from discord_app.vendor_menus  import vendor_inv_embeds, wet_price
 import                                discord_app.nav_menus
-import                                discord_app.vendor_views.vendor_menus
+import                                discord_app.vendor_menus.vendor_menus
 import                                discord_app.vehicle_menus
 import                                discord_app.cargo_menus
 
@@ -28,7 +28,7 @@ DF_API_HOST = os.getenv('DF_API_HOST')
 
 async def buy_menu(df_state: DFState):
     if not df_state.vendor_obj:
-        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
+        await discord_app.vendor_menus.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_menu)  # Add this menu to the back stack
 
     df_state.vendor_obj['vehicle_inventory'] = sorted(
@@ -40,14 +40,12 @@ async def buy_menu(df_state: DFState):
         key=lambda x: x['unit_price']
     )
 
-    menu_embed = discord.Embed()
+    buy_embed = discord.Embed()
+    buy_embed = df_embed_author(buy_embed, df_state)
+    buy_embed.description = f'## {df_state.vendor_obj['name']}'
 
-    menu_embed.description = await vendor_inv_md(df_state, verbose=True)
-    menu_embed.description = menu_embed.description[:4096]
+    embeds = await vendor_inv_embeds(df_state, [buy_embed], verbose=True)
 
-    menu_embed = df_embed_author(menu_embed, df_state)
-
-    embeds = [menu_embed]
     embeds = add_tutorial_embed(embeds, df_state)
 
     buy_view = BuyView(df_state)
@@ -241,7 +239,7 @@ class BuyCargoSelect(discord.ui.Select):
 
 async def buy_resource_menu(df_state: DFState, resource_type: str):
     if not df_state.vendor_obj:
-        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
+        await discord_app.vendor_menus.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_resource_menu, args={'resource_type': resource_type})  # Add this menu to the back stack
 
     embed = ResourceBuyQuantityEmbed(df_state, resource_type)
@@ -339,7 +337,7 @@ class ResourceConfirmBuyButton(discord.ui.Button):
 
 async def buy_cargo_menu(df_state: DFState):
     if not df_state.vendor_obj:
-        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
+        await discord_app.vendor_menus.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_cargo_menu)  # Add this menu to the back stack
 
     embed = CargoBuyQuantityEmbed(df_state)
@@ -621,7 +619,7 @@ class QuantityBuyButton(discord.ui.Button):  # XXX: Explode this button into lik
 
 async def buy_vehicle_menu(df_state: DFState):
     if not df_state.vendor_obj:
-        await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
+        await discord_app.vendor_menus.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=buy_vehicle_menu)  # Add this menu to the back stack
 
     part_list = []

@@ -116,6 +116,48 @@ async def validate_interaction(interaction: discord.Interaction, df_state: DFSta
     return True  # Continue
 
 
+def split_description_into_embeds(
+    content_string: str,
+    embed_title: str,
+    target_embeds_list: list[discord.Embed],
+    continuation_prefix: str = '-# continued\n',
+):
+    """
+    Splits a long content string into multiple embeds, each respecting the max_length.
+    The first embed will have `embed_title`. Subsequent embeds will start with `continuation_prefix`.
+    """
+    MAX_EMBED_DESCRIPTION_LENGTH = 2048
+
+    # If content is effectively empty or just "- None", add a single embed with title and "- None"
+    if not content_string.strip() or content_string.strip() == '- None':
+        target_embeds_list.append(discord.Embed(description=f'{embed_title}\n- None'))
+        return
+
+    lines = content_string.split('\n')
+    # Start the first embed with the title
+    current_embed_lines = [embed_title]
+    current_length = len(embed_title) + 1  # +1 for the newline after title
+
+    for line in lines:
+        # If adding this line (plus a newline) would exceed the limit
+        if current_length + len(line) + 1 > MAX_EMBED_DESCRIPTION_LENGTH:
+            # Finalize the current embed
+            target_embeds_list.append(discord.Embed(description='\n'.join(current_embed_lines)))
+            # Start a new embed with the continuation prefix (or empty)
+            current_embed_lines = [continuation_prefix.strip()] if continuation_prefix.strip() else []
+            current_length = len(continuation_prefix)  # Length of prefix + its newline
+        
+        current_embed_lines.append(line)
+        current_length += len(line) + 1  # Add length of line and its preceding newline
+
+    # Add the last accumulated embed, if it has content beyond just the title (or continuation_prefix)
+    if current_embed_lines and (len(current_embed_lines) > 1 or (current_embed_lines[0] != continuation_prefix.strip() and current_embed_lines[0] != embed_title)):
+        target_embeds_list.append(discord.Embed(description='\n'.join(current_embed_lines)))
+    elif not current_embed_lines and not target_embeds_list:  # Handle case where content is very short and fits in one embed but loop doesn't add it
+        if lines:  # Ensure there was some initial content
+            target_embeds_list.append(discord.Embed(description=f'{embed_title}\n{content_string}'))
+
+
 async def get_image_as_discord_file(url: str) -> discord.File:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -189,7 +231,7 @@ def get_user_metadata(df_state: DFState, metadata_key: str):
     return user_metadata.get(metadata_key)
 
 
-def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
+def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> list[discord.Embed]:
     if not df_state.convoy_obj:
         return embeds
     if (

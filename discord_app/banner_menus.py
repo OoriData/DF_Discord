@@ -9,8 +9,8 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import api_calls, handle_timeout, df_embed_author, validate_interaction, DF_LOGO_EMOJI, DF_GUILD_ID
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.main_menu_menus
-import                                discord_app.vendor_views.vendor_menus
-import                                discord_app.vendor_views.buy_menus
+import                                discord_app.vendor_menus.vendor_menus
+import                                discord_app.vendor_menus.buy_menus
 import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
 import                                discord_app.warehouse_menus

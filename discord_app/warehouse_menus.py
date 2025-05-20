@@ -8,12 +8,12 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata, get_vehicle_emoji, get_cargo_emoji
 from discord_app.map_rendering import add_map_to_embed
-import                                discord_app.vendor_views.vendor_menus
-import                                discord_app.vendor_views.buy_menus
+import                                discord_app.vendor_menus.vendor_menus
+import                                discord_app.vendor_menus.buy_menus
 import                                discord_app.nav_menus
 import                                discord_app.main_menu_menus
 import                                discord_app.convoy_menus
-from discord_app.vendor_views  import vehicles_md
+from discord_app.vendor_menus  import vehicles_md
 from discord_app.df_state      import DFState
 
 
@@ -87,8 +87,8 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
             if cargo['recipient']:
                 cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each*'
-                margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)  # limit emojis to 24
-                cargo_str += f'\n  - Profit margin: {'💵 ' * margin}'
+                margin = min(round((cargo['unit_delivery_reward'] / cargo['unit_price']) / 2), 24)  # limit emojis to 24
+                cargo_str += f'\n    - Profit margin: {'💵 ' * margin}'
 
         cargo_list.append(cargo_str)
     displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'

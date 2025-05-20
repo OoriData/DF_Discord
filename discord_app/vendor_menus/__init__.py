@@ -4,7 +4,10 @@
 import                  math
 from datetime           import datetime, timezone, timedelta
 
-from discord_app import api_calls, DFState, get_vehicle_emoji
+import discord
+
+from discord_app import api_calls, DFState, get_vehicle_emoji, split_description_into_embeds
+
 
 
 def vehicles_md(vehicles, verbose: bool = False):
@@ -38,33 +41,34 @@ def vehicles_md(vehicles, verbose: bool = False):
                     f'  - Coupling: **{couplings}**' if couplings else None,
                 ] if line is not None]
             )
+        
+        if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
+            vehicle_str += '\n  - *contains cargo, cannot be sold*'
 
         vehicle_list.append(vehicle_str)
     return '\n'.join(vehicle_list) if vehicle_list else '- None'
 
 
-async def vendor_inv_md(df_state: DFState, *, verbose: bool = False) -> str:
-    """ Build the vendor inventory markdown from df_state """
+async def vendor_inv_embeds(df_state: DFState, embeds: list[discord.Embed], *, verbose: bool = False) -> list[discord.Embed]:
+    """ Returns embeds representing the resource, vehicle, and cargo inventory for the vendor. """
     vendor_obj = df_state.vendor_obj
 
-    displayable_resources = format_resources(vendor_obj)
-    displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
-    displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
+    if vendor_obj['fuel'] or vendor_obj['water'] or vendor_obj['food']:
+        displayable_resources = format_resources(vendor_obj)
+        embeds.append(discord.Embed(description='\n'.join([  # Resources section is typically short, no need to split
+            '### Resources for sale',
+            displayable_resources,
+        ])))
 
-    md = '\n'.join([
-        f'## {vendor_obj['name']}',
-        '### Available for Purchase',
-        '**Resources:**',
-        displayable_resources,
-        '',
-        '**Vehicles:**',
-        displayable_vehicles,
-        '',
-        '**Cargo:**',
-        displayable_cargo
-    ])
+    if vendor_obj['vehicle_inventory']:
+        displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
+        split_description_into_embeds(displayable_vehicles, '### Vehicles for sale', embeds)
 
-    return md
+    if vendor_obj['cargo_inventory']:
+        displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
+        split_description_into_embeds(displayable_cargo, '### Cargo for sale', embeds)
+
+    return embeds
 
 
 def format_resources(vendor_obj: dict) -> str:
@@ -79,7 +83,7 @@ def format_resources(vendor_obj: dict) -> str:
 
             resources_list.append(
                 f'- {resource.capitalize()} {emoji}: {vendor_obj[resource]} {unit}\n'
-                f'  - *${vendor_obj[f"{resource}_price"]:,.0f} per {unit[:-1]}*'
+                f'  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*'
             )
 
     return '\n'.join(resources_list) if resources_list else '- None'
@@ -99,9 +103,9 @@ async def format_cargo(df_state: DFState, *, verbose: bool, vendor: bool = False
 
         cargo_str = format_basic_cargo(cargo)
 
-        if cargo['recipient']:
+        if cargo['recipient'] and verbose:
             await enrich_delivery_info(df_state, cargo, verbose)
-            if verbose and cargo.get('recipient_vendor'):
+            if cargo.get('recipient_vendor'):
                 cargo_str += format_delivery_info(cargo)
 
         if vendor:
@@ -129,10 +133,12 @@ def update_wet_unit_price(cargo: dict, vendor_obj: dict) -> None:
 
 
 def is_cargo_invalid(cargo: dict, vendor_obj: dict) -> bool:
-    """ Determine if cargo should be skipped because required vendor pricing is missing """
+    """ Determine if cargo should be skipped because required vendor pricing is missing, and skip intrinsic cargo """
     for resource in ['fuel', 'water', 'food']:
         if cargo.get(resource) is not None and vendor_obj.get(f'{resource}_price') is None:
             return True
+    if cargo.get('intrinsic_part_id'):
+        return True  # Skip parts
     return False
 
 
@@ -193,8 +199,8 @@ def format_delivery_info(cargo: dict) -> str:
         f'\n  - Deliver to *{vendor_location}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each on delivery*'
     ]
 
-    margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)
-    delivery_info.append(f'\n  - Profit margin: {'💵 ' * margin}')
+    margin = min(round((cargo['unit_delivery_reward'] / cargo['unit_price']) / 2), 24)  # limit emojis to 24
+    delivery_info.append(f'\n    - Profit margin: {'💵 ' * margin}')
 
     tile_distance = math.sqrt(
         (vendor_obj['x'] - cargo['vendor_x']) ** 2 +

@@ -15,7 +15,10 @@ import discord_app.nav_menus
 import discord_app.vehicle_menus
 import discord_app.cargo_menus
 
-from discord_app.vendor_views  import vendor_inv_md, wet_price
+from discord_app.vendor_menus  import (
+    wet_price, vehicles_md, format_basic_cargo, enrich_delivery_info, format_delivery_info, update_wet_unit_price,
+    is_cargo_invalid
+)
 from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200
@@ -28,70 +31,69 @@ async def sell_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_menu)  # Add this menu to the back stack
 
+    sell_embed = discord.Embed()
+    sell_embed = df_embed_author(sell_embed, df_state)
+    sell_embed.description = f'## {df_state.vendor_obj['name']}'
+
+    embeds = [sell_embed]
+
     resources_list = []
     if df_state.vendor_obj.get('fuel'):
-        resources_list.append(f'- Fuel: {df_state.convoy_obj['fuel']:,} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
+        resources_list.append(f'- Fuel ⛽️: {df_state.convoy_obj['fuel']:,} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('water'):
-        resources_list.append(f'- Water: {df_state.convoy_obj['water']:,} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
+        resources_list.append(f'- Water 💧: {df_state.convoy_obj['water']:,} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('food'):
-        resources_list.append(f'- Food: {df_state.convoy_obj['food']:,} meals\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
-    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
+        resources_list.append(f'- Food 🥪: {df_state.convoy_obj['food']:,} meals\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
+    displayable_resources = '\n'.join(resources_list) if resources_list else None
 
-    vehicle_list = []
-    for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
-        if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
-            vehicle_str += '\n  - *contains cargo, cannot be sold*'
-        vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
+    if displayable_resources:
+        embeds.append(discord.Embed(description='\n'.join([
+            '### Resources the convoy can sell',
+            f'{displayable_resources}',
+        ])))
 
-    cargo_list = []
-    for vehicle in df_state.convoy_obj['vehicles']:
-        for cargo in vehicle['cargo']:
-            if cargo.get('intrinsic_part_id'):
-                continue  # Skip parts
+    if df_state.convoy_obj['vehicles'] and df_state.vendor_obj.get('vehicle_inventory'):
+        displayable_vehicles = vehicles_md(df_state.convoy_obj['vehicles'])
+    else:
+        displayable_vehicles = None
 
-            if cargo.get('recipient'):  # It's delivery cargo
-                if not cargo.get('recipient_vendor'):
-                    cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+    if displayable_vehicles:
+        embeds.append(discord.Embed(description='\n'.join([
+            '### Vehicles the convoy can sell',
+            f'{displayable_vehicles}',
+        ])))
 
-                cargo_str = (
-                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}*\n'
-                    f'  - Deliver to *{cargo['recipient_vendor']['name']}* | '
-                    f'*${cargo['unit_delivery_reward']:,.0f}* per item'
-                )
+    if df_state.vendor_obj.get('cargo_inventory'):
+        cargo_list = []
+        for vehicle in df_state.convoy_obj['vehicles']:
+            for cargo in vehicle['cargo']:
+                if is_cargo_invalid(cargo, df_state.vendor_obj):
+                    continue
 
-            else:  # It's normal sellable cargo
-                unit_price = wet_price(cargo, df_state.vendor_obj, quantity=1)  # Single unit price
+                update_wet_unit_price(cargo, df_state.vendor_obj)
 
-                cargo_str = (
-                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}* | '
-                    f'*${unit_price:,.0f} each*'
-                )
+                cargo_str = format_basic_cargo(cargo)
 
-            cargo_list.append(cargo_str)
+                if cargo.get('recipient'):  # It's delivery cargo
+                    await enrich_delivery_info(df_state, cargo)
+                    if cargo.get('recipient_vendor'):
+                        cargo_str += format_delivery_info(cargo)
 
-    displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
+                cargo_list.append(cargo_str)
 
-    embed = discord.Embed()
-    embed.description = '\n'.join([
-        f'## {df_state.vendor_obj['name']}',
-        '### Available to sell from convoy:',
-        '**Resources:**',
-        f'{displayable_resources}',
-        '',
-        '**Vehicles:**',
-        f'{displayable_vehicles}',
-        '',
-        '**Cargo:**',
-        f'{displayable_cargo}'
-    ])
+        displayable_cargo = '\n'.join(cargo_list) if cargo_list else None
+    else:
+        displayable_cargo = None
 
-    embed = df_embed_author(embed, df_state)
+    if displayable_cargo:
+        embeds.append(discord.Embed(description='\n'.join([
+            '### Cargo the convoy can sell',
+            f'{displayable_cargo}',
+        ])))
 
     view = SellView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class SellView(discord.ui.View):
     def __init__(self, df_state: DFState):

@@ -17,7 +17,7 @@ from discord_app               import (
 )
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
-import discord_app.vendor_views.buy_menus
+import discord_app.vendor_menus.buy_menus
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 from discord_app.df_state      import DFState
@@ -959,7 +959,7 @@ class SendConvoyConfirmView(discord.ui.View):
             override_style=override_style,
             override_emoji=override_emoji
         ))
-        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(
+        self.add_item(discord_app.vendor_menus.buy_menus.TopUpButton(
             df_state=self.df_state,
             menu=route_finder,
             menu_args={

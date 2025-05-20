@@ -10,7 +10,7 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import (
     api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
 )
-from discord_app.vendor_views  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
+from discord_app.vendor_menus  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
 import discord_app.nav_menus
 import discord_app.vehicle_menus
 import discord_app.cargo_menus

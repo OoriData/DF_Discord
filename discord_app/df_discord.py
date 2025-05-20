@@ -84,7 +84,7 @@ class DesolateCog(commands.Cog):
         self.update_user_cache.start()
         await self.cache_ready.wait()  # Wait until cache is initialized
 
-        self.bot.add_view(TimeoutView(self.df_users_cache, None))
+        self.bot.add_view(TimeoutView(self.df_users_cache))
 
         logger.debug(ansi_color('Initializing notification loop…', 'yellow'))
         self.notifier.start()

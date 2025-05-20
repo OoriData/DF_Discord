@@ -104,7 +104,7 @@ async def format_cargo(df_state: DFState, *, verbose: bool, vendor: bool = False
         cargo_str = format_basic_cargo(cargo)
 
         if cargo['recipient'] and verbose:
-            await enrich_delivery_info(df_state, cargo, verbose)
+            await enrich_delivery_info(df_state, cargo)
             if cargo.get('recipient_vendor'):
                 cargo_str += format_delivery_info(cargo)
 
@@ -172,7 +172,7 @@ def format_basic_cargo(cargo: dict) -> str:
     return cargo_str
 
 
-async def enrich_delivery_info(df_state: DFState, cargo: dict, verbose: bool) -> None:
+async def enrich_delivery_info(df_state: DFState, cargo: dict) -> None:
     """ Attach vendor and location info to deliverable cargo """
     if not cargo.get('recipient_vendor'):
         cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])

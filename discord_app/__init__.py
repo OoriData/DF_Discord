@@ -40,7 +40,7 @@ MOUNTAIN_TIME = ZoneInfo('America/Denver')
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
     if df_state.interaction.message:
-        dead_message = df_state.interaction.channel.fetch_message(df_state.interaction.message.id)
+        dead_message = await df_state.interaction.channel.fetch_message(df_state.interaction.message.id)
     else:
         dead_message = None
 

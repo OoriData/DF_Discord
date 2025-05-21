@@ -195,26 +195,28 @@ class MechView(discord.ui.View):
 async def upgrade_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
 
+    header_embed = df_embed_author(discord.Embed(), df_state)
+    header_embed.description = '\n'.join([
+        f'## {df_state.vehicle_obj['name']}',
+        f'*{df_state.vehicle_obj['description']}*',
+    ])
+
     displayable_vehicle_parts = '\n'.join(
         discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
     )
-    truncated_vehicle_parts = displayable_vehicle_parts[:3750]
+    truncated_vehicle_parts = displayable_vehicle_parts[:4096]
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
-        f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['description']}*',
-        '## Parts',
+    parts_embed = discord.Embed(description = '\n'.join([
+        f'## {df_state.vehicle_obj['name']} parts',
         truncated_vehicle_parts,
-        f'### {df_state.vehicle_obj['name']} stats'
-    ])
+    ]))
 
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
 
     view = UpgradeVehicleView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=[header_embed, parts_embed, footer_embed], view=view)
 
 class UpgradeVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -382,9 +384,9 @@ async def part_install_confirm_menu(df_state: DFState):
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '### Current Part',
+        '### Current Part(s)',
         discord_app.cargo_menus.format_part(current_parts) if current_parts else '- None',
-        '### New Parts',
+        '### New Part(s)',
         discord_app.cargo_menus.format_part(compatibilities),
         f'### {df_state.vehicle_obj['name']} stats'
     ])
@@ -490,20 +492,24 @@ async def remove_part_vehicle_menu(df_state: DFState):
 
     displayable_vehicle_parts = '\n'.join(discord_app.cargo_menus.format_part(part) for part in removable_parts)
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
+    header_embed = df_embed_author(discord.Embed(), df_state)
+    header_embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
+    ])
+    
+    parts_embed = discord.Embed(description='\n'.join([
         '## Removable parts',
         displayable_vehicle_parts,
         f'### {df_state.vehicle_obj['name']} stats'
-    ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    ]))
+
+    footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
 
     view = RemovePartView(df_state, removable_parts)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=[header_embed, parts_embed, footer_embed], view=view)
 
 class RemovePartView(discord.ui.View):
     def __init__(self, df_state: DFState, removable_parts):

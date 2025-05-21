@@ -56,9 +56,9 @@ class TimeoutView(discord.ui.View):
         self = add_external_URL_buttons(self)  # Add external link buttons
 
         if prev_interaction:
-            if prev_interaction.app_permissions.send_messages:
+            if prev_interaction.app_permissions.send_messages:  # Check if the bot can send messages in the channel
                 self.add_item(TimedOutMainMenuButton(user_cache))
-            elif prev_interaction.channel.type in (discord.ChannelType.private, discord.ChannelType.group):
+            elif prev_interaction.channel.type in (discord.ChannelType.private, discord.ChannelType.group):  # Check if the channel is a DM or group DM
                 self.add_item(discord.ui.Button(
                     style=discord.ButtonStyle.blurple,
                     label='Interaction timed out',
@@ -66,7 +66,7 @@ class TimeoutView(discord.ui.View):
                     custom_id='disabled_timed_out_button',
                     row=1
                 ))
-            else:
+            else:  # If the bot can't send messages in the channel, add a disabled button
                 self.add_item(discord.ui.Button(
                     style=discord.ButtonStyle.blurple,
                     label='Interaction timed out | Main Menu',

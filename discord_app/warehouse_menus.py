@@ -34,7 +34,7 @@ async def warehoused(df_state: DFState, edit: bool):
     embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
     embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
 
-    cargo_volume = sum(cargo['volume'] * cargo['quantity'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
+    cargo_volume = sum(cargo['volume'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
 
     if df_state.user_obj['metadata']['mobile']:
         embed.description += '\n' + '\n'.join([

@@ -8,7 +8,7 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
+    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, split_description_into_embeds
 )
 from discord_app.vendor_menus  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
 import discord_app.nav_menus
@@ -201,22 +201,23 @@ async def upgrade_vehicle_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
     ])
 
-    displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
-    )
-    truncated_vehicle_parts = displayable_vehicle_parts[:4096]
+    embeds = [header_embed]
 
-    parts_embed = discord.Embed(description = '\n'.join([
-        f'## {df_state.vehicle_obj['name']} parts',
-        truncated_vehicle_parts,
-    ]))
+    split_description_into_embeds(
+        content_string='\n'.join(
+            discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
+        ),
+        embed_title=f'## {df_state.vehicle_obj['name']} parts',
+        target_embeds_list=embeds,
+    )
 
     footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
     footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
+    embeds.append(footer_embed)
 
     view = UpgradeVehicleView(df_state)
 
-    await df_state.interaction.response.edit_message(embeds=[header_embed, parts_embed, footer_embed], view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class UpgradeVehicleView(discord.ui.View):
     def __init__(self, df_state: DFState):

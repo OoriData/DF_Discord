@@ -43,11 +43,10 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if w['sett_id'] == df_state.sett_obj['sett_id']
     ), None)
     if df_state.warehouse_obj:
-        warehouse_embed = discord.Embed()
-        warehouse_embed.description += '\n' + '\n'.join([
+        warehouse_embed = discord.Embed(description='\n' + '\n'.join([
             f'# {df_state.sett_obj['name']} Warehouse',
             await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
-        ])
+        ]))
 
         embeds.append(warehouse_embed)
 

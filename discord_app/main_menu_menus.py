@@ -117,7 +117,7 @@ async def main_menu(
         user_obj=user_obj,
         interaction=interaction,
         user_cache=user_cache,
-        misc={'resource_weights': await api_calls.resource_weights()}
+        misc={'resource_weights': await api_calls.resource_weights()}  # XXX: Cache this and move to df_discord.py or smth
     )
 
     main_menu_embed = discord.Embed()
@@ -246,6 +246,9 @@ class MainMenuUsernameModal(discord.ui.Modal):
         self.df_state.user_obj = await api_calls.get_user(user_id)
         self.df_state.user_obj['metadata']['mobile'] = True
         await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+
+        self.df_state.user_cache[self.df_state.user_obj['user_id']] = self.df_state.user_obj
+
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache)
 
 class NewUserNotificationsButton(discord.ui.Button):

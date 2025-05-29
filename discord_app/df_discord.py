@@ -233,7 +233,7 @@ class DesolateCog(commands.Cog):
         discord_notification_users = server_notification_users + dm_notification_users
         for user in discord_notification_users:
             try:
-                discord_user = guild.get_member(user['discord_id'])
+                discord_user = self.bot.get_user(user['discord_id'])
                 self.df_users_cache[discord_user] = user  # Use Discord ID as key, DF user ID as value
                 await add_discord_roles(discord_user)
             except Exception as e:
@@ -249,6 +249,9 @@ class DesolateCog(commands.Cog):
             notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
 
             for discord_user, df_user in self.df_users_cache.items():
+                if not discord_user:
+                    continue
+
                 logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_user['user_id']})', 'blue'))
 
                 notification_type = df_user['metadata']['notifications']

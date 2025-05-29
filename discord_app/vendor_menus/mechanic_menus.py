@@ -400,7 +400,7 @@ async def part_install_confirm_menu(df_state: DFState):
 class ConfirmInstallButton(discord.ui.Button):
     def __init__(self, df_state: DFState, row: int = 1):
         self.df_state = df_state
-        self.part_to_install = df_state.cargo_obj # The cargo item selected for installation
+        self.part_to_install = df_state.cargo_obj  # The cargo item selected for installation
 
         # Determine if the part is from the vendor's stock
         self.is_from_vendor_stock = any(

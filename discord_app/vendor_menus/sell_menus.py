@@ -422,7 +422,7 @@ class CargoConfirmSellButton(discord.ui.Button):
 
         if len(cargo_name_original) > available_length_for_name:
             # Ensure there's space for "..." if truncating
-            if available_length_for_name < 3: # Not enough space for "..."
+            if available_length_for_name < 3:  # Not enough space for "..."
                 truncated_name = cargo_name_original[:max(0, available_length_for_name)]
             else:
                 truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."
@@ -509,7 +509,7 @@ class SellAllCargoButton(discord.ui.Button):
 
         if len(cargo_name_original) > available_length_for_name:
             # Ensure there's space for "..." if truncating
-            if available_length_for_name < 3: # Not enough space for "..."
+            if available_length_for_name < 3:  # Not enough space for "..."
                 truncated_name = cargo_name_original[:max(0, available_length_for_name)]
             else:
                 truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."

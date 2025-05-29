@@ -53,12 +53,12 @@ class DesolateCog(commands.Cog):
         df_guild = self.bot.get_guild(DF_GUILD_ID)
         logger.info(ansi_color(f'Discord guild: {df_guild.name}', 'purple'))
         logger.info(ansi_color(f'Bot/App: {self.bot.user.name}', 'purple'))
-        logger.info(ansi_color(f'Gameplay channel 1: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID).name}', 'purple'))
-        logger.info(ansi_color(f'Gameplay channel 2: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_2_ID).name}', 'purple'))
-        logger.info(ansi_color(f'Gameplay channel 3: #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID).name}', 'purple'))
-        logger.info(ansi_color(f'Notification channel: #{self.bot.get_channel(DF_CHANNEL_ID).name}', 'purple'))
-        logger.info(ansi_color(f'Leaderboard channel: #{self.bot.get_channel(DF_LEADERBOARD_CHANNEL_ID).name}', 'purple'))
-        logger.info(ansi_color(f'Welcome channel: #{self.bot.get_channel(DF_WELCOME_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 1:  #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_1_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 2:  #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_2_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Gameplay channel 3:  #{self.bot.get_channel(DF_GAMEPLAY_CHANNEL_3_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Notification channel:  #{self.bot.get_channel(DF_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Leaderboard channel:  #{self.bot.get_channel(DF_LEADERBOARD_CHANNEL_ID).name}', 'purple'))
+        logger.info(ansi_color(f'Welcome channel:  #{self.bot.get_channel(DF_WELCOME_CHANNEL_ID).name}', 'purple'))
         logger.info(ansi_color(f'DF API: {DF_API_HOST}', 'purple'))
 
         logger.debug(ansi_color('Initializing settlements cache…', 'yellow'))
@@ -201,11 +201,11 @@ class DesolateCog(commands.Cog):
 
         try:
             await welcome_channel.send(content=member.mention, embed=welcome_embed)
-            logger.info(ansi_color(f'Sent welcome message for {member.name} ({member.id}) to #{welcome_channel.name}', 'green'))
+            logger.info(ansi_color(f'Sent welcome message for {member.name} ({member.id}) to  #{welcome_channel.name}', 'green'))
         except discord.Forbidden:  # This might occur if the bot doesn't have send permissions in the welcome_channel
-            logger.warning(ansi_color(f'Could not send welcome message to #{welcome_channel.name}. Bot might lack permissions.', 'yellow'))
+            logger.warning(ansi_color(f'Could not send welcome message to  #{welcome_channel.name}. Bot might lack permissions.', 'yellow'))
         except Exception as e:
-            logger.error(ansi_color(f'Failed to send welcome message for {member.name} ({member.id}) to #{welcome_channel.name}: {e}', 'red'))
+            logger.error(ansi_color(f'Failed to send welcome message for {member.name} ({member.id}) to  #{welcome_channel.name}: {e}', 'red'))
 
     @tasks.loop(minutes=15)
     async def update_user_cache(self):

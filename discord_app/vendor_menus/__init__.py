@@ -220,7 +220,7 @@ def format_clearance_info(cargo: dict) -> str:
     try:
         creation_date_str = cargo.get('creation_date')
         if not creation_date_str:
-            return '' # No date to check against
+            return ''  # No date to check against
         
         cargo_creation_dt = datetime.fromisoformat(creation_date_str).replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
@@ -252,8 +252,8 @@ def format_clearance_info(cargo: dict) -> str:
             return f'\n  - *Clearance! {discount_percentage}% off!* 🏷️'  # + f' `CARGO IS {(now - cargo_age).days} DAYS OLD`'
     except (ValueError, TypeError):
         # Handle potential errors during date parsing/comparison gracefully
-        return '' # Don't add clearance info if dates are problematic
-    return '' # Not on sale or an error occurred
+        return ''  # Don't add clearance info if dates are problematic
+    return ''  # Not on sale or an error occurred
 
 
 async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:

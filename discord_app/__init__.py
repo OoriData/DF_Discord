@@ -369,7 +369,7 @@ class TutorialEmbed(discord.Embed):
 DF_HELP = '''\
 ## Welcome to the **Desolate Frontiers**!
 
-This thing's just out of Alpha, so things *will* break and the game *is not* finished! If you have an issue, please DM Choccy (or just holler in #general)!
+This thing's just out of Alpha, so things *will* break and the game *is not* finished! If you have an issue, please DM Choccy (or just holler in  #general)!
 
 - You'll be managing a logistics company, running convoys of land vehicles across the remains of the US, carrying all manner of useful goods. 🚛
 - To get started, run **`/desolate-frontiers`** to get your account signed up for our system. You'll also get to name your first convoy there! 💻

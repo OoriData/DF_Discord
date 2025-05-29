@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: UNLICENSED
 FROM python:3.12-slim
 
-# Combine commands in one RUN instruction to minimize # of layers in the file system, saving disk space.
+# Combine commands in one RUN instruction to minimize  # of layers in the file system, saving disk space.
 # Also ref: https://github.com/reproducible-containers/buildkit-cache-dance
 ENV DEBIAN_FRONTEND=noninteractive
 RUN \

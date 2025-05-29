@@ -40,16 +40,16 @@ DISCORD_TOKEN = "SECRET REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"  
 # Server that is used as the presumed playerbase to send notifications to 
 DF_GUILD_ID = "1119003654800822302"    # oori dev server
 # Channel to send those notifications in
-DF_CHANNEL_ID = "1179194033923432578"  # #bot-attic-🔇
+DF_CHANNEL_ID = "1179194033923432578"  #  #bot-attic-🔇
 
 WASTELANDER_ROLE = "1201669829140942970"  # "WASTELANDER test" role in oori dev server
 ALPHA_ROLE = "1201669791866441748"        # "ALPHA test" role in oori dev server
 BETA_ROLE = "1201669724987990096"         # "BETA test" role in oori dev server
 
-DF_WELCOME_CHANNEL_ID = "1365103931935690874"     # #df-test-notifications-🔇
-DF_GAMEPLAY_CHANNEL_1_ID = "1119004092098953366"  # #bot-garage-🔇
-DF_GAMEPLAY_CHANNEL_2_ID = "1179194033923432578"  # #bot-attic-🔇
-DF_GAMEPLAY_CHANNEL_3_ID = "1205228905431306250"  # #bot-dungeon-🔇
+DF_WELCOME_CHANNEL_ID = "1365103931935690874"     #  #df-test-notifications-🔇
+DF_GAMEPLAY_CHANNEL_1_ID = "1119004092098953366"  #  #bot-garage-🔇
+DF_GAMEPLAY_CHANNEL_2_ID = "1179194033923432578"  #  #bot-attic-🔇
+DF_GAMEPLAY_CHANNEL_3_ID = "1205228905431306250"  #  #bot-dungeon-🔇
 ```
 You'll need to have the [1Password CLI tools](https://developer.1password.com/docs/cli/get-started/) installed to make this work ("Manual" reccomended over "Homebrew")
 

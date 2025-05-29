@@ -755,7 +755,7 @@ async def route_menu(
 
     # --- Resource Constraint Checking ---
     # Lists to store resources that fall below critical or safety thresholds
-    critical_resources = [] # Below minimum required
+    critical_resources = []  # Below minimum required
     safety_resources = []   # Below recommended safety margin (2x required)
 
     for resource in ['fuel', 'water', 'food']:  # Check standard resources constraints
@@ -806,7 +806,7 @@ async def route_menu(
     override_style = None
     override_emoji = None
     safety_margin_emoji = '⚠️'  # Emoji for safety warnings
-    critical_margin_emoji = '🛑' # Emoji for critical warnings
+    critical_margin_emoji = '🛑'  # Emoji for critical warnings
 
     def _create_warning_embed(  # Helper function to create resource warning embeds
         color: discord.Color,
@@ -874,7 +874,7 @@ async def route_menu(
             override_style = discord.ButtonStyle.red
             override_emoji = safety_margin_emoji
         # Ensure emoji reflects the most severe warning (critical takes precedence)
-        override_emoji = override_emoji or safety_margin_emoji # Use safety emoji if no critical emoji set
+        override_emoji = override_emoji or safety_margin_emoji  # Use safety emoji if no critical emoji set
 
         safety_embed = _create_warning_embed(  # Create the safety warning embed using the helper function
             color=discord.Color.yellow(),
@@ -898,8 +898,8 @@ async def route_menu(
     view = SendConvoyConfirmView(  # Create the confirmation view with buttons (Confirm, Next Route, Top Up)
         df_state=df_state,
         prospective_journey_plus_misc=prospective_journey_plus_misc,
-        override_style=override_style, # Pass the determined button style
-        override_emoji=override_emoji, # Pass the determined button emoji
+        override_style=override_style,  # Pass the determined button style
+        override_emoji=override_emoji,  # Pass the determined button emoji
         dest_x=dest_x,
         dest_y=dest_y,
         route_choices=route_choices,
@@ -914,13 +914,13 @@ async def route_menu(
             og_message.id,
             embeds=embeds,
             view=view,
-            attachments=[image_file] # Include the map image file
+            attachments=[image_file]  # Include the map image file
         )
     else:  # If not responded yet, edit the initial deferred response
         await df_state.interaction.response.edit_message(
             embeds=embeds,
             view=view,
-            attachments=[image_file] # Include the map image file
+            attachments=[image_file]  # Include the map image file
         )
 
 class SendConvoyConfirmView(discord.ui.View):

@@ -150,7 +150,7 @@ def create_condensed_internal_leaderboard(internal_leaderboard_data: dict, alleg
             allegiance_pos = spot['leaderboard_position']
             break
 
-    if allegiance_pos is None: # Should not happen if allegiance_id is valid
+    if allegiance_pos is None:  # Should not happen if allegiance_id is valid
         # Fallback: just take top 5 if user not found for some reason
         return [user_id for user_id, spot in sorted_spots[:5]]
 
@@ -163,21 +163,21 @@ def create_condensed_internal_leaderboard(internal_leaderboard_data: dict, alleg
             condensed_internal_leaderboard.append(user_id)
             processed_user_ids.add(user_id)
         else:
-            break # Already sorted, so we can break
+            break  # Already sorted, so we can break
 
     if allegiance_pos <= 5:  # Add 4th and 5th place if allegiance is in top 5 and not already added
         for user_id, spot in sorted_spots:
             if 3 < spot['leaderboard_position'] <= 5 and user_id not in processed_user_ids:
                 condensed_internal_leaderboard.append(user_id)
                 processed_user_ids.add(user_id)
-    else: # Allegiance is outside top 5
+    else:  # Allegiance is outside top 5
         # Check if there's a gap between top 3 and user's surrounding positions
         # Ensure condensed_internal_leaderboard is not empty before accessing its last element
         if condensed_internal_leaderboard:
             last_top_pos = internal_leaderboard_data[condensed_internal_leaderboard[-1]]['leaderboard_position']
             if allegiance_pos -1 > last_top_pos + 1:
                 condensed_internal_leaderboard.append('…')
-        elif allegiance_pos > 1: # If top 3 was empty and user is not #1, ellipsis might be needed
+        elif allegiance_pos > 1:  # If top 3 was empty and user is not  #1, ellipsis might be needed
              condensed_internal_leaderboard.append('…')
 
 
@@ -192,7 +192,7 @@ def create_condensed_internal_leaderboard(internal_leaderboard_data: dict, alleg
     seen = set()
     for item in condensed_internal_leaderboard:
         if item == '…':
-            if 'ellipsis' not in seen: # Allow only one ellipsis
+            if 'ellipsis' not in seen:  # Allow only one ellipsis
                 final_list.append(item)
                 seen.add('ellipsis')
         elif item not in seen:
@@ -281,10 +281,10 @@ def create_condensed_global_leaderboard(global_leaderboard_data: dict, allegianc
         for banner_id, spot in sorted_banners:
             if 3 < spot['leaderboard_position'] <= 5 and banner_id not in condensed_global_leaderboard:
                 condensed_global_leaderboard.append(banner_id)
-    else: # Allegiance banner is outside top 5
+    else:  # Allegiance banner is outside top 5
         # Check if ellipsis is needed
         last_top_pos = 0
-        if condensed_global_leaderboard: # If top 3 were added
+        if condensed_global_leaderboard:  # If top 3 were added
             # Get the position of the last banner added from top 3
             last_top_banner_id = condensed_global_leaderboard[-1]
             if last_top_banner_id in global_leaderboard_data:
@@ -341,7 +341,7 @@ def format_global_leaderboard_for_display(global_leaderboard_data: dict, condens
     current_sorted_idx = 0
     for item_in_condensed_list in condensed_banner_ids:
         if item_in_condensed_list == '…':
-            if not processed_ellipsis : # Add ellipsis only once if multiple were somehow added
+            if not processed_ellipsis :  # Add ellipsis only once if multiple were somehow added
                 # Check if this ellipsis is logically placed (i.e., creates a visual gap)
                 # This is hard to do perfectly without knowing the next actual item's position from condensed_banner_ids
                 # A simpler rule: if '...' is present, and we haven't added it, add it.
@@ -354,19 +354,19 @@ def format_global_leaderboard_for_display(global_leaderboard_data: dict, condens
         # This assumes item_in_condensed_list is an actual banner_id here
         if current_sorted_idx < len(sorted_banner_spots_data):
             spot = next((s for s in sorted_banner_spots_data if global_leaderboard_data.get(item_in_condensed_list) == s), None)
-            if not spot: # Should not happen if condensed_banner_ids are valid
+            if not spot:  # Should not happen if condensed_banner_ids are valid
                 # Try to find by matching banner_id if spot object comparison fails due to dict nuances
                 if item_in_condensed_list in global_leaderboard_data:
                     spot = global_leaderboard_data[item_in_condensed_list]
                 else:
-                    continue # Skip if banner_id from condensed list is not in global_leaderboard_data
+                    continue  # Skip if banner_id from condensed list is not in global_leaderboard_data
 
             # Ensure we are processing in sorted order from sorted_banner_spots_data
             # This loop structure is a bit complex due to '...'. A simpler way might be to iterate sorted_banner_spots_data
             # and decide when to print '...' based on gaps and its presence in condensed_banner_ids.
             # For now, let's use the current spot.
 
-            current_banner_id = item_in_condensed_list # This is the banner_id we are processing
+            current_banner_id = item_in_condensed_list  # This is the banner_id we are processing
 
             position_line = (
                 f"{spot['leaderboard_position']}. **{spot['name']}**"
@@ -380,7 +380,7 @@ def format_global_leaderboard_for_display(global_leaderboard_data: dict, condens
             volume_line = f"  - Total volume moved: **{spot['stats'].get('total_volume_moved', 0)}L**"
             global_leaderboard_string.extend([position_line, volume_line])
             last_pos = spot['leaderboard_position']
-            current_sorted_idx += 1 # Move to the next item in the pre-sorted list
+            current_sorted_idx += 1  # Move to the next item in the pre-sorted list
         
     return global_leaderboard_string
 

@@ -22,6 +22,7 @@ from discord_app                 import (
     DF_GAMEPLAY_CHANNEL_1_ID, DF_GAMEPLAY_CHANNEL_2_ID, DF_GAMEPLAY_CHANNEL_3_ID,
     DF_LOGO_EMOJI,
     MOUNTAIN_TIME, DF_LEADERBOARD_CHANNEL_ID,
+    SERVER_NOTIFICATION_VALUE, DM_NOTIFICATION_VALUE
 )
 from discord_app                 import TimeoutView, api_calls, DF_HELP, discord_timestamp
 from discord_app.banner_menus    import format_top_n_global_leaderboard
@@ -206,7 +207,7 @@ class DesolateCog(commands.Cog):
         except Exception as e:
             logger.error(ansi_color(f'Failed to send welcome message for {member.name} ({member.id}) to #{welcome_channel.name}: {e}', 'red'))
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=15)
     async def update_user_cache(self):
         if not isinstance(self.df_users_cache, dict):  # Initialize cache if not already a dictionary
             self.df_users_cache = {}
@@ -216,11 +217,6 @@ class DesolateCog(commands.Cog):
             await asyncio.sleep(55)  # Sleep so the updating of the user cache doesn't overlap with the notifier
 
         guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
-        current_member_ids = {member.id for member in guild.members}  # Create a set of current members' IDs
-
-        for cached_member_id in list(self.df_users_cache.keys()):  # Remove users from cache who are no longer in the guild
-            if cached_member_id not in current_member_ids:
-                del self.df_users_cache[cached_member_id]
 
         async def add_discord_roles(member):
             user_role_ids = [role.id for role in member.roles]
@@ -230,21 +226,18 @@ class DesolateCog(commands.Cog):
                 except HTTPException as e:
                     logger.error(ansi_color(f'Couldn\'t add Player/Beta roles to user {member.display_name}: {e}', 'red'))
 
-        for member in guild.members:  # Update cache with current members
-            if member.id in self.df_users_cache:  # If the member is already in the cache, skip the API call
-                await add_discord_roles(member)  # Add Alpha/Beta roles
-                continue
+        discord_users_dict = await api_calls.get_discord_users()
+        server_notification_users = discord_users_dict['server_notifications']
+        dm_notification_users = discord_users_dict['dm_notifications']
 
-            try:  # Fetch user data via API only if they aren't in the cache
-                user_dict = await api_calls.get_user_by_discord(member.id)
-                self.df_users_cache[member.id] = user_dict['user_id']  # Use Discord ID as key, DF user ID as value
-                await add_discord_roles(member)  # Add Alpha/Beta roles
-                logger.debug(ansi_color(f'discord user {member.name} ({user_dict['user_id']}) added to df_users_cache', 'green'))
-            except RuntimeError as e:  # Just skip unregistered users
-                logger.debug(ansi_color(f'discord user {member.name} is not registered: {e}', 'cyan'))
-                continue
+        discord_notification_users = server_notification_users + dm_notification_users
+        for user in discord_notification_users:
+            try:
+                discord_user = guild.get_member(user['discord_id'])
+                self.df_users_cache[discord_user] = user  # Use Discord ID as key, DF user ID as value
+                await add_discord_roles(discord_user)
             except Exception as e:
-                logger.error(ansi_color(f'Error updating the cache for user {member.name}: {e}', 'red'))
+                logger.error(ansi_color(e, 'red'))
 
         if initial_setup:
             logger.info(ansi_color('User cache initialization complete', 'green'))
@@ -253,66 +246,75 @@ class DesolateCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def notifier(self):
         if isinstance(self.df_users_cache, dict):  # If the cache has been initialized
-            guild: discord.Guild = self.bot.get_guild(DF_GUILD_ID)
             notification_channel: discord.guild.GuildChannel = self.bot.get_channel(DF_CHANNEL_ID)
 
-            for discord_user_id, df_id in self.df_users_cache.items():
-                discord_user = guild.get_member(discord_user_id)  # Fetch the Discord member using the ID
+            for discord_user, df_user in self.df_users_cache.items():
+                logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_user['user_id']})', 'blue'))
 
-                if discord_user:
-                    logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_id})', 'blue'))
-                    try:  # Fetch unseen dialogue for the DF user
-                        unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_id)
-                        logger.debug(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+                notification_type = df_user['metadata']['notifications']
+                
+                if notification_type not in [SERVER_NOTIFICATION_VALUE, DM_NOTIFICATION_VALUE]:
+                    logger.info('User has Discord ID, but does not receive either server or DM notifications')
+                    continue
 
-                        seen_this_round = set()  # Ephemeral deduplication per user per run
+                try:  # Fetch unseen dialogue for the DF user
+                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_user['user_id'])
+                    logger.debug(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
-                        if unseen_dialogue_dicts:
-                            notifications = []
-                            for dialogue in unseen_dialogue_dicts:
-                                for message in dialogue['messages']:
-                                    content = message['content'].strip()
+                    seen_this_round = set()  # Ephemeral deduplication per user per run
 
-                                    if not content or content in seen_this_round:
-                                        logger.error(ansi_color('Got duplicate notification, skipping…', 'red'))
-                                        continue
+                    if unseen_dialogue_dicts:
+                        notifications = []
+                        for dialogue in unseen_dialogue_dicts:
+                            for message in dialogue['messages']:
+                                content = message['content'].strip()
 
-                                    seen_this_round.add(content)
-                                    notifications.append({
-                                        'message_content': content,
-                                        'message_metadata': dialogue
-                                    })
+                                if not content or content in seen_this_round:
+                                    logger.error(ansi_color('Got duplicate notification, skipping…', 'red'))
+                                    continue
 
-                            embeds_to_send = []
-                            for notification in notifications:
-                                # embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
-                                embed = discord.Embed(description=notification['message_content'][:4096])  # Embed descriptions can be a maximum of 4096 chars
-                                embed.set_author(
-                                    name=discord_user.display_name,
-                                    icon_url=discord_user.avatar.url
-                                )
+                                seen_this_round.add(content)
+                                notifications.append({
+                                    'message_content': content,
+                                    'message_metadata': dialogue
+                                })
 
-                                user_convoy_id = notification['message_metadata']['char_b_id']
+                        embeds_to_send = []
+                        for notification in notifications:
+                            # embed = discord.Embed(description=notification[:4096])  # Embed descriptions can be a maximum of 4096 chars
+                            embed = discord.Embed(description=notification['message_content'][:4096])  # Embed descriptions can be a maximum of 4096 chars
+                            embed.set_author(
+                                name=discord_user.display_name,
+                                icon_url=discord_user.avatar.url
+                            )
 
-                                # XXX: use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
-                                # view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
+                            user_convoy_id = notification['message_metadata']['char_b_id']
 
-                                # await notification_channel.send(embed=embed, view=view)
+                            # XXX: use (currently nonexistent) messsage metadata to decide what sort of button to attach to the notification (Respond to encounter, Go to convoy, etc)
+                            # view = RespondToConvoyView(user_discord_id=discord_user_id, user_convoy_id=user_convoy_id, user_cache=self.df_users_cache)
 
-                                embeds_to_send.append(embed)
+                            # await notification_channel.send(embed=embed, view=view)
 
+                            embeds_to_send.append(embed)
+
+                        if notification_type == SERVER_NOTIFICATION_VALUE:
+                            notification_log = 'User receives server notification'
                             ping = f'<@{discord_user.id}>'
                             await notification_channel.send(content=ping, embeds=embeds_to_send)
-                            logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
 
-                            # Mark dialogue as seen after sending notification
-                            await api_calls.mark_dialogue_as_seen(df_id)
+                        elif notification_type == DM_NOTIFICATION_VALUE:
+                            notification_log = 'User receives DM notification'
+                            await discord_user.send(embeds=embeds_to_send)
 
-                    except Exception as e:
-                        logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
-                        continue
-                else:
-                    logger.error(ansi_color(f'Discord user with ID {discord_user_id} not found in guild', 'red'))
+                        logger.info(notification_log)
+                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
+
+                        # Mark dialogue as seen after sending notification
+                        await api_calls.mark_dialogue_as_seen(df_user['user_id'])
+
+                except Exception as e:
+                    logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))
+                    continue
 
     @tasks.loop(time=time(hour=10, minute=0, tzinfo=MOUNTAIN_TIME))  # 10AM Mountain Time
     async def post_leaderboards(self):

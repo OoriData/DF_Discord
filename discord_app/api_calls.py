@@ -141,6 +141,16 @@ async def get_user_by_discord(discord_id: int) -> dict:
     return response.json()
 
 
+async def get_discord_users() -> list[dict]:
+    async with httpx.AsyncClient(verify=False) as client:
+        response = await client.get(
+            url=f'{DF_API_HOST}/user/discord_users'
+        )
+
+    _check_code(response)
+    return response.json()
+
+
 async def update_user_metadata(user_id: UUID, new_metadata: dict) -> dict:
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.patch(

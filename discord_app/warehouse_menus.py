@@ -949,6 +949,7 @@ class StoreVehicleSelect(discord.ui.Select):
         else:
             await discord_app.main_menu_menus.main_menu(
                 interaction=self.df_state.interaction,
+                user_cache=self.df_state.user_cache,
                 df_map=self.df_state.map_obj
             )
 

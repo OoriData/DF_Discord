@@ -37,6 +37,9 @@ OORI_RED = (138, 43, 43)
 
 MOUNTAIN_TIME = ZoneInfo('America/Denver')
 
+SERVER_NOTIFICATION_VALUE = 'official_Discord_server'
+DM_NOTIFICATION_VALUE = 'official_Discord_DM'
+
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
     if message:

@@ -234,8 +234,11 @@ class DesolateCog(commands.Cog):
         for user in discord_notification_users:
             try:
                 discord_user = self.bot.get_user(user['discord_id'])
-                self.df_users_cache[discord_user] = user  # Use Discord ID as key, DF user ID as value
-                await add_discord_roles(discord_user)
+                self.df_users_cache[discord_user] = user  # Use Discord user as key, DF user as value
+
+                member = guild.get_member(discord_user.id)
+                if member:
+                    await add_discord_roles(member)
             except Exception as e:
                 logger.error(ansi_color(e, 'red'))
 

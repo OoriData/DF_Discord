@@ -92,7 +92,7 @@ async def main_menu(
                     f"Notifications, such as being alerted to when your convoy has arrived, are delivered to the [{DF_LOGO_EMOJI} Desolate Frontiers server](https://discord.gg/nS7NVC7PaK) by default.",
                     "",
                     "If you do not want to join the server, you can have notifications delivered to your DMs instead.",
-                    "-# You can change where you receive notifications at any time from the options menu.",
+                    "-# You can change where you receive notifications at any time from the options menu. **You *must* be in a server which has the Desolate Frontiers App installed in order to receive notifications!**",
                 ])
             else:
                 description = 'You do not have any convoys yet. Use the button below to create one.'

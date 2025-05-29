@@ -313,7 +313,7 @@ class DesolateCog(commands.Cog):
                             await discord_user.send(embeds=embeds_to_send)
 
                         logger.info(notification_log)
-                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.nick} ({discord_user.id})', 'green'))
+                        logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.display_name} ({discord_user.id})', 'green'))
 
                         # Mark dialogue as seen after sending notification
                         await api_calls.mark_dialogue_as_seen(df_user['user_id'])

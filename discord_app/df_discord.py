@@ -234,13 +234,18 @@ class DesolateCog(commands.Cog):
         for user in discord_notification_users:
             try:
                 discord_user = self.bot.get_user(user['discord_id'])
+                if not discord_user:  # If the Discord user for that ID is not found
+                    # This probably means the app is not installed in any server that the user is in, so it cannot see them and cannot fetch their Discord user object from the API
+                    logger.warning(ansi_color(f'DF user {user['username']} ({user['user_id']}) cannot be found by their `discord_id`; skipping…', 'yellow'))
+                    continue
+
                 self.df_users_cache[discord_user] = user  # Use Discord user as key, DF user as value
 
                 member = guild.get_member(discord_user.id)
                 if member:
                     await add_discord_roles(member)
             except Exception as e:
-                logger.error(ansi_color(e, 'red'))
+                logger.error(ansi_color(f'Error adding DF user {user['username']} ({user['user_id']} to user cache: {e}', 'red'))
 
         if initial_setup:
             logger.info(ansi_color('User cache initialization complete', 'green'))
@@ -255,7 +260,7 @@ class DesolateCog(commands.Cog):
                 if not discord_user:
                     continue
 
-                logger.debug(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_user['user_id']})', 'blue'))
+                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_user['user_id']})', 'blue'))
 
                 notification_type = df_user['metadata']['notifications']
                 
@@ -265,7 +270,7 @@ class DesolateCog(commands.Cog):
 
                 try:  # Fetch unseen dialogue for the DF user
                     unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_user['user_id'])
-                    logger.debug(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
+                    logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
                     seen_this_round = set()  # Ephemeral deduplication per user per run
 

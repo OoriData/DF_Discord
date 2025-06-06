@@ -62,11 +62,23 @@ async def vendor_inv_embeds(df_state: DFState, embeds: list[discord.Embed], *, v
 
     if vendor_obj['vehicle_inventory']:
         displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
-        split_description_into_embeds(displayable_vehicles, '### Vehicles for sale', embeds)
+        displayable_vehicles = displayable_vehicles[:2000]
+
+        split_description_into_embeds(
+            content_string=displayable_vehicles,
+            embed_title='### Vehicles for sale',
+            target_embeds_list=embeds
+        )
 
     if vendor_obj['cargo_inventory']:
         displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
-        split_description_into_embeds(displayable_cargo, '### Cargo for sale', embeds)
+        displayable_cargo = displayable_cargo[:3200]
+
+        split_description_into_embeds(
+            content_string=displayable_cargo,
+            embed_title='### Cargo for sale',
+            target_embeds_list=embeds
+        )
 
     return embeds
 

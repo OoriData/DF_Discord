@@ -259,8 +259,14 @@ class DesolateCog(commands.Cog):
             for discord_user, df_user in self.df_users_cache.items():
                 if not discord_user:
                     continue
+                if isinstance(discord_user, str):
+                    logger.error(ansi_color(f'Discord user for DF user {df_user['username']} (DF ID: {df_user['user_id']}) is a string: {discord_user}. Cannot fetch notifications (also, what the hell?)', 'red'))
 
-                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (discord id: {discord_user.id}) (DF id: {df_user['user_id']})', 'blue'))
+                    # self.update_user_cache.
+
+                    continue
+
+                logger.info(ansi_color(f'Fetching notifications for user {discord_user.name} (Discord ID: {discord_user.id}) (DF ID: {df_user['user_id']})', 'blue'))
 
                 notification_type = df_user['metadata']['notifications']
                 

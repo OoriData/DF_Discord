@@ -43,7 +43,7 @@ def vehicles_md(vehicles, verbose: bool = False):
             )
         
         if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
-            vehicle_str += '\n  - *contains cargo, cannot be sold*'
+            vehicle_str += '\n  - *contains cargo*'
 
         vehicle_list.append(vehicle_str)
     return '\n'.join(vehicle_list) if vehicle_list else '- None'

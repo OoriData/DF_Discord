@@ -27,6 +27,12 @@ async def mechanic_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=mechanic_menu)  # Add this menu to the back stack
 
+    mech_embed = discord.Embed()
+    mech_embed = df_embed_author(mech_embed, df_state)
+    mech_embed.description = f'## {df_state.vendor_obj['name']}'
+
+    embeds = [mech_embed]
+
     convoy_parts = []
     for cargo in df_state.convoy_obj['all_cargo']:
         if cargo.get('parts'):
@@ -37,9 +43,10 @@ async def mechanic_menu(df_state: DFState):
 
             convoy_parts.append(cargo_str)
     if convoy_parts:
-        displayable_convoy_parts = '\n'.join(convoy_parts)
-    else:
-        displayable_convoy_parts = '- None'
+        embeds.append(discord.Embed(description='\n'.join([
+            '## Upgrade parts from convoy inventory',
+            '\n'.join(convoy_parts),
+        ])))
 
     vendor_parts = []
     for cargo in df_state.vendor_obj['cargo_inventory']:
@@ -51,32 +58,29 @@ async def mechanic_menu(df_state: DFState):
 
             vendor_parts.append(cargo_str)
     if vendor_parts:
-        displayable_vendor_parts = '\n'.join(vendor_parts)
-    else:
-        displayable_vendor_parts = '- None'
+        embeds.append(discord.Embed(description='\n'.join([
+            '## Upgrade parts from vendor inventory',
+            '\n'.join(vendor_parts),
+        ])))
 
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- **{vehicle['name']}** | *${vehicle['value']:,.0f}*'
-        vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list)
-
-    embed = discord.Embed(
-        description='\n'.join([
-            f'# {df_state.vendor_obj['name']}',
-            '## Upgrade parts from convoy inventory',
-            displayable_convoy_parts,
-            '## Upgrade parts from vendor inventory',
-            displayable_vendor_parts,
-            '### Select a vehicle for repairs/upgrades',
-            displayable_vehicles,
+        vehicle_hard_cap = vehicle['hard_stat_cap']
+        vehicle_str = '\n'.join([
+            f'- **{vehicle['name']}** | *${vehicle['value']:,.0f}*',
+            f'  - 🌿 {vehicle['raw_efficiency']}  |  🚀 {vehicle['raw_top_speed']}  |  🥾 {vehicle['raw_offroad_capability']}',
+            f'  - 📦 {vehicle['cargo_capacity']:,.0f} L  |  🏋️ {vehicle['weight_capacity']:,.0f} kg'
         ])
-    )
-    embed = df_embed_author(embed, df_state)
+        vehicle_list.append(vehicle_str)
+
+    embeds.append(discord.Embed(description='\n'.join([
+        '### Select a vehicle for repairs/upgrades',
+        '\n'.join(vehicle_list),
+    ])))
 
     view = MechVehicleDropdownView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class MechVehicleDropdownView(discord.ui.View):
     def __init__(self, df_state: DFState):

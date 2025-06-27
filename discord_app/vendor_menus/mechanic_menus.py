@@ -383,6 +383,32 @@ async def part_install_confirm_menu(df_state: DFState):
 
     compatibilities = df_state.cargo_obj['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
 
+    # Aggregate stat changes from all new parts
+    aggregated_stats = {}
+    if compatibilities:
+        # Sum up all additive stats
+        for part in compatibilities:
+            for key, value in part.items():
+                if key.endswith('_add') and value is not None:
+                    aggregated_stats[key] = aggregated_stats.get(key, 0) + value
+        
+        # Sum up part values for the 'part_value' mod_key
+        total_part_value = sum(part.get('value', 0) for part in compatibilities)
+        aggregated_stats['part_value'] = total_part_value
+
+    # Calculate total installation price
+    total_installation_price = 0
+    if compatibilities:
+        total_installation_price = sum(part.get('installation_price', 0) for part in compatibilities)
+
+    # Check if the part is from the vendor and add its price
+    is_from_vendor_stock = any(
+        c['cargo_id'] == df_state.cargo_obj['cargo_id']
+        for c in df_state.vendor_obj['cargo_inventory']
+    )
+    if is_from_vendor_stock:
+        total_installation_price += df_state.cargo_obj.get('unit_price')
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
@@ -391,48 +417,48 @@ async def part_install_confirm_menu(df_state: DFState):
         f'*{df_state.vehicle_obj['description']}*',
         '### Current Part(s)',
         discord_app.cargo_menus.format_part(current_parts) if current_parts else '- None',
-        '### New Part(s)',
+        f'### New Part(s) to be installed from {df_state.cargo_obj['name']} | **${df_state.cargo_obj['unit_price']:,.0f}**',
+        f'*{df_state.cargo_obj['base_desc']}*',
         discord_app.cargo_menus.format_part(compatibilities),
+        f'### Total installation price: ${total_installation_price:,.0f}',
         f'### {df_state.vehicle_obj['name']} stats'
     ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, aggregated_stats)
 
-    view = InstallConfirmView(df_state)
+    view = InstallConfirmView(df_state, total_installation_price)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 
+class InstallConfirmView(discord.ui.View):
+    def __init__(self, df_state: DFState, total_installation_price: int):
+        self.df_state = df_state
+        super().__init__(timeout=600)
+
+        discord_app.nav_menus.add_nav_buttons(self, df_state)
+        self.add_item(ConfirmInstallButton(df_state, total_installation_price, row=1))
+
+    async def on_timeout(self):
+        await handle_timeout(self.df_state)
+
 class ConfirmInstallButton(discord.ui.Button):
-    def __init__(self, df_state: DFState, row: int = 1):
+    def __init__(self, df_state: DFState, total_installation_price: int, row: int = 1):
         self.df_state = df_state
         self.part_to_install = df_state.cargo_obj  # The cargo item selected for installation
+        self.total_cost = total_installation_price
 
-        # Determine if the part is from the vendor's stock
-        self.is_from_vendor_stock = any(
-            c['cargo_id'] == self.part_to_install['cargo_id']
-            for c in self.df_state.vendor_obj['cargo_inventory']
-        )
-
-        self.install_cost = 0
-        if self.is_from_vendor_stock:
-            self.install_cost = self.part_to_install.get('unit_price', 0)
-
-        can_afford = self.df_state.convoy_obj['money'] >= self.install_cost
+        can_afford = self.df_state.convoy_obj['money'] >= self.total_cost
         
         label = f'Install {self.part_to_install['name']}'
-        if self.install_cost > 0:
-            label += f' | ${self.install_cost:,.0f}'
+        if self.total_cost > 0:
+            label += f' | ${self.total_cost:,.0f}'
         
-        disabled = False
-        if self.install_cost > 0 and not can_afford:
-            disabled = True
-        elif self.install_cost == 0:  # Part from convoy inventory, installation is free
-            disabled = False
+        disabled = not can_afford
 
         super().__init__(
             style=discord.ButtonStyle.green,
             label=label,
             disabled=disabled,
-            custom_id='confirm_install_part',  # Keep original custom_id for consistency
+            custom_id='confirm_install_part',
             row=row
         )
 
@@ -477,17 +503,6 @@ class ConfirmInstallButton(discord.ui.Button):
         view = PostMechView(self.df_state)
 
         await interaction.response.edit_message(embed=embed, view=view)
-
-class InstallConfirmView(discord.ui.View):
-    def __init__(self, df_state: DFState):
-        self.df_state = df_state
-        super().__init__(timeout=600)
-
-        discord_app.nav_menus.add_nav_buttons(self, df_state)
-        self.add_item(ConfirmInstallButton(df_state, row=1))
-
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
 
 
 async def remove_part_vehicle_menu(df_state: DFState):

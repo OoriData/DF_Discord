@@ -299,11 +299,9 @@ def format_part(part_cargo: dict, verbose: bool=True):
             
             # Pricing info
             if part.get('value'):
-                lines.append(f'  - Part value: **${part['value']}**')
+                lines.append(f'  - Part value: **${part['value']:,.0f}**')
             if part.get('installation_price') is not None:
-                lines.append(f'  - Installation price: **${part['installation_price']}**')
-            if part.get('value') and part.get('installation_price') is not None:
-                lines.append(f'  - Total price: **${part['value'] + part['installation_price']}**')
+                lines.append(f'    - **Installation price: ${part['installation_price']:,.0f}**')
         else:
             # Only add these items in non-verbose mode
             if part.get('fuel_capacity'):

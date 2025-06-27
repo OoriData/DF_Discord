@@ -513,7 +513,6 @@ class StoreCargoQuantityEmbed(discord.Embed):
             warehouse_capacity = self.df_state.warehouse_obj['cargo_storage_capacity']
             self.add_field(name='Warehouse Free Space', value=f'{warehouse_capacity - current_warehouse_volume:,.0f}L / {warehouse_capacity:,.0f}L')
 
-
 class StoreCargoQuantityView(discord.ui.View):
     def __init__(self, df_state: DFState, store_quantity: int=1):
         self.df_state = df_state
@@ -705,8 +704,9 @@ class StoreAllCargoButton(discord.ui.Button):
         self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
         await warehouse_menu(self.df_state)
 
+
 async def retrieve_cargo_menu(df_state: DFState):
-    df_state.append_menu_to_back_stack(func=store_cargo_menu)  # Add this menu to the back stack
+    df_state.append_menu_to_back_stack(func=retrieve_cargo_menu)  # Add this menu to the back stack
 
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
@@ -785,7 +785,7 @@ class RetrieveCargoSelect(discord.ui.Select):
 
 
 async def retrieve_cargo_quantity_menu(df_state: DFState):
-    df_state.append_menu_to_back_stack(func=store_cargo_quantity_menu)  # Add this menu to the back stack
+    df_state.append_menu_to_back_stack(func=retrieve_cargo_quantity_menu)  # Add this menu to the back stack
 
     embed = CargoRetrieveQuantityEmbed(df_state)
 
@@ -1048,6 +1048,7 @@ class RetrieveAllCargoButton(discord.ui.Button):
         # Re-fetch warehouse_obj for its updated inventory
         self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
         await warehouse_menu(self.df_state)
+
 
 async def store_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=store_vehicle_menu)  # Add this menu to the back stack

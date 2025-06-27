@@ -8,7 +8,8 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, split_description_into_embeds
+    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, split_description_into_embeds,
+    create_paginated_select_options
 )
 from discord_app.vendor_menus  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
 import discord_app.nav_menus
@@ -196,8 +197,8 @@ class MechView(discord.ui.View):
         await handle_timeout(self.df_state)
 
 
-async def upgrade_vehicle_menu(df_state: DFState):
-    df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
+async def upgrade_vehicle_menu(df_state: DFState, page: int = 0):
+    df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu, args={'page': page})  # Add this menu to the back stack
 
     header_embed = df_embed_author(discord.Embed(), df_state)
     header_embed.description = '\n'.join([
@@ -219,12 +220,13 @@ async def upgrade_vehicle_menu(df_state: DFState):
     footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
     embeds.append(footer_embed)
 
-    view = UpgradeVehicleView(df_state)
+    view = UpgradeVehicleView(df_state, page=page)
 
     await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class UpgradeVehicleView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, page: int = 0):
+        self.page = page
         self.df_state = df_state
         super().__init__(timeout=600)
 
@@ -243,23 +245,21 @@ class UpgradeVehicleView(discord.ui.View):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
-
-        await part_inventory_menu(self.df_state, is_vendor=False)
+        await part_inventory_menu(self.df_state, is_vendor=False, page=self.page)
 
     @discord.ui.button(label='Install part from Vendor inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_vendor', row=1)
     async def install_part_from_vendor_button(self, interaction: discord.Interaction, button: discord.Button):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
-
-        await part_inventory_menu(self.df_state, is_vendor=True)
+        await part_inventory_menu(self.df_state, is_vendor=True, page=self.page)
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 
-async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
-    df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor})  # Add this menu to the back stack
+async def part_inventory_menu(df_state: DFState, is_vendor: bool=False, page: int = 0):
+    df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor, 'page': page})  # Add this menu to the back stack
 
     if is_vendor:
         source_inventory = df_state.vendor_obj['cargo_inventory']
@@ -302,7 +302,6 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
         discord_app.cargo_menus.format_part(c_cargo) for c_cargo in compatible_part_cargo_list
     )
 
-
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
@@ -317,44 +316,48 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
-    view = PartSelectView(df_state, compatible_part_cargo_list)
+    view = PartSelectView(df_state, compatible_part_cargo_list, is_vendor=is_vendor, page=page)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 
 class PartSelectView(discord.ui.View):
-    def __init__(self, df_state: DFState, part_cargos_to_display):
+    def __init__(self, df_state: DFState, part_cargos_to_display, is_vendor: bool, page: int):
         self.df_state = df_state
         super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
-        self.add_item(UpgradePartSelect(self.df_state, part_cargos_to_display))
+        self.add_item(UpgradePartSelect(self.df_state, part_cargos_to_display, is_vendor=is_vendor, page=page))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 class UpgradePartSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, part_cargos_to_display):
+    def __init__(self, df_state: DFState, part_cargos_to_display, is_vendor: bool, page: int):
         self.df_state = df_state
         self.part_cargos_to_display = part_cargos_to_display
+        self.is_vendor = is_vendor
+        self.page = page
 
         placeholder = 'Which part to install?'
         disabled = False
-        options = [
+        all_options = [
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
             for cargo in self.part_cargos_to_display
             if cargo.get('parts')
         ]
 
-        if not options:
+        if not all_options:
             placeholder = 'No compatible parts to install'
             disabled = True
-            options = [discord.SelectOption(label='none', value='none')]
+            paginated_options = [discord.SelectOption(label='none', value='none')]
+        else:
+            sorted_options = sorted(all_options, key=lambda opt: opt.label.lower())
+            paginated_options = create_paginated_select_options(sorted_options, self.page)
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
-            placeholder=placeholder,
-            options=sorted_options,
+            placeholder=f'{placeholder} (Page {self.page + 1})',
+            options=paginated_options,
             custom_id='select_part',
             disabled=disabled
         )
@@ -363,6 +366,11 @@ class UpgradePartSelect(discord.ui.Select):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
+
+        if self.values[0] in ('prev_page', 'next_page'):
+            self.page += -1 if self.values[0] == 'prev_page' else 1
+            await part_inventory_menu(self.df_state, is_vendor=self.is_vendor, page=self.page)
+            return
 
         all_inventories = self.df_state.vendor_obj['cargo_inventory'] + self.df_state.convoy_obj['all_cargo']
         self.df_state.cargo_obj = next((

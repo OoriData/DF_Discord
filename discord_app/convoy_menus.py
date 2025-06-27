@@ -13,7 +13,7 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import (
     api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed,
     get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji,
-    get_cargo_emoji
+    get_cargo_emoji, create_paginated_select_options
 )
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
@@ -638,46 +638,36 @@ class DestinationSelect(discord.ui.Select):
             and 'tutorial' not in sett['name'].lower()                # Exclude settlements with "tutorial" in their name
         ]
 
-        # Sort settlements, prioritizing cargo destinations and then by distance
         sorted_settlements = sorted(
             settlements,
             key=lambda x: (not x[4], x[3])  # Sort by presence of cargo names (True first), then by distance
         )
 
-        # Paginate the sorted settlements
-        DESTS_PER_PAGE = 23
-        page_start, page_end = self.page * DESTS_PER_PAGE, (self.page + 1) * DESTS_PER_PAGE
-        max_pages = (len(sorted_settlements) - 1) // DESTS_PER_PAGE
-
-        # Create the SelectOption list with pagination controls
-        options = self._create_pagination_options(sorted_settlements[page_start:page_end], self.page, max_pages)
-
-        super().__init__(
-            placeholder=f'Where to? (page {self.page + 1})',
-            options=options,
-            custom_id='destination_select',
-        )
-
-    def _create_pagination_options(self, settlements, current_page, max_pages):
-        options = []
-
-        if current_page > 0:  # Add 'previous page' option if not on the first page
-            options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
-
-        for sett_name, x, y, _, cargo_names, emoji in settlements:
+        all_options = []
+        for sett_name, x, y, _, cargo_names, emoji in sorted_settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
-            options.append(discord.SelectOption(
+            all_options.append(discord.SelectOption(
                 label=label[:100],  # Only the first 100 chars of the label string
                 value=f'{x},{y}',
                 emoji=DF_LOGO_EMOJI if cargo_names else emoji  # Add the tutorial emoji if cargo destination, else use city based emoji
             ))
 
-        if current_page < max_pages:  # Add 'next page' option if not on the last page
-            options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
+        if len(all_options) > 25:  # If there are more than 25 options
+            paginated_options = create_paginated_select_options(all_options, self.page)
 
-        return options
+            super().__init__(
+                placeholder=f'Where to? (page {self.page + 1})',
+                options=paginated_options,
+                custom_id='destination_select',
+            )
+        else:
+            super().__init__(
+                placeholder=f'Where to? (page {self.page + 1})',
+                options=all_options,
+                custom_id='destination_select',
+            )
 
     async def callback(self, interaction: discord.Interaction):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):

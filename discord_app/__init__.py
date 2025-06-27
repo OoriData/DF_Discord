@@ -194,6 +194,45 @@ def split_description_into_embeds(
             target_embeds_list.append(discord.Embed(description=f'{embed_title}\n{content_string}'))
 
 
+def create_paginated_select_options(
+    all_options: list[discord.SelectOption],
+    current_page: int,
+    options_per_page: int = 23
+) -> list[discord.SelectOption]:
+    """
+    Paginates a list of SelectOptions and adds page navigation options.
+
+    Args:
+        all_options (list[discord.SelectOption]): The full list of options to paginate.
+        current_page (int): The current page number (0-indexed).
+        options_per_page (int): The number of options to show per page.
+
+    Returns:
+        list[discord.SelectOption]: The list of options for the current page, including navigation.
+    """
+    if not all_options:
+        return [discord.SelectOption(label='No options available', value='no_options', disabled=True)]
+
+    max_pages = (len(all_options) - 1) // options_per_page
+    max_pages = max(max_pages, 0)
+
+    page_start = current_page * options_per_page
+    page_end = page_start + options_per_page
+
+    paginated_options = all_options[page_start:page_end]
+
+    options_for_view = []
+    if current_page > 0:
+        options_for_view.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
+
+    options_for_view.extend(paginated_options)
+
+    if current_page < max_pages:
+        options_for_view.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
+
+    return options_for_view
+
+
 async def get_image_as_discord_file(url: str) -> discord.File:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)

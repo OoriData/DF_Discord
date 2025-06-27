@@ -7,7 +7,9 @@ import                                discord
 
 from utiloori.ansi_color       import ansi_color
 
-from discord_app               import api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata, get_vehicle_emoji, get_cargo_emoji
+from discord_app               import (
+    api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata, get_vehicle_emoji, get_cargo_emoji, create_paginated_select_options
+)
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_menus.vendor_menus
 import                                discord_app.vendor_menus.buy_menus
@@ -18,8 +20,10 @@ from discord_app.vendor_menus  import vehicles_md
 from discord_app.df_state      import DFState
 
 
-async def warehouse_menu(df_state: DFState, edit: bool=True):
-    df_state.append_menu_to_back_stack(func=warehouse_menu)  # Add this menu to the back stack
+async def warehouse_menu(df_state: DFState, edit: bool = True):
+    df_state.append_menu_to_back_stack(
+        func=warehouse_menu, args={'edit': edit}
+    )  # Add this menu to the back stack
 
     if df_state.warehouse_obj:
         df_state.warehouse_obj = await api_calls.get_warehouse(df_state.warehouse_obj['warehouse_id'])
@@ -35,12 +39,12 @@ async def warehoused(df_state: DFState, edit: bool):
     embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
     embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
 
-    cargo_volume = sum(cargo['volume'] for cargo in df_state.warehouse_obj['cargo_storage'])  # TODO: Think about implementing this stat in the backend
+    cargo_volume = sum(cargo.get('volume', 0) for cargo in df_state.warehouse_obj.get('cargo_storage', []))
 
     if df_state.user_obj['metadata']['mobile']:
         embed.description += '\n' + '\n'.join([
             '',
-            f'Cargo Storage 📦: **{cargo_volume:,}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L',
+            f'Cargo Storage 📦: **{cargo_volume:,.0f}** / {df_state.warehouse_obj['cargo_storage_capacity']:,.0f}L',
             f'Vehicle Storage 🅿️: **{len(df_state.warehouse_obj['vehicle_storage'])}** / {df_state.warehouse_obj['vehicle_storage_capacity']:,}'
         ])
     else:
@@ -58,7 +62,7 @@ async def warehoused(df_state: DFState, edit: bool):
     else:
         await df_state.interaction.followup.send(embeds=embeds, view=view)
 
-async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
+async def warehouse_vehicles_md(warehouse_obj, verbose: bool = False) -> str:
     vehicle_list = []
     for vehicle in warehouse_obj['vehicle_storage']:
         vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
@@ -73,11 +77,12 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
             ])
 
         vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
+    return '\n'.join(vehicle_list) if vehicle_list else '- None'
 
+async def warehouse_cargo_md(warehouse_obj, verbose: bool = False) -> str:
     cargo_list = []
     for cargo in warehouse_obj['cargo_storage']:
-        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,.2f} each*'
+        cargo_str = f'- {cargo['quantity']} **{cargo['name']}**(s) | *${cargo['unit_price']:,.0f} each*'
 
         if verbose:
             for resource in ['fuel', 'water', 'food']:
@@ -92,7 +97,11 @@ async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
                 cargo_str += f'\n    - Profit margin: {'💵 ' * margin}'
 
         cargo_list.append(cargo_str)
-    displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
+    return '\n'.join(cargo_list) if cargo_list else '- None'
+
+async def warehouse_storage_md(warehouse_obj, verbose: bool = False) -> str:
+    displayable_vehicles = await warehouse_vehicles_md(warehouse_obj, verbose)
+    displayable_cargo = await warehouse_cargo_md(warehouse_obj, verbose)
 
     return '\n'.join([
         '### Cargo',
@@ -705,36 +714,40 @@ class StoreAllCargoButton(discord.ui.Button):
         await warehouse_menu(self.df_state)
 
 
-async def retrieve_cargo_menu(df_state: DFState):
-    df_state.append_menu_to_back_stack(func=retrieve_cargo_menu)  # Add this menu to the back stack
+async def retrieve_cargo_menu(df_state: DFState, page: int = 0):
+    df_state.append_menu_to_back_stack(
+        func=retrieve_cargo_menu, args={'page': page}
+    )  # Add this menu to the back stack
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
+    header_embed = discord.Embed(description=f'# Warehouse in {df_state.sett_obj['name']}')
+    header_embed = df_embed_author(header_embed, df_state)
+
     cargo_volume = _calculate_warehouse_current_volume(df_state.warehouse_obj)
+    cargo_embed = discord.Embed(description=await warehouse_cargo_md(df_state.warehouse_obj))
 
-    embed.description += f'\nCargo Storage 📦: **{cargo_volume:,}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L'
+    footer_embed = discord.Embed(description=f'\nCargo Storage 📦: **{cargo_volume:,.0f}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L')
 
-    embeds = [embed]
-    view = RetrieveCargoView(df_state)
-    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
+    view = RetrieveCargoView(df_state, page=page)
+    await df_state.interaction.response.edit_message(embeds=[header_embed, cargo_embed, footer_embed], view=view)
 
 class RetrieveCargoView(discord.ui.View):
-    def __init__(self, df_state: DFState, retrieve_quantity: int=1):
+    def __init__(self, df_state: DFState, page: int = 0, retrieve_quantity: int = 1):
         self.df_state = df_state
+        self.page = page
         self.retrieve_quantity = retrieve_quantity
         super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(RetrieveCargoSelect(self.df_state))
+        self.add_item(RetrieveCargoSelect(self.df_state, page=self.page))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 class RetrieveCargoSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, row: int=1):
+    def __init__(self, df_state: DFState, page: int = 0, row: int = 1):
         self.df_state = df_state
+        self.page = page
 
         placeholder = 'Cargo which can be retrieved'
         disabled = False
@@ -746,25 +759,30 @@ class RetrieveCargoSelect(discord.ui.Select):
                     for vendor in settlement['vendors']:
                         vendor_mapping[vendor['vendor_id']] = vendor['name']
 
-        options = []
+        all_cargo_options = []
         for cargo in df_state.warehouse_obj['cargo_storage']:
             vendor_name = f'| {vendor_mapping.get(cargo['recipient'], '')}'
 
-            options.append(discord.SelectOption(
+            all_cargo_options.append(discord.SelectOption(
                 label=f'{cargo['name']} {vendor_name}',
                 value=cargo['cargo_id'],
                 emoji=get_cargo_emoji(cargo)
             ))
 
-        if not options:
+        sorted_options = sorted(all_cargo_options, key=lambda opt: opt.label.lower())
+
+        if not all_cargo_options:
             placeholder = 'Warehouse has no cargo which can be retrieved'
             disabled = True
             options = [discord.SelectOption(label='None', value='None')]
+        elif len(all_cargo_options) > 25:  # More than 25 options
+            options = create_paginated_select_options(sorted_options, self.page)  # Paginate
+        else:
+            options = sorted_options
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
-            placeholder=placeholder,
-            options=sorted_options[:25],
+            placeholder=f'{placeholder} (Page {self.page + 1})',
+            options=options,
             disabled=disabled,
             custom_id='retrieve_cargo_select',
             row=row
@@ -774,6 +792,11 @@ class RetrieveCargoSelect(discord.ui.Select):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
+
+        if self.values[0] in ('prev_page', 'next_page'):
+            self.page += -1 if self.values[0] == 'prev_page' else 1
+            await retrieve_cargo_menu(self.df_state, page=self.page)
+            return
 
         # Defaults to none if cargo item selected matches a cargo item in the convoy's inventory
         self.df_state.cargo_obj = next((

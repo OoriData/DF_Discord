@@ -8,7 +8,8 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata, get_vehicle_emoji, get_cargo_emoji, create_paginated_select_options
+    api_calls, handle_timeout, df_embed_author, add_tutorial_embed, validate_interaction, get_user_metadata,
+    get_vehicle_emoji, get_cargo_emoji, create_paginated_select_options, split_description_into_embeds
 )
 from discord_app.map_rendering import add_map_to_embed
 import                                discord_app.vendor_menus.vendor_menus
@@ -33,27 +34,39 @@ async def warehouse_menu(df_state: DFState, edit: bool = True):
         await warehouseless(df_state, edit)
 
 async def warehoused(df_state: DFState, edit: bool):
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
+    header_embed = discord.Embed(description=f'# Warehouse in {df_state.sett_obj['name']}')
+    header_embed = df_embed_author(header_embed, df_state)
+    
+    embeds = [header_embed]
 
-    embed.description = f'# Warehouse in {df_state.sett_obj['name']}'
-    embed.description += '\n' + await warehouse_storage_md(df_state.warehouse_obj, verbose=True)
+    if df_state.warehouse_obj['cargo_storage']:
+        cargo_md = await warehouse_cargo_md(df_state.warehouse_obj)
+        split_description_into_embeds(
+            content_string=cargo_md[:5000],
+            embed_title='## Cargo',
+            target_embeds_list=embeds
+        )
+    if df_state.warehouse_obj['vehicle_storage']:
+        vehicles_md = await warehouse_vehicles_md(df_state.warehouse_obj)
+        split_description_into_embeds(
+            content_string=vehicles_md[:5000],
+            embed_title='## Vehicles',
+            target_embeds_list=embeds
+        )
 
+    footer_embed = discord.Embed()
     cargo_volume = sum(cargo.get('volume', 0) for cargo in df_state.warehouse_obj.get('cargo_storage', []))
 
     if df_state.user_obj['metadata']['mobile']:
-        embed.description += '\n' + '\n'.join([
+        footer_embed.description = '\n' + '\n'.join([
             '',
             f'Cargo Storage 📦: **{cargo_volume:,.0f}** / {df_state.warehouse_obj['cargo_storage_capacity']:,.0f}L',
             f'Vehicle Storage 🅿️: **{len(df_state.warehouse_obj['vehicle_storage'])}** / {df_state.warehouse_obj['vehicle_storage_capacity']:,}'
         ])
     else:
-        embed.add_field(name='Cargo Storage 📦', value=f'**{cargo_volume:,}**\n/{df_state.warehouse_obj['cargo_storage_capacity']:,} liters')
-        embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']:,}')
-
-    embed.description = embed.description[:4096]  # Limit the length of the description to ensure it is within the limit
-
-    embeds = [embed]
+        footer_embed.add_field(name='Cargo Storage 📦', value=f'**{cargo_volume:,}**\n/{df_state.warehouse_obj['cargo_storage_capacity']:,} liters')
+        footer_embed.add_field(name='Vehicle Storage 🅿️', value=f'**{len(df_state.warehouse_obj['vehicle_storage'])}**\n/{df_state.warehouse_obj['vehicle_storage_capacity']:,}')
+    embeds.append(footer_embed)
 
     view = WarehouseView(df_state)
 
@@ -722,13 +735,19 @@ async def retrieve_cargo_menu(df_state: DFState, page: int = 0):
     header_embed = discord.Embed(description=f'# Warehouse in {df_state.sett_obj['name']}')
     header_embed = df_embed_author(header_embed, df_state)
 
-    cargo_volume = _calculate_warehouse_current_volume(df_state.warehouse_obj)
-    cargo_embed = discord.Embed(description=await warehouse_cargo_md(df_state.warehouse_obj))
+    embeds = [header_embed]
 
+    split_description_into_embeds(
+        content_string=await warehouse_cargo_md(df_state.warehouse_obj),
+        target_embeds_list=embeds
+    )
+
+    cargo_volume = _calculate_warehouse_current_volume(df_state.warehouse_obj)
     footer_embed = discord.Embed(description=f'\nCargo Storage 📦: **{cargo_volume:,.0f}** / {df_state.warehouse_obj['cargo_storage_capacity']:,}L')
+    embeds.append(footer_embed)
 
     view = RetrieveCargoView(df_state, page=page)
-    await df_state.interaction.response.edit_message(embeds=[header_embed, cargo_embed, footer_embed], view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class RetrieveCargoView(discord.ui.View):
     def __init__(self, df_state: DFState, page: int = 0, retrieve_quantity: int = 1):

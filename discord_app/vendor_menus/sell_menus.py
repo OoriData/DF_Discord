@@ -8,7 +8,8 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji
+    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji,
+    split_description_into_embeds
 )
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
@@ -47,10 +48,11 @@ async def sell_menu(df_state: DFState):
     displayable_resources = '\n'.join(resources_list) if resources_list else None
 
     if displayable_resources:
-        embeds.append(discord.Embed(description='\n'.join([
-            '### Resources the convoy can sell',
-            f'{displayable_resources}',
-        ])))
+        split_description_into_embeds(
+            content_string=displayable_resources,
+            embed_title='### Resources the convoy can sell',
+            target_embeds_list=embeds
+        )
 
     if df_state.convoy_obj['vehicles'] and df_state.vendor_obj.get('vehicle_inventory'):
         displayable_vehicles = vehicles_md(df_state.convoy_obj['vehicles'])
@@ -58,10 +60,11 @@ async def sell_menu(df_state: DFState):
         displayable_vehicles = None
 
     if displayable_vehicles:
-        embeds.append(discord.Embed(description='\n'.join([
-            '### Vehicles the convoy can sell',
-            f'{displayable_vehicles}',
-        ])))
+        split_description_into_embeds(
+            content_string=displayable_vehicles,
+            embed_title='### Vehicles the convoy can sell',
+            target_embeds_list=embeds
+        )
 
     if df_state.vendor_obj.get('cargo_inventory'):
         cargo_list = []
@@ -86,10 +89,11 @@ async def sell_menu(df_state: DFState):
         displayable_cargo = None
 
     if displayable_cargo:
-        embeds.append(discord.Embed(description='\n'.join([
-            '### Cargo the convoy can sell',
-            f'{displayable_cargo}',
-        ])))
+        split_description_into_embeds(
+            content_string=displayable_cargo[:5000],
+            embed_title='### Cargo the convoy can sell',
+            target_embeds_list=embeds
+        )
 
     view = SellView(df_state)
 
@@ -575,6 +579,11 @@ async def sell_vehicle_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_vehicle_menu)  # Add this menu to the back stack
 
+    header_embed = discord.Embed(description=f'## {df_state.vendor_obj['name']}')
+    header_embed = df_embed_author(header_embed, df_state)
+
+    embeds = [header_embed]
+
     part_list = []
     for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
@@ -584,21 +593,22 @@ async def sell_vehicle_menu(df_state: DFState):
         part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
+    vehicle_md = '\n'.join([
         f'## {df_state.vendor_obj['name']}',
         f'### {df_state.vehicle_obj['name']} | ${df_state.vehicle_obj['value']:,}',
         f'*{df_state.vehicle_obj['description']}*',
         '### Parts',
-        displayable_vehicle_parts,
-        f'### {df_state.vehicle_obj['name']} stats'
+        displayable_vehicle_parts
     ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    split_description_into_embeds(content_string=vehicle_md, target_embeds_list=embeds)
+
+    footer_embed = discord.Embed(description=f'### {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
+    embeds.append(footer_embed)
 
     view = VehicleSellConfirmView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class VehicleSellConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):

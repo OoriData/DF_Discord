@@ -154,8 +154,8 @@ async def validate_interaction(interaction: discord.Interaction, df_state: DFSta
 
 def split_description_into_embeds(
     content_string: str,
-    embed_title: str,
     target_embeds_list: list[discord.Embed],
+    embed_title: str = '',
     continuation_prefix: str = '-# continued\n',
 ):
     """

@@ -43,8 +43,9 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if w['sett_id'] == df_state.sett_obj['sett_id']
     ), None)
     if df_state.warehouse_obj:
+        warehouse_md = await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
         split_description_into_embeds(
-            content_string=await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj),
+            content_string=warehouse_md[:5000],
             embed_title=f'# {df_state.sett_obj['name']} Warehouse',
             target_embeds_list=embeds
         )

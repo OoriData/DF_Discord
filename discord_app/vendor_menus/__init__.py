@@ -187,7 +187,10 @@ def format_basic_cargo(cargo: dict) -> str:
 async def enrich_delivery_info(df_state: DFState, cargo: dict) -> None:
     """ Attach vendor and location info to deliverable cargo """
     if not cargo.get('recipient_vendor'):
-        cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+        cargo['recipient_vendor'] = await api_calls.get_vendor(
+            vendor_id=cargo['recipient'],
+            user_id=df_state.user_obj['user_id']
+        )
 
     if cargo.get('recipient_vendor'):
         cargo['recipient_location'] = next((
@@ -275,7 +278,8 @@ async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:
         try:
             cargo['compatibilities'][vehicle['vehicle_id']] = await api_calls.check_part_compatibility(
                 vehicle_id=vehicle['vehicle_id'],
-                part_cargo_id=cargo['cargo_id']
+                part_cargo_id=cargo['cargo_id'],
+                user_id=convoy_obj['user_id']
             )
         except RuntimeError as e:
             cargo['compatibilities'][vehicle['vehicle_id']] = e

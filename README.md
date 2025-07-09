@@ -32,6 +32,8 @@ LOG_LEVEL = "INFO"
 
 DF_API_HOST = "http://localhost:1337"
 
+DF_SKELETON_KEY = "op://Oori DevOps/Desolate Frontiers Auth Secret Key/password"
+
 DF_MAP_RENDERER = "http://localhost:9100"
 
 DISCORD_TOKEN = "SECRET REFERENCE TO THE TOKEN OF THE BOT YOU'RE TESTING WITH"  # Discord bot/app to use

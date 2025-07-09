@@ -112,7 +112,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
             interaction=interaction,
             message=new_message,
             user_cache=self.user_cache,
-            user_id=interaction.user.id
+            discord_user_id=interaction.user.id
         )
 
         if not interaction.response.is_done():

@@ -275,7 +275,7 @@ class DesolateCog(commands.Cog):
                     continue
 
                 try:  # Fetch unseen dialogue for the DF user
-                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(df_user['user_id'])
+                    unseen_dialogue_dicts = await api_calls.get_unseen_dialogue_for_user(user_id=df_user['user_id'])
                     logger.info(ansi_color(f'Got {len(unseen_dialogue_dicts)} unseen dialogues', 'cyan'))
 
                     seen_this_round = set()  # Ephemeral deduplication per user per run
@@ -327,7 +327,7 @@ class DesolateCog(commands.Cog):
                         logger.info(ansi_color(f'Sent {len(notifications)} notification(s) to user {discord_user.display_name} ({discord_user.id})', 'green'))
 
                         # Mark dialogue as seen after sending notification
-                        await api_calls.mark_dialogue_as_seen(df_user['user_id'])
+                        await api_calls.mark_dialogue_as_seen(user_id=df_user['user_id'])
 
                 except Exception as e:
                     logger.error(ansi_color(f'Error fetching notifications: {e}', 'red'))

@@ -126,7 +126,11 @@ async def make_convoy_embed(
             route_tiles.append((x, y))
             pos += 1
 
-        destination = await api_calls.get_tile(journey['dest_x'], journey['dest_y'])
+        destination = await api_calls.get_tile(
+            x=journey['dest_x'],
+            y=journey['dest_y'],
+            user_id=df_state.user_obj['user_id']
+        )
 
         eta = df_state.convoy_obj['journey']['eta']
         progress_percent = ((journey['progress']) / len(journey['route_x'])) * 100
@@ -178,7 +182,8 @@ async def make_convoy_embed(
 
         destination = await api_calls.get_tile(
             x=prospective_journey_plus_misc['journey']['dest_x'],
-            y=prospective_journey_plus_misc['journey']['dest_y']
+            y=prospective_journey_plus_misc['journey']['dest_y'],
+            user_id=df_state.user_obj['user_id']
         )
 
         delta_t = discord_timestamp(
@@ -393,7 +398,10 @@ class ConvoyView(discord.ui.View):
         deliveries = []
         recipient_coords = []
         for cargo in cargo_for_delivery:  # For each deliverable cargo, get vendor's details and add it to destinations
-            recipient_vendor = await api_calls.get_vendor(cargo['recipient'])
+            recipient_vendor = await api_calls.get_vendor(
+                vendor_id=cargo['recipient'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
             # Grab destination name to display to user
             deliveries.append('\n'.join([
@@ -472,7 +480,8 @@ class JourneyButton(discord.ui.Button):
         else:  # If the convoy is already on a journey
             self.df_state.convoy_obj = await api_calls.cancel_journey(
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                journey_id=self.df_state.convoy_obj['journey']['journey_id']
+                journey_id=self.df_state.convoy_obj['journey']['journey_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
             await convoy_menu(self.df_state)
 
@@ -573,7 +582,7 @@ async def send_convoy_menu(df_state: DFState):
 
     embeds = add_tutorial_embed(embeds, df_state)
 
-    # df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
+    # df_map = await api_calls.get_map()
     df_map = df_state.map_obj
     view = DestinationView(df_state=df_state, df_map=df_map)
 
@@ -702,7 +711,12 @@ async def route_finder(
     if not df_state.interaction.response.is_done():
         await df_state.interaction.response.defer()
 
-    route_choices = await api_calls.find_route(df_state.convoy_obj['convoy_id'], dest_x, dest_y)
+    route_choices = await api_calls.find_route(
+        convoy_id=df_state.convoy_obj['convoy_id'],
+        dest_x=dest_x,
+        dest_y=dest_y,
+        user_id=df_state.user_obj['user_id']
+    )
     await route_menu(
         df_state=df_state,
         dest_x=dest_x,
@@ -1035,7 +1049,8 @@ class ConfirmJourneyButton(discord.ui.Button):
         try:
             self.df_state.convoy_obj = await api_calls.send_convoy(
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                journey_id=self.prospective_journey_plus_misc['journey']['journey_id']
+                journey_id=self.prospective_journey_plus_misc['journey']['journey_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

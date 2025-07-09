@@ -311,7 +311,8 @@ class ResourceConfirmSellButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 resource_type=self.resource_type,
-                quantity=self.sale_quantity
+                quantity=self.sale_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=str(e), ephemeral=True)
@@ -451,7 +452,8 @@ class CargoConfirmSellButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.sale_quantity
+                quantity=self.sale_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -539,7 +541,8 @@ class SellAllCargoButton(discord.ui.Button):
                     vendor_id=self.df_state.vendor_obj['vendor_id'],
                     convoy_id=self.df_state.convoy_obj['convoy_id'],
                     cargo_id=cargo['cargo_id'],
-                    quantity=cargo['quantity']
+                    quantity=cargo['quantity'],
+                    user_id=self.df_state.user_obj['user_id']
                 )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -641,7 +644,8 @@ class SellVehicleButton(discord.ui.Button):
             self.df_state.convoy_obj = await api_calls.sell_vehicle(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

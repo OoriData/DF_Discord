@@ -42,11 +42,13 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         )
 
         civic_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
-            civic_allegiance['banner']['banner_id']
+            civic_allegiance['banner']['banner_id'],
+            user_id=df_state.user_obj['user_id']
         )
         internal_leaderboard_position = civic_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
         civic_allegiance['banner']['global_leaderboard'] = await api_calls.get_banner_global_leaderboard(
-            civic_allegiance['banner']['banner_id']
+            civic_allegiance['banner']['banner_id'],
+            user_id=df_state.user_obj['user_id']
         )
         global_leaderboard_position = civic_allegiance['banner']['global_leaderboard'][civic_allegiance['banner']['banner_id']]['leaderboard_position']
 
@@ -68,7 +70,8 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         )
 
         guild_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
-            guild_allegiance['banner']['banner_id']
+            guild_allegiance['banner']['banner_id'],
+            user_id=df_state.user_obj['user_id']
         )
         internal_leaderboard_position = guild_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
         guild_allegiance['banner']['global_leaderboard'] = None
@@ -90,11 +93,13 @@ async def banner_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] |
         )
 
         syndicate_allegiance['banner']['internal_leaderboard'] = await api_calls.get_banner_internal_leaderboard(
-            syndicate_allegiance['banner']['banner_id']
+            syndicate_allegiance['banner']['banner_id'],
+            user_id=df_state.user_obj['user_id']
         )
         internal_leaderboard_position = syndicate_allegiance['banner']['internal_leaderboard'][df_state.user_obj['user_id']]['leaderboard_position']
         syndicate_allegiance['banner']['global_leaderboard'] = await api_calls.get_banner_global_leaderboard(
-            syndicate_allegiance['banner']['banner_id']
+            syndicate_allegiance['banner']['banner_id'],
+            user_id=df_state.user_obj['user_id']
         )
         global_leaderboard_position = syndicate_allegiance['banner']['global_leaderboard'][syndicate_allegiance['banner']['banner_id']]['leaderboard_position']
 

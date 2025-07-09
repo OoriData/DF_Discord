@@ -31,7 +31,7 @@ async def main_menu(
         interaction: discord.Interaction,
         user_cache: dict,
         message: discord.Message=None,
-        user_id: int=None,
+        discord_user_id: int=None,
         df_map=None,
         edit: bool=True
 ):
@@ -41,14 +41,14 @@ async def main_menu(
     title_embed.color = discord.Color.from_rgb(*OORI_RED)
     title_embed.set_image(url='attachment://image.png')
 
-    if not user_id:
-        user_id = interaction.user.id
+    if not discord_user_id:
+        discord_user_id = interaction.user.id
 
     if interaction:
         await interaction.response.defer()
 
     try:
-        user_obj = await api_calls.get_user_by_discord(user_id)
+        user_obj = await api_calls.get_user_by_discord(discord_user_id)
     except RuntimeError as e:
         # print(f'user not registered: {e}')
         user_obj = None
@@ -58,10 +58,16 @@ async def main_menu(
             convoy_descs = []
             sorted_convoys = sorted(user_obj['convoys'], key=lambda x: x['name'], reverse=True)
             for convoy in sorted_convoys:
-                tile_obj = await api_calls.get_tile(convoy['x'], convoy['y'])
+                tile_obj = await api_calls.get_tile(
+                    x=convoy['x'],
+                    y=convoy['y']
+                )
 
                 if convoy['journey']:
-                    destination = await api_calls.get_tile(convoy['journey']['dest_x'], convoy['journey']['dest_y'])
+                    destination = await api_calls.get_tile(
+                        x=convoy['journey']['dest_x'],
+                        y=convoy['journey']['dest_y']
+                    )
                     progress_percent = ((convoy['journey']['progress']) / len(convoy['journey']['route_x'])) * 100
                     eta = convoy['journey']['eta']
                     convoy_descs.extend([
@@ -112,7 +118,7 @@ async def main_menu(
         df_map = await api_calls.get_map()
 
     df_state = DFState(  # Prepare the DFState object
-        user_discord_id=user_id,
+        user_discord_id=discord_user_id,
         map_obj=df_map,
         user_obj=user_obj,
         interaction=interaction,
@@ -245,7 +251,10 @@ class MainMenuUsernameModal(discord.ui.Modal):
         user_id = await api_calls.new_user(self.username_input.value, interaction.user.id)
         self.df_state.user_obj = await api_calls.get_user(user_id)
         self.df_state.user_obj['metadata']['mobile'] = True
-        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+        await api_calls.update_user_metadata(
+            user_id=self.df_state.user_obj['user_id'],
+            new_metadata=self.df_state.user_obj['metadata']
+        )
 
         self.df_state.user_cache[self.df_state.user_obj['user_id']] = self.df_state.user_obj
 
@@ -270,7 +279,10 @@ class NewUserNotificationsButton(discord.ui.Button):
         self.df_state.user_obj['metadata']['notifications'] = DM_NOTIFICATION_VALUE
         if self.df_state.convoy_obj:
             self.df_state.convoy_obj['user_metadata']['notifications'] = DM_NOTIFICATION_VALUE
-        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+        await api_calls.update_user_metadata(
+            user_id=self.df_state.user_obj['user_id'],
+            new_metadata=self.df_state.user_obj['metadata']
+        )
 
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache)
 
@@ -294,12 +306,22 @@ class MainMenuConvoyNameModal(discord.ui.Modal):
         self.df_state.interaction = interaction
 
         try:
-            convoy_id = await api_calls.new_convoy(self.df_state.user_obj['user_id'], self.convoy_name_input.value)
+            convoy_id = await api_calls.new_convoy(
+                user_id=self.df_state.user_obj['user_id'],
+                new_convoy_name=self.convoy_name_input.value
+            )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
-        self.df_state.convoy_obj = await api_calls.get_convoy(convoy_id)
-        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        self.df_state.convoy_obj = await api_calls.get_convoy(
+            convoy_id=convoy_id,
+            user_id=self.df_state.user_obj['user_id']
+        )
+        tile_obj = await api_calls.get_tile(
+            x=self.df_state.convoy_obj['x'],
+            y=self.df_state.convoy_obj['y'],
+            user_id=self.df_state.user_obj['user_id']
+        )
         self.df_state.sett_obj = tile_obj['settlements'][0]
 
         await convoy_menus.convoy_menu(self.df_state)
@@ -368,7 +390,10 @@ class MainMenuWarehouseSelect(discord.ui.Select):
             return
         self.df_state.interaction = interaction
 
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.values[0])
+        self.df_state.warehouse_obj = await api_calls.get_warehouse(
+            warehouse_id=self.values[0],
+            user_id=self.df_state.user_obj['user_id']
+        )
         self.df_state.sett_obj = next((
             s
             for row in self.df_state.map_obj['tiles']
@@ -398,7 +423,11 @@ class MainMenuSingleConvoyButton(discord.ui.Button):
 
         self.df_state.convoy_obj = self.df_state.user_obj['convoys'][0]
 
-        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        tile_obj = await api_calls.get_tile(
+            x=self.df_state.convoy_obj['x'],
+            y=self.df_state.convoy_obj['y'],
+            user_id=self.df_state.user_obj['user_id']
+        )
         self.df_state.sett_obj = tile_obj['settlements'][0] if tile_obj['settlements'] else None
 
         await convoy_menus.convoy_menu(self.df_state)
@@ -434,7 +463,11 @@ class MainMenuConvoySelect(discord.ui.Select):
             if c['convoy_id'] == self.values[0]
         ), None)
 
-        tile_obj = await api_calls.get_tile(self.df_state.convoy_obj['x'], self.df_state.convoy_obj['y'])
+        tile_obj = await api_calls.get_tile(
+            x=self.df_state.convoy_obj['x'],
+            y=self.df_state.convoy_obj['y'],
+            user_id=self.df_state.user_obj['user_id']
+        )
         if tile_obj['settlements']:
             self.df_state.sett_obj = tile_obj['settlements'][0]  # XXX presuming only one settlement
 
@@ -553,8 +586,8 @@ class ChangeUsernameModal(discord.ui.Modal):
         new_username = self.username_modal.value  # Get value directly from the TextInput instance
 
         self.df_state.user_obj = await api_calls.change_username(
-            self.df_state.user_obj['user_id'],
-            new_username
+            user_id=self.df_state.user_obj['user_id'],
+            new_name=new_username
         )
         self.df_state.user_obj['username'] = new_username
 
@@ -634,7 +667,7 @@ class ChangeConvoyNameModal(discord.ui.Modal):
 
         super().__init__(title='Rename Your Convoy')
 
-        # Pre-fill the name with the selected convoy’s current name
+        # Pre-fill the name with the selected convoy's current name
         self.convoy_name_modal = discord.ui.TextInput(
             label='New convoy name',
             style=discord.TextStyle.short,
@@ -651,7 +684,8 @@ class ChangeConvoyNameModal(discord.ui.Modal):
         # Call the backend to update the name
         success = await api_calls.change_convoy_name(
             convoy_id=self.df_state.convoy_obj['convoy_id'],
-            new_name=new_name
+            new_name=new_name,
+            user_id=self.df_state.user_obj['user_id']
         )
 
         embed = discord.Embed()
@@ -700,7 +734,10 @@ class NotificationsButton(discord.ui.Button):
         self.df_state.user_obj['metadata']['notifications'] = new_notifications
         if self.df_state.convoy_obj:
             self.df_state.convoy_obj['user_metadata']['notifications'] = new_notifications
-        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+        await api_calls.update_user_metadata(
+            user_id=self.df_state.user_obj['user_id'],
+            new_metadata=self.df_state.user_obj['metadata']
+        )
 
         await main_menu(interaction=interaction, df_map=self.df_state.map_obj, user_cache=self.df_state.user_cache)
         await options_menu(self.df_state)
@@ -732,7 +769,10 @@ class AppModeButton(discord.ui.Button):
         self.df_state.user_obj['metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
         if self.df_state.convoy_obj:
             self.df_state.convoy_obj['user_metadata']['mobile'] = not self.df_state.user_obj['metadata']['mobile']
-        await api_calls.update_user_metadata(self.df_state.user_obj['user_id'], self.df_state.user_obj['metadata'])
+        await api_calls.update_user_metadata(
+            user_id=self.df_state.user_obj['user_id'],
+            new_metadata=self.df_state.user_obj['metadata']
+        )
 
         await options_menu(self.df_state)
 
@@ -782,7 +822,10 @@ class ReferralCodeModal(discord.ui.Modal):
         self.df_state.interaction = interaction
         code = str(self.referral_modal.value).upper()
 
-        success = await api_calls.redeem_referral(self.df_state.user_obj['user_id'], code)
+        success = await api_calls.redeem_referral(
+            user_id=self.df_state.user_obj['user_id'],
+            referral_code=code
+        )
         print(success)
         try:
             await interaction.response.send_message(

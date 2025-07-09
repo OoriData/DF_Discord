@@ -27,7 +27,10 @@ async def warehouse_menu(df_state: DFState, edit: bool = True):
     )  # Add this menu to the back stack
 
     if df_state.warehouse_obj:
-        df_state.warehouse_obj = await api_calls.get_warehouse(df_state.warehouse_obj['warehouse_id'])
+        df_state.warehouse_obj = await api_calls.get_warehouse(
+            warehouse_id=df_state.warehouse_obj['warehouse_id'],
+            user_id=df_state.user_obj['user_id']
+        )
 
         await warehoused(df_state, edit)
     else:
@@ -104,7 +107,10 @@ async def warehouse_cargo_md(warehouse_obj, verbose: bool = False) -> str:
                     cargo_str += f'\n  - {resource.capitalize()}: {cargo[resource]:,.0f}{unit}'
 
             if cargo['recipient']:
-                cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+                cargo['recipient_vendor'] = await api_calls.get_vendor(
+                    vendor_id=cargo['recipient'],
+                    user_id=warehouse_obj['user_id']
+                )
                 cargo_str += f'\n  - Deliver to *{cargo['recipient_vendor']['name']}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each*'
                 margin = min(round((cargo['unit_delivery_reward'] / cargo['unit_price']) / 2), 24)  # limit emojis to 24
                 cargo_str += f'\n    - Profit margin: {'💵 ' * margin}'
@@ -653,7 +659,8 @@ class CargoConfirmStoreButton(discord.ui.Button):
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.store_quantity
+                quantity=self.store_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -664,7 +671,10 @@ class CargoConfirmStoreButton(discord.ui.Button):
         # Re-fetch convoy_obj if it still exists
         self.df_state.convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
         # Re-fetch warehouse_obj for its updated inventory
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+        self.df_state.warehouse_obj = await api_calls.get_warehouse(
+            self.df_state.warehouse_obj['warehouse_id'],
+            user_id=self.df_state.user_obj['user_id']
+        )
 
         await warehouse_menu(self.df_state)
 
@@ -715,7 +725,7 @@ class StoreAllCargoButton(discord.ui.Button):
                     quantity=cargo_stack['quantity']  # Store the whole stack
                 )
             except RuntimeError as e:
-                await interaction.response.send_message(content=f"Error storing {cargo_stack['name']}: {e}", ephemeral=True)
+                await interaction.response.send_message(content=f'Error storing {cargo_stack['name']}: {e}', ephemeral=True)
                 # Potentially stop or continue, for now, we continue
 
         # Re-fetch user_obj to get updated convoy list and money
@@ -723,7 +733,10 @@ class StoreAllCargoButton(discord.ui.Button):
         # Re-fetch convoy_obj if it still exists
         self.df_state.convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
         # Re-fetch warehouse_obj for its updated inventory
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+        self.df_state.warehouse_obj = await api_calls.get_warehouse(
+            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+            user_id=self.df_state.user_obj['user_id']
+        )
         await warehouse_menu(self.df_state)
 
 
@@ -1013,7 +1026,8 @@ class CargoConfirmRetrieveButton(discord.ui.Button):
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.retrieve_quantity
+                quantity=self.retrieve_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -1025,7 +1039,10 @@ class CargoConfirmRetrieveButton(discord.ui.Button):
         # Re-fetch convoy_obj if it still exists
         self.df_state.convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
         # Re-fetch warehouse_obj for its updated inventory
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+        self.df_state.warehouse_obj = await api_calls.get_warehouse(
+            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+            user_id=self.df_state.user_obj['user_id']
+        )
 
         await warehouse_menu(self.df_state)
 
@@ -1077,7 +1094,8 @@ class RetrieveAllCargoButton(discord.ui.Button):
                     warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                     convoy_id=self.df_state.convoy_obj['convoy_id'],
                     cargo_id=cargo_stack['cargo_id'],
-                    quantity=cargo_stack['quantity']  # Retrieve the whole stack
+                    quantity=cargo_stack['quantity'],  # Retrieve the whole stack
+                    user_id=self.df_state.user_obj['user_id']
                 )
             except RuntimeError as e:
                 await interaction.response.send_message(content=f'Error retrieving {cargo_stack['name']}: {e}', ephemeral=True)
@@ -1088,7 +1106,10 @@ class RetrieveAllCargoButton(discord.ui.Button):
         # Re-fetch convoy_obj if it still exists
         self.df_state.convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
         # Re-fetch warehouse_obj for its updated inventory
-        self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+        self.df_state.warehouse_obj = await api_calls.get_warehouse(
+            warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+            user_id=self.df_state.user_obj['user_id']
+        )
         await warehouse_menu(self.df_state)
 
 
@@ -1160,12 +1181,16 @@ class StoreVehicleSelect(discord.ui.Select):
             await api_calls.store_vehicle_in_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=vehicle_to_store['vehicle_id']
+                vehicle_id=vehicle_to_store['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
             # Re-fetch user_obj to get updated convoy list and money
             self.df_state.user_obj = await api_calls.get_user(self.df_state.user_obj['user_id'])
             # Re-fetch warehouse_obj for its updated inventory
-            self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
             # Check if the convoy still exists
             updated_convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
@@ -1255,14 +1280,18 @@ class RetrieveVehicleSelect(discord.ui.Select):
             await api_calls.retrieve_vehicle_in_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=vehicle_to_retrieve['vehicle_id']
+                vehicle_id=vehicle_to_retrieve['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
             # Re-fetch user_obj to get updated convoy list and money
             self.df_state.user_obj = await api_calls.get_user(self.df_state.user_obj['user_id'])
             # Re-fetch convoy_obj as it has been modified
             self.df_state.convoy_obj = next((c for c in self.df_state.user_obj['convoys'] if c['convoy_id'] == self.df_state.convoy_obj['convoy_id']), None)
              # Re-fetch warehouse_obj for its updated inventory
-            self.df_state.warehouse_obj = await api_calls.get_warehouse(self.df_state.warehouse_obj['warehouse_id'])
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(
+                warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -1354,7 +1383,8 @@ class SpawnConvoyNameModal(discord.ui.Modal):
             self.df_state.convoy_obj = await api_calls.spawn_convoy_from_warehouse(
                 warehouse_id=self.df_state.warehouse_obj['warehouse_id'],
                 vehicle_id=self.vehicle_id,
-                new_convoy_name=self.convoy_name_input.value
+                new_convoy_name=self.convoy_name_input.value,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -1409,8 +1439,14 @@ class BuyWarehouseButton(discord.ui.Button):
         self.df_state.interaction = interaction
 
         try:
-            warehouse_id = await api_calls.new_warehouse(self.df_state.sett_obj['sett_id'], self.df_state.user_obj['user_id'])
-            new_warehouse = await api_calls.get_warehouse(warehouse_id)
+            warehouse_id = await api_calls.new_warehouse(
+                sett_id=self.df_state.sett_obj['sett_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
+            new_warehouse = await api_calls.get_warehouse(
+                warehouse_id=warehouse_id,
+                user_id=self.df_state.user_obj['user_id']
+            )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
@@ -1418,6 +1454,9 @@ class BuyWarehouseButton(discord.ui.Button):
         self.df_state.user_obj['warehouses'].append(new_warehouse)
         self.df_state.warehouse_obj = new_warehouse
 
-        self.df_state.convoy_obj = await api_calls.get_convoy(self.df_state.convoy_obj['convoy_id'])  # Get convoy again to update money display. very wasteful and silly.
+        self.df_state.convoy_obj = await api_calls.get_convoy(
+            convoy_id=self.df_state.convoy_obj['convoy_id'],
+            user_id=self.df_state.user_obj['user_id']
+        )
 
         await warehouse_menu(self.df_state)

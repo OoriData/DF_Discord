@@ -29,7 +29,11 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
     sett_embed = discord.Embed()
     sett_embed = df_embed_author(sett_embed, df_state)
 
-    tile_obj = await api_calls.get_tile(df_state.convoy_obj['x'], df_state.convoy_obj['y'])
+    tile_obj = await api_calls.get_tile(
+        x=df_state.convoy_obj['x'],
+        y=df_state.convoy_obj['y'],
+        user_id=df_state.user_obj['user_id']
+    )
     if not tile_obj['settlements']:
         await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
         return
@@ -162,7 +166,10 @@ class WarehouseButton(discord.ui.Button):
             if w['sett_id'] == self.df_state.sett_obj['sett_id']
         ), None)
         if local_warehouse:
-            self.df_state.warehouse_obj = await api_calls.get_warehouse(local_warehouse['warehouse_id'])
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(
+                warehouse_id=local_warehouse['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
         await discord_app.warehouse_menus.warehouse_menu(self.df_state)
 

@@ -73,7 +73,8 @@ async def get_map(
         x_min: int | None = None,
         x_max: int | None = None,
         y_min: int | None = None,
-        y_max: int | None = None
+        y_max: int | None = None,
+        user_id: UUID | None = None
 ) -> dict:
     params = {}
 
@@ -99,7 +100,7 @@ async def get_map(
     return deserialize_map(response.content)
 
 
-async def get_tile(x: int, y: int) -> dict:
+async def get_tile(x: int, y: int, user_id: UUID | None = None) -> dict:
     headers = {'Authorization': f'Bearer {create_session('DF_DISCORD_APP')}'}
     async with httpx.AsyncClient(verify=False) as client:
         response = await client.get(

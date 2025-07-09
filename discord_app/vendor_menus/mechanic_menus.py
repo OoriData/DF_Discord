@@ -480,7 +480,8 @@ class ConfirmInstallButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
-                part_cargo_id=self.part_to_install['cargo_id']
+                part_cargo_id=self.part_to_install['cargo_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -622,7 +623,8 @@ class RemoveConfirmView(discord.ui.View):
             vendor_id=self.df_state.vendor_obj['vendor_id'],
             convoy_id=self.df_state.convoy_obj['convoy_id'],
             vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
-            part_id=self.df_state.part_obj['part_id']
+            part_id=self.df_state.part_obj['part_id'],
+            user_id=self.df_state.user_obj['user_id']
         )
         # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
@@ -659,7 +661,10 @@ async def scrap_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=scrap_vehicle_menu)  # Add this menu to the back stack
 
     try:
-        scrap_check = await api_calls.check_scrap(df_state.vehicle_obj['vehicle_id'])
+        scrap_check = await api_calls.check_scrap(
+            vehicle_id=df_state.vehicle_obj['vehicle_id'],
+            user_id=df_state.user_obj['user_id']
+        )
     except RuntimeError as e:
         await df_state.interaction.response.send_message(content=e, ephemeral=True)
         return
@@ -740,7 +745,8 @@ class ScrapVehicleButton(discord.ui.Button):
             self.df_state.convoy_obj = await api_calls.vendor_scrap_vehicle(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

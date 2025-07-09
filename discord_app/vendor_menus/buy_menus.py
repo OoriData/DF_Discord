@@ -315,7 +315,8 @@ class ResourceConfirmBuyButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 resource_type=self.resource_type,
-                quantity=self.cart_quantity
+                quantity=self.cart_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -479,7 +480,8 @@ class CargoConfirmBuyButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.cart_quantity
+                quantity=self.cart_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -697,7 +699,8 @@ class BuyVehicleButton(discord.ui.Button):
             self.df_state.convoy_obj = await api_calls.buy_vehicle(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -1014,7 +1017,8 @@ class TopUpButton(discord.ui.Button):
                     vendor_id=vendor_id,
                     convoy_id=self.df_state.convoy_obj['convoy_id'],
                     resource_type=resource_type,
-                    quantity=quantity
+                    quantity=quantity,
+                    user_id=self.df_state.user_obj['user_id']
                 )
                 
                 # Update state
@@ -1054,4 +1058,5 @@ class TopUpButton(discord.ui.Button):
             await interaction.followup.send(embed=error_embed, ephemeral=True)
             
         except Exception as e:
+            print
             await interaction.followup.send('An unexpected error occurred. Please try again later.', ephemeral=True)

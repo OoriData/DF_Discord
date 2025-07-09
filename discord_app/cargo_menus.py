@@ -30,7 +30,10 @@ async def cargo_menu(df_state: DFState):
     ), None)
 
     if df_state.cargo_obj['recipient']:
-        recipient_vendor_obj = await api_calls.get_vendor(vendor_id=df_state.cargo_obj['recipient'])
+        recipient_vendor_obj = await api_calls.get_vendor(
+            vendor_id=df_state.cargo_obj['recipient'],
+            user_id=df_state.user_obj['user_id']
+        )
     else:
         recipient_vendor_obj = {}
 
@@ -121,7 +124,8 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             self.df_state.convoy_obj = await api_calls.move_cargo(
                 self.df_state.convoy_obj['convoy_id'],
                 self.df_state.cargo_obj['cargo_id'],
-                dest_vehicle['vehicle_id']
+                dest_vehicle['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

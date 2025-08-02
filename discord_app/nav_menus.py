@@ -6,7 +6,7 @@ import                           discord
 import                           discord_app.main_menu_menus
 import                           discord_app.convoy_menus
 import discord_app.sett_menus
-import                           discord_app.vendor_views.vendor_menus
+import                           discord_app.vendor_menus.vendor_menus
 
 from discord_app.df_state import DFState, DFMenu
 from discord_app          import validate_interaction, get_settlement_emoji

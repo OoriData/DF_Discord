@@ -30,7 +30,10 @@ async def cargo_menu(df_state: DFState):
     ), None)
 
     if df_state.cargo_obj['recipient']:
-        recipient_vendor_obj = await api_calls.get_vendor(vendor_id=df_state.cargo_obj['recipient'])
+        recipient_vendor_obj = await api_calls.get_vendor(
+            vendor_id=df_state.cargo_obj['recipient'],
+            user_id=df_state.user_obj['user_id']
+        )
     else:
         recipient_vendor_obj = {}
 
@@ -121,7 +124,8 @@ class MoveCargoVehicleSelect(discord.ui.Select):
             self.df_state.convoy_obj = await api_calls.move_cargo(
                 self.df_state.convoy_obj['convoy_id'],
                 self.df_state.cargo_obj['cargo_id'],
-                dest_vehicle['vehicle_id']
+                dest_vehicle['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -157,8 +161,8 @@ class MapButton(discord.ui.Button):
         embed = discord.Embed(
             description='\n'.join([
                 f'## {self.df_state.cargo_obj['name']}',
-                '🟨 - Your convoy\'s location'
-                '🟦 - Recipient vendor\'s location'
+                '🟨 - Your convoy\'s location',
+                '🟦 - Recipient vendor\'s location',
             ])
         )
 
@@ -179,6 +183,7 @@ class MapButton(discord.ui.Button):
 
 
 def format_part(part_cargo: dict, verbose: bool=True):
+    """ Format vehicle part data into markdown string with proper list formatting. """
     if isinstance(part_cargo, list):
         parts = part_cargo
     elif part_cargo.get('cargo_id'):
@@ -206,73 +211,116 @@ def format_part(part_cargo: dict, verbose: bool=True):
         diameter_in = round(part['diameter'] * 39.3701) if part.get('diameter') else None
 
         slot = part['slot'].replace('_', ' ').capitalize() if part['slot'] != 'ice' else 'ICE'
-        if verbose:
+        
+        # Build requirements list separately
+        requirements_text = ''
+        if verbose and part.get('requirements'):
             requirements = [
-                f'    - {req.replace('_', ' ').capitalize()}' if req != 'ice' else '    - ICE'
+                f'- {req.replace('_', ' ').capitalize()}' if req != 'ice' else '- ICE'
                 for req in part.get('requirements')
             ]
+            requirements_text = '  - Requirements:\n    ' + '\n    '.join(requirements)
+            
         coupling = part['coupling'].replace('_', ' ').capitalize() if part['coupling'] else None
 
-        if verbose:  # Display eeeerrrryyythang
-            part_attrs = [
-                f'- {slot} (OE)' if part.get('oe') else f'- {part['slot'].replace('_', ' ').capitalize()}',
-                f'  - **{part['name']}** (Original Equipment)' if part.get('OE') else f'  - **{part['name']}**',
-                f'    - {part['wp']} / 10 wear points' if part.get('wp') else None,
-
-                f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
-                f'  - Efficiency 🌿: **{efficiency_add:+.0f}**' if efficiency_add else None,
-                f'  - Top speed 🚀: **{top_speed_add:+.0f}**' if top_speed_add else None,
-                f'  - Offroad capability 🏔️: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
-                f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)' if cargo_capacity_add else None,
-                f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)' if weight_capacity_add else None,
-                f'  - Weight capacity multi 💪: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
-
-                f'  - Minimum weight class: **{part['weight_class']}**' if part.get('weight_class') else None,
-                '  - requirements:' if requirements else None,
-                '\n'.join(requirements) if requirements else None,
-
-                f'  - **{part['kw']}** kW (**{horsepower}** hp)' if part.get('kw') else None,
-                f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)' if part.get('nm') else None,
-                f'  - **{part['fuel_capacity']}** L ⛽️ (**{fuel_gal}** gal)' if part.get('fuel_capacity') else None,
-                f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
-                f'  - **{part['energy_density']}** Wh/kg' if part.get('energy_density') else None,
-                f'  - **{part['water_capacity']}** L 💧 (**{water_gal}** gal)' if part.get('water_capacity') else None,
-                f'  - **{coupling}**' if coupling else None,
-                f'  - **{part['driven_axles']}** axles driven' if part.get('driven_axles') else None,
-                f'  - **{part['diameter']}**m ({diameter_in} in) diameter' if part.get('diameter') else None,
-
-                '  - **critical**' if part.get('critical') else None,
-                '  - **removable** ↩️' if part.get('removable') else None,
-                '  - **salvagable** ♻️' if part.get('salvagable') else None,
-                '  - **bolt-on**' if part.get('bolt_on') else None,
-
-                f'  - *{part['description']}*' if part.get('description') else None,
-                f'    - Part value: **${part['value']}**' if part.get('installation_price') else None,
-                f'    - Installation price: **${part['installation_price']}**' if part.get('installation_price') is not None else None,
-                f'    - Total price: **${part['value'] + part['installation_price']}**' if part.get('value') and part.get('installation_price') is not None else None,
-            ]
+        lines = []
+        
+        # Start with part name and handle OE marking
+        if part.get('oe'):
+            lines.append(f'- **{part['name']}** (Original Equipment)')
         else:
-            # Only display slot, name, base 7 multipliers (without alt display), capacities, removable, and salvagable
-            part_attrs = [
-                f'- {slot}',
-                f'  - **{part['name']}**',
+            lines.append(f'- **{part['name']}**')
+            
+        # Add slot and wear points
+        lines.append(f'  - Slot: **{slot}**')
+        if part.get('wp'):
+            lines.append(f'  - {part['wp']} / 10 wear points')
 
-                f'  - AC 🛡️: **{ac_add:+.0f}**' if ac_add else None,
-                f'  - Efficiency 🌿: **{efficiency_add:+.0f}**' if efficiency_add else None,
-                f'  - Top speed 🚀: **{top_speed_add:+.0f}**' if top_speed_add else None,
-                f'  - Offroad capability 🏔️: **{offroad_capability_add:+.0f}**' if offroad_capability_add else None,
-                f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L' if cargo_capacity_add else None,
-                f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg' if weight_capacity_add else None,
-                f'  - Weight capacity multi 🏋️: **{weight_capacity_multi:+.0f}**' if weight_capacity_multi else None,
+        # Add stats
+        if ac_add:
+            lines.append(f'  - AC 🛡️: **{ac_add:+.0f}**')
+        if efficiency_add:
+            lines.append(f'  - Efficiency 🌿: **{efficiency_add:+.0f}**')
+        if top_speed_add:
+            lines.append(f'  - Top speed 🚀: **{top_speed_add:+.0f}**')
+        if offroad_capability_add:
+            lines.append(f'  - Offroad capability 🥾: **{offroad_capability_add:+.0f}**')
+        if cargo_capacity_add:
+            if verbose:
+                lines.append(f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L ({cargo_cubic_feet:+} ft³)')
+            else:
+                lines.append(f'  - Cargo capacity add 📦: **{cargo_capacity_add:+.0f}** L')
+        if weight_capacity_add:
+            if verbose:
+                lines.append(f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg ({weight_lbs:+} lbs)')
+            else:
+                lines.append(f'  - Weight capacity add 🏋️: **{weight_capacity_add:+.0f}** kg')
+        if weight_capacity_multi:
+            lines.append(f'  - Weight capacity multi {'💪' if verbose else '🏋️'}: **{weight_capacity_multi:+.0f}**')
 
-                f'  - **{part['fuel_capacity']}** L ⛽️' if part.get('fuel_capacity') else None,
-                f'  - **{part['kwh_capacity']}** kWh 🔋' if part.get('kwh_capacity') else None,
-                f'  - **{part['water_capacity']}** L 💧' if part.get('water_capacity') else None,
+        # Add verbose-only information
+        if verbose:
+            if part.get('weight_class'):
+                lines.append(f'  - Minimum weight class: **{part['weight_class']}**')
+            
+            # Add requirements as a properly formatted sublist
+            if requirements_text:
+                lines.append(requirements_text)
+                
+            # Add technical specs
+            if part.get('kw'):
+                lines.append(f'  - **{part['kw']}** kW (**{horsepower}** hp)')
+            if part.get('nm'):
+                lines.append(f'  - **{part['nm']}** N·m (**{lbft}** lb·ft)')
+            if part.get('fuel_capacity'):
+                lines.append(f'  - **{part['fuel_capacity']}** L ⛽️ (**{fuel_gal}** gal)')
+            if part.get('kwh_capacity'):
+                lines.append(f'  - **{part['kwh_capacity']}** kWh 🔋')
+            if part.get('energy_density'):
+                lines.append(f'  - **{part['energy_density']}** Wh/kg')
+            if part.get('water_capacity'):
+                lines.append(f'  - **{part['water_capacity']}** L 💧 (**{water_gal}** gal)')
+            if coupling:
+                lines.append(f'  - **{coupling}**')
+            if part.get('driven_axles'):
+                lines.append(f'  - **{part['driven_axles']}** axles driven')
+            if part.get('diameter'):
+                lines.append(f'  - **{part['diameter']}**m ({diameter_in} in) diameter')
+                
+            # Add flags
+            if part.get('critical'):
+                lines.append('  - **Critical**')
+            if part.get('removable'):
+                lines.append('  - **Removable** ↩️')
+            if part.get('salvagable'):
+                lines.append('  - **Salvagable** ♻️')
+            if part.get('bolt_on'):
+                lines.append('  - **Bolt-on**')
+                
+            # Add description and pricing as separate paragraphs with proper indentation
+            if part.get('description'):
+                lines.append(f'  - *{part['description']}*')
+            
+            # Pricing info
+            if part.get('value'):
+                lines.append(f'  - Part value: **${part['value']:,.0f}**')
+            if part.get('installation_price') is not None:
+                lines.append(f'    - **Installation price: ${part['installation_price']:,.0f}**')
+        else:
+            # Only add these items in non-verbose mode
+            if part.get('fuel_capacity'):
+                lines.append(f'  - **{part['fuel_capacity']}** L ⛽️')
+            if part.get('kwh_capacity'):
+                lines.append(f'  - **{part['kwh_capacity']}** kWh 🔋')
+            if part.get('water_capacity'):
+                lines.append(f'  - **{part['water_capacity']}** L 💧')
+            if part.get('removable'):
+                lines.append('  - **Removable** ↩️')
+            if part.get('salvagable'):
+                lines.append('  - **Salvagable** ♻️')
 
-                '  - **removable** ↩️' if part.get('removable') else None,
-                '  - **salvagable** ♻️' if part.get('salvagable') else None,
-            ]
+        # Join this part's lines with proper newlines
+        part_strs.append('\n'.join(lines))
 
-        part_strs.append('\n'.join(attr for attr in part_attrs if attr))
-
+    # Add an extra newline between parts for better separation
     return '\n'.join(part_strs)

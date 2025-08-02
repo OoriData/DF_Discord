@@ -1,4 +1,5 @@
 httpx
+python-jose[cryptography]
 discord
 # audioop-lts  # will be nessisary if we go to 3.13, although i wouldn't be surprised if discord.py covers it?
 utiloori

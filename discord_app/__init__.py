@@ -3,6 +3,7 @@
 """ Discord Frontend """
 from __future__             import annotations
 from datetime               import datetime
+from zoneinfo               import ZoneInfo
 import                             io
 import                             os
 
@@ -23,6 +24,7 @@ DF_WELCOME_CHANNEL_ID = int(os.environ['DF_WELCOME_CHANNEL_ID'])
 DF_GAMEPLAY_CHANNEL_1_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_1_ID'])
 DF_GAMEPLAY_CHANNEL_2_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_2_ID'])
 DF_GAMEPLAY_CHANNEL_3_ID = int(os.environ['DF_GAMEPLAY_CHANNEL_3_ID'])
+DF_LEADERBOARD_CHANNEL_ID = int(os.environ['DF_LEADERBOARD_CHANNEL_ID'])
 
 DF_LOGO_EMOJI = '<:df_logo:1310693347370864710>'
 
@@ -33,33 +35,71 @@ OORI_WHITE = (219, 226, 233)
 OORI_YELLOW = (243, 213, 78)
 OORI_RED = (138, 43, 43)
 
+MOUNTAIN_TIME = ZoneInfo('America/Denver')
+
+SERVER_NOTIFICATION_VALUE = 'official_Discord_server'
+DM_NOTIFICATION_VALUE = 'official_Discord_DM'
+
 
 async def handle_timeout(df_state: DFState, message: discord.Message=None):
     if message:
         await message.edit(
-            view=TimeoutView(df_state.user_cache)
+            view=TimeoutView(df_state.user_cache, prev_interaction=df_state.interaction)
         )
 
     else:
         await df_state.interaction.edit_original_response(
-            view=TimeoutView(df_state.user_cache)
+            view=TimeoutView(df_state.user_cache, prev_interaction=df_state.interaction)
         )
-
+    
 class TimeoutView(discord.ui.View):
-    def __init__(self, user_cache):
+    def __init__(self, user_cache, prev_interaction: discord.Interaction=None):
         super().__init__(timeout=None)
 
         self = add_external_URL_buttons(self)  # Add external link buttons
 
-        self.add_item(TimedOutMainMenuButton(user_cache))
+        if prev_interaction:
+            if prev_interaction.app_permissions.send_messages:  # Check if the bot can send messages in the channel
+                self.add_item(TimedOutMainMenuButton(user_cache))
+            elif prev_interaction.channel.type in (discord.ChannelType.private, discord.ChannelType.group):  # Check if the channel is a DM or group DM
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.blurple,
+                    label='Interaction timed out',
+                    disabled=True,
+                    custom_id='disabled_timed_out_button',
+                    row=1
+                ))
+            else:  # If the bot can't send messages in the channel, add a disabled button
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.blurple,
+                    label='Interaction timed out | Main Menu',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button',
+                    row=1
+                ))
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.gray,
+                    label='Add the DF App to this server to enable',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button_explaination_1',
+                    row=2
+                ))
+                self.add_item(discord.ui.Button(
+                    style=discord.ButtonStyle.gray,
+                    label='the "timed out | Main Menu" button',
+                    disabled=True,
+                    custom_id='disabled_timed_out_main_menu_button_explaination_2',
+                    row=3
+                ))
+                
 
 class TimedOutMainMenuButton(discord.ui.Button):
     def __init__(self, user_cache: DFState):
         self.user_cache = user_cache
-
+  
         super().__init__(
             style=discord.ButtonStyle.blurple,
-            label='Interaction timed out; Main Menu',
+            label='Interaction timed out | Main Menu',
             custom_id='timed_out_main_menu_button',
             row=1
         )
@@ -72,7 +112,7 @@ class TimedOutMainMenuButton(discord.ui.Button):
             interaction=interaction,
             message=new_message,
             user_cache=self.user_cache,
-            user_id=interaction.user.id
+            discord_user_id=interaction.user.id
         )
 
         if not interaction.response.is_done():
@@ -110,6 +150,87 @@ async def validate_interaction(interaction: discord.Interaction, df_state: DFSta
         return False  # Do not continue
     
     return True  # Continue
+
+
+def split_description_into_embeds(
+    content_string: str,
+    target_embeds_list: list[discord.Embed],
+    embed_title: str = '',
+    continuation_prefix: str = '-# continued\n',
+):
+    """
+    Splits a long content string into multiple embeds, each respecting the max_length.
+    The first embed will have `embed_title`. Subsequent embeds will start with `continuation_prefix`.
+    """
+    MAX_EMBED_DESCRIPTION_LENGTH = 2048
+
+    # If content is effectively empty or just "- None", add a single embed with title and "- None"
+    if not content_string.strip() or content_string.strip() == '- None':
+        target_embeds_list.append(discord.Embed(description=f'{embed_title}\n- None'))
+        return
+
+    lines = content_string.split('\n')
+    # Start the first embed with the title
+    current_embed_lines = [embed_title]
+    current_length = len(embed_title) + 1  # +1 for the newline after title
+
+    for line in lines:
+        # If adding this line (plus a newline) would exceed the limit
+        if current_length + len(line) + 1 > MAX_EMBED_DESCRIPTION_LENGTH:
+            # Finalize the current embed
+            target_embeds_list.append(discord.Embed(description='\n'.join(current_embed_lines)))
+            # Start a new embed with the continuation prefix (or empty)
+            current_embed_lines = [continuation_prefix.strip()] if continuation_prefix.strip() else []
+            current_length = len(continuation_prefix)  # Length of prefix + its newline
+        
+        current_embed_lines.append(line)
+        current_length += len(line) + 1  # Add length of line and its preceding newline
+
+    # Add the last accumulated embed, if it has content beyond just the title (or continuation_prefix)
+    if current_embed_lines and (len(current_embed_lines) > 1 or (current_embed_lines[0] != continuation_prefix.strip() and current_embed_lines[0] != embed_title)):
+        target_embeds_list.append(discord.Embed(description='\n'.join(current_embed_lines)))
+    elif not current_embed_lines and not target_embeds_list:  # Handle case where content is very short and fits in one embed but loop doesn't add it
+        if lines:  # Ensure there was some initial content
+            target_embeds_list.append(discord.Embed(description=f'{embed_title}\n{content_string}'))
+
+
+def create_paginated_select_options(
+    all_options: list[discord.SelectOption],
+    current_page: int,
+    options_per_page: int = 23
+) -> list[discord.SelectOption]:
+    """
+    Paginates a list of SelectOptions and adds page navigation options.
+
+    Args:
+        all_options (list[discord.SelectOption]): The full list of options to paginate.
+        current_page (int): The current page number (0-indexed).
+        options_per_page (int): The number of options to show per page.
+
+    Returns:
+        list[discord.SelectOption]: The list of options for the current page, including navigation.
+    """
+    if not all_options:
+        return [discord.SelectOption(label='No options available', value='no_options', disabled=True)]
+
+    max_pages = (len(all_options) - 1) // options_per_page
+    max_pages = max(max_pages, 0)
+
+    page_start = current_page * options_per_page
+    page_end = page_start + options_per_page
+
+    paginated_options = all_options[page_start:page_end]
+
+    options_for_view = []
+    if current_page > 0:
+        options_for_view.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
+
+    options_for_view.extend(paginated_options)
+
+    if current_page < max_pages:
+        options_for_view.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
+
+    return options_for_view
 
 
 async def get_image_as_discord_file(url: str) -> discord.File:
@@ -185,7 +306,7 @@ def get_user_metadata(df_state: DFState, metadata_key: str):
     return user_metadata.get(metadata_key)
 
 
-def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> discord.Embed:
+def add_tutorial_embed(embeds: list[discord.Embed], df_state: DFState) -> list[discord.Embed]:
     if not df_state.convoy_obj:
         return embeds
     if (
@@ -287,7 +408,7 @@ class TutorialEmbed(discord.Embed):
 DF_HELP = '''\
 ## Welcome to the **Desolate Frontiers**!
 
-This thing's just out of Alpha, so things *will* break and the game *is not* finished! If you have an issue, please DM Choccy (or just holler in #general)!
+This thing's just out of Alpha, so things *will* break and the game *is not* finished! If you have an issue, please DM Choccy (or just holler in  #general)!
 
 - You'll be managing a logistics company, running convoys of land vehicles across the remains of the US, carrying all manner of useful goods. 🚛
 - To get started, run **`/desolate-frontiers`** to get your account signed up for our system. You'll also get to name your first convoy there! 💻
@@ -335,7 +456,6 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
         '🚙': {
             'SUV', 'long_SUV', 'CUV',
             '4x4', '4x4_APC',
-            'minivan', 'cabover_minivan',
         },
         '🏎️': {'2-door_sedan', 'convertible', 'dune_buggy', 'tracked_vehicle'},
         '🛻': {
@@ -346,8 +466,8 @@ def get_vehicle_emoji(vehicle_shape: str) -> str | None:
             '2-door_UTV', '4-door_UTV',
         },
         '🚐': {
+            'minivan', 'cabover_minivan',
             'van', 'cargo_van',
-            'cabover_minivan',
         },
         '🚌': {'bus', 'coach',},
         '🚚': {

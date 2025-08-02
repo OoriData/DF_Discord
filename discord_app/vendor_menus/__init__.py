@@ -4,7 +4,10 @@
 import                  math
 from datetime           import datetime, timezone, timedelta
 
-from discord_app import api_calls, DFState, get_vehicle_emoji
+import discord
+
+from discord_app import api_calls, DFState, get_vehicle_emoji, split_description_into_embeds
+
 
 
 def vehicles_md(vehicles, verbose: bool = False):
@@ -19,41 +22,65 @@ def vehicles_md(vehicles, verbose: bool = False):
         vehicle_str = f'- {get_vehicle_emoji(vehicle['shape'])} | **{vehicle['name']}** | {powered_by_emoji} | *${vehicle['value']:,}*'
 
         if verbose:
+            if vehicle['couplings']:
+                couplings = ', '.join(  # Normalize lists as a single string
+                    val.replace('_', ' ').capitalize()
+                    for val in set(vehicle['couplings'])  # Use a set to ensure only unique values
+                )
+            else:
+                couplings = None
+
             vehicle_str += '\n' + '\n'.join([
-                f'  - *{vehicle['make_model']}*',
-                f'  - Top Speed: **{vehicle['top_speed']:.0f}** / 100',
-                f'  - Efficiency: **{vehicle['efficiency']:.0f}** / 100',
-                f'  - Offroad Capability: **{vehicle['offroad_capability']:.0f}** / 100',
-                f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L',
-                f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg'
-            ])
+                line for line in [
+                    f'  - *{vehicle['make_model']}*',
+                    f'  - Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
+                    f'  - Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
+                    f'  - Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
+                    f'  - Volume Capacity: **{vehicle['cargo_capacity']:.0f}**L' if vehicle.get('cargo_capacity') else None,
+                    f'  - Weight Capacity: **{vehicle['weight_capacity']:.0f}**kg',
+                    f'  - Coupling: **{couplings}**' if couplings else None,
+                ] if line is not None]
+            )
+        
+        if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
+            vehicle_str += '\n  - *contains cargo*'
 
         vehicle_list.append(vehicle_str)
     return '\n'.join(vehicle_list) if vehicle_list else '- None'
 
 
-async def vendor_inv_md(df_state: DFState, *, verbose: bool = False) -> str:
-    """ Build the vendor inventory markdown from df_state """
+async def vendor_inv_embeds(df_state: DFState, embeds: list[discord.Embed], *, verbose: bool = False) -> list[discord.Embed]:
+    """ Returns embeds representing the resource, vehicle, and cargo inventory for the vendor. """
     vendor_obj = df_state.vendor_obj
 
-    displayable_resources = format_resources(vendor_obj)
-    displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
-    displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
+    if vendor_obj['fuel'] or vendor_obj['water'] or vendor_obj['food']:
+        displayable_resources = format_resources(vendor_obj)
+        embeds.append(discord.Embed(description='\n'.join([  # Resources section is typically short, no need to split
+            '### Resources for sale',
+            displayable_resources,
+        ])))
 
-    md = '\n'.join([
-        f'## {vendor_obj['name']}',
-        '### Available for Purchase',
-        '**Resources:**',
-        displayable_resources,
-        '',
-        '**Vehicles:**',
-        displayable_vehicles,
-        '',
-        '**Cargo:**',
-        displayable_cargo
-    ])
+    if vendor_obj['vehicle_inventory']:
+        displayable_vehicles = vehicles_md(vendor_obj['vehicle_inventory'], verbose=verbose)
+        displayable_vehicles = displayable_vehicles[:2000]
 
-    return md
+        split_description_into_embeds(
+            content_string=displayable_vehicles,
+            embed_title='### Vehicles for sale',
+            target_embeds_list=embeds
+        )
+
+    if vendor_obj['cargo_inventory']:
+        displayable_cargo = await format_cargo(df_state, verbose=verbose, vendor=True)
+        displayable_cargo = displayable_cargo[:3200]
+
+        split_description_into_embeds(
+            content_string=displayable_cargo,
+            embed_title='### Cargo for sale',
+            target_embeds_list=embeds
+        )
+
+    return embeds
 
 
 def format_resources(vendor_obj: dict) -> str:
@@ -68,7 +95,7 @@ def format_resources(vendor_obj: dict) -> str:
 
             resources_list.append(
                 f'- {resource.capitalize()} {emoji}: {vendor_obj[resource]} {unit}\n'
-                f'  - *${vendor_obj[f"{resource}_price"]:,.0f} per {unit[:-1]}*'
+                f'  - *${vendor_obj[f'{resource}_price']:,.0f} per {unit[:-1]}*'
             )
 
     return '\n'.join(resources_list) if resources_list else '- None'
@@ -88,9 +115,9 @@ async def format_cargo(df_state: DFState, *, verbose: bool, vendor: bool = False
 
         cargo_str = format_basic_cargo(cargo)
 
-        if cargo['recipient']:
-            await enrich_delivery_info(df_state, cargo, verbose)
-            if verbose and cargo.get('recipient_vendor'):
+        if cargo['recipient'] and verbose:
+            await enrich_delivery_info(df_state, cargo)
+            if cargo.get('recipient_vendor'):
                 cargo_str += format_delivery_info(cargo)
 
         if vendor:
@@ -118,10 +145,12 @@ def update_wet_unit_price(cargo: dict, vendor_obj: dict) -> None:
 
 
 def is_cargo_invalid(cargo: dict, vendor_obj: dict) -> bool:
-    """ Determine if cargo should be skipped because required vendor pricing is missing """
+    """ Determine if cargo should be skipped because required vendor pricing is missing, and skip intrinsic cargo """
     for resource in ['fuel', 'water', 'food']:
         if cargo.get(resource) is not None and vendor_obj.get(f'{resource}_price') is None:
             return True
+    if cargo.get('intrinsic_part_id'):
+        return True  # Skip parts
     return False
 
 
@@ -155,10 +184,13 @@ def format_basic_cargo(cargo: dict) -> str:
     return cargo_str
 
 
-async def enrich_delivery_info(df_state: DFState, cargo: dict, verbose: bool) -> None:
+async def enrich_delivery_info(df_state: DFState, cargo: dict) -> None:
     """ Attach vendor and location info to deliverable cargo """
     if not cargo.get('recipient_vendor'):
-        cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+        cargo['recipient_vendor'] = await api_calls.get_vendor(
+            vendor_id=cargo['recipient'],
+            user_id=df_state.user_obj['user_id']
+        )
 
     if cargo.get('recipient_vendor'):
         cargo['recipient_location'] = next((
@@ -182,8 +214,8 @@ def format_delivery_info(cargo: dict) -> str:
         f'\n  - Deliver to *{vendor_location}* | ***${cargo['unit_delivery_reward']:,.0f}*** *each on delivery*'
     ]
 
-    margin = min(round(cargo['unit_delivery_reward'] / cargo['unit_price']), 24)
-    delivery_info.append(f'\n  - Profit margin: {'💵 ' * margin}')
+    margin = min(round((cargo['unit_delivery_reward'] / cargo['unit_price']) / 2), 24)  # limit emojis to 24
+    delivery_info.append(f'\n    - Profit margin: {'💵 ' * margin}')
 
     tile_distance = math.sqrt(
         (vendor_obj['x'] - cargo['vendor_x']) ** 2 +
@@ -203,7 +235,7 @@ def format_clearance_info(cargo: dict) -> str:
     try:
         creation_date_str = cargo.get('creation_date')
         if not creation_date_str:
-            return '' # No date to check against
+            return ''  # No date to check against
         
         cargo_creation_dt = datetime.fromisoformat(creation_date_str).replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
@@ -235,8 +267,8 @@ def format_clearance_info(cargo: dict) -> str:
             return f'\n  - *Clearance! {discount_percentage}% off!* 🏷️'  # + f' `CARGO IS {(now - cargo_age).days} DAYS OLD`'
     except (ValueError, TypeError):
         # Handle potential errors during date parsing/comparison gracefully
-        return '' # Don't add clearance info if dates are problematic
-    return '' # Not on sale or an error occurred
+        return ''  # Don't add clearance info if dates are problematic
+    return ''  # Not on sale or an error occurred
 
 
 async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:
@@ -246,7 +278,8 @@ async def enrich_parts_compatibility(convoy_obj: dict, cargo: dict) -> None:
         try:
             cargo['compatibilities'][vehicle['vehicle_id']] = await api_calls.check_part_compatibility(
                 vehicle_id=vehicle['vehicle_id'],
-                part_cargo_id=cargo['cargo_id']
+                part_cargo_id=cargo['cargo_id'],
+                user_id=convoy_obj['user_id']
             )
         except RuntimeError as e:
             cargo['compatibilities'][vehicle['vehicle_id']] = e

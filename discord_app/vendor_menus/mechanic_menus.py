@@ -8,10 +8,10 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji
+    api_calls, handle_timeout, df_embed_author, validate_interaction, get_vehicle_emoji, split_description_into_embeds,
+    create_paginated_select_options
 )
-from discord_app.vendor_views  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
-from discord_app.map_rendering import add_map_to_embed
+from discord_app.vendor_menus  import enrich_parts_compatibility, format_parts_compatibility, format_basic_cargo
 import discord_app.nav_menus
 import discord_app.vehicle_menus
 import discord_app.cargo_menus
@@ -28,6 +28,12 @@ async def mechanic_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=mechanic_menu)  # Add this menu to the back stack
 
+    mech_embed = discord.Embed()
+    mech_embed = df_embed_author(mech_embed, df_state)
+    mech_embed.description = f'## {df_state.vendor_obj['name']}'
+
+    embeds = [mech_embed]
+
     convoy_parts = []
     for cargo in df_state.convoy_obj['all_cargo']:
         if cargo.get('parts'):
@@ -38,9 +44,10 @@ async def mechanic_menu(df_state: DFState):
 
             convoy_parts.append(cargo_str)
     if convoy_parts:
-        displayable_convoy_parts = '\n'.join(convoy_parts)
-    else:
-        displayable_convoy_parts = '- None'
+        embeds.append(discord.Embed(description='\n'.join([
+            '## Upgrade parts from convoy inventory',
+            '\n'.join(convoy_parts),
+        ])))
 
     vendor_parts = []
     for cargo in df_state.vendor_obj['cargo_inventory']:
@@ -52,32 +59,29 @@ async def mechanic_menu(df_state: DFState):
 
             vendor_parts.append(cargo_str)
     if vendor_parts:
-        displayable_vendor_parts = '\n'.join(vendor_parts)
-    else:
-        displayable_vendor_parts = '- None'
+        embeds.append(discord.Embed(description='\n'.join([
+            '## Upgrade parts from vendor inventory',
+            '\n'.join(vendor_parts),
+        ])))
 
     vehicle_list = []
     for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- **{vehicle['name']}** | *${vehicle['value']:,.0f}*'
-        vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list)
-
-    embed = discord.Embed(
-        description='\n'.join([
-            f'# {df_state.vendor_obj['name']}',
-            '## Upgrade parts from convoy inventory',
-            displayable_convoy_parts,
-            '## Upgrade parts from vendor inventory',
-            displayable_vendor_parts,
-            '### Select a vehicle for repairs/upgrades',
-            displayable_vehicles,
+        vehicle_hard_cap = vehicle['hard_stat_cap']
+        vehicle_str = '\n'.join([
+            f'- **{vehicle['name']}** | *${vehicle['value']:,.0f}*',
+            f'  - 🌿 {vehicle['raw_efficiency']}  |  🚀 {vehicle['raw_top_speed']}  |  🥾 {vehicle['raw_offroad_capability']}',
+            f'  - 📦 {vehicle['cargo_capacity']:,.0f} L  |  🏋️ {vehicle['weight_capacity']:,.0f} kg'
         ])
-    )
-    embed = df_embed_author(embed, df_state)
+        vehicle_list.append(vehicle_str)
+
+    embeds.append(discord.Embed(description='\n'.join([
+        '### Select a vehicle for repairs/upgrades',
+        '\n'.join(vehicle_list),
+    ])))
 
     view = MechVehicleDropdownView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class MechVehicleDropdownView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -193,32 +197,36 @@ class MechView(discord.ui.View):
         await handle_timeout(self.df_state)
 
 
-async def upgrade_vehicle_menu(df_state: DFState):
-    df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu)  # Add this menu to the back stack
+async def upgrade_vehicle_menu(df_state: DFState, page: int = 0):
+    df_state.append_menu_to_back_stack(func=upgrade_vehicle_menu, args={'page': page})  # Add this menu to the back stack
 
-    displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
-    )
-    truncated_vehicle_parts = displayable_vehicle_parts[:3750]
-
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
+    header_embed = df_embed_author(discord.Embed(), df_state)
+    header_embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '## Parts',
-        truncated_vehicle_parts,
-        f'### {df_state.vehicle_obj['name']} stats'
     ])
 
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embeds = [header_embed]
 
-    view = UpgradeVehicleView(df_state)
+    split_description_into_embeds(
+        content_string='\n'.join(
+            discord_app.cargo_menus.format_part(part, verbose=False) for part in df_state.vehicle_obj['parts']
+        ),
+        embed_title=f'## {df_state.vehicle_obj['name']} parts',
+        target_embeds_list=embeds,
+    )
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
+    embeds.append(footer_embed)
+
+    view = UpgradeVehicleView(df_state, page=page)
+
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class UpgradeVehicleView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, page: int = 0):
+        self.page = page
         self.df_state = df_state
         super().__init__(timeout=600)
 
@@ -237,51 +245,61 @@ class UpgradeVehicleView(discord.ui.View):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
-
-        await part_inventory_menu(self.df_state, is_vendor=False)
+        await part_inventory_menu(self.df_state, is_vendor=False, page=self.page)
 
     @discord.ui.button(label='Install part from Vendor inventory', style=discord.ButtonStyle.blurple, custom_id='part_from_vendor', row=1)
     async def install_part_from_vendor_button(self, interaction: discord.Interaction, button: discord.Button):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
-
-        await part_inventory_menu(self.df_state, is_vendor=True)
+        await part_inventory_menu(self.df_state, is_vendor=True, page=self.page)
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 
-async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
-    df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor})  # Add this menu to the back stack
+async def part_inventory_menu(df_state: DFState, is_vendor: bool=False, page: int = 0):
+    df_state.append_menu_to_back_stack(func=part_inventory_menu, args={'is_vendor': is_vendor, 'page': page})  # Add this menu to the back stack
 
     if is_vendor:
-        cargo_inventory = df_state.vendor_obj['cargo_inventory']
+        source_inventory = df_state.vendor_obj['cargo_inventory']
     else:
-        cargo_inventory = [
-            c for c in df_state.convoy_obj['all_cargo']
-            if c.get('parts')
-        ]
+        # Filter for parts cargo from convoy's all_cargo
+        source_inventory = [c for c in df_state.convoy_obj['all_cargo'] if c.get('parts')]
 
     incompatible_part_cargo_strs = []
-    compatible_part_cargo = []
-    compatible_parts = []
-    for cargo in cargo_inventory:
-        compatibilities = cargo['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
+    compatible_part_cargo_list = []  # Stores cargo dicts that are compatible
 
-        if isinstance(compatibilities, RuntimeError):
+    for current_cargo_item in source_inventory:
+        # For vendor inventory, ensure it's a part. Convoy inventory is pre-filtered.
+        if is_vendor and not current_cargo_item.get('parts'):
+            continue
+
+        # Ensure 'compatibilities' key is present by calling enrich_parts_compatibility.
+        # This modifies 'current_cargo_item' in-place.
+        await enrich_parts_compatibility(df_state.convoy_obj, current_cargo_item)
+
+        # Get the compatibility result for the currently selected vehicle
+        vehicle_specific_compatibilities = current_cargo_item['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
+
+        if isinstance(vehicle_specific_compatibilities, RuntimeError):
             incompatible_part_cargo_strs.append('\n'.join([
-                f'- {cargo['name']}',
-                f'  - ❌ *{compatibilities!s}*'
+                f'- {current_cargo_item['name']}',
+                f'  - ❌ *{vehicle_specific_compatibilities!s}*'
             ]))
+        elif vehicle_specific_compatibilities:  # Check if the list of configurations is not empty
+            compatible_part_cargo_list.append(current_cargo_item)
         else:
-            compatible_part_cargo.append(cargo)
-            compatible_parts.extend(compatibilities)
+            # No compatible configurations for this specific vehicle
+            incompatible_part_cargo_strs.append('\n'.join([
+                f'- {current_cargo_item['name']}',
+                f'  - ❌ *No compatible configurations for {df_state.vehicle_obj['name']}*'
+            ]))
 
-    displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs)
+    displayable_incompatible_parts = '\n'.join(incompatible_part_cargo_strs) if incompatible_part_cargo_strs else '- None'
 
-    displayable_compatible_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part) for part in compatible_part_cargo
+    displayable_compatible_parts = '\n\n'.join(
+        discord_app.cargo_menus.format_part(c_cargo) for c_cargo in compatible_part_cargo_list
     )
 
     embed = discord.Embed()
@@ -289,53 +307,57 @@ async def part_inventory_menu(df_state: DFState, is_vendor: bool=False):
     embed.description = '\n'.join([
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
-        f'*{df_state.vehicle_obj['base_desc']}*',
+        f'*{df_state.vehicle_obj.get('description', '')}*',
         '### Incompatible parts',
         displayable_incompatible_parts if incompatible_part_cargo_strs else '- None',
         '### Compatible parts available for purchase and installation' if is_vendor else '### Compatible parts available for installation',
-        displayable_compatible_parts if compatible_part_cargo else '- None',
+        displayable_compatible_parts if compatible_part_cargo_list else '- None',
         f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
 
-    view = PartSelectView(df_state, compatible_part_cargo)
+    view = PartSelectView(df_state, compatible_part_cargo_list, is_vendor=is_vendor, page=page)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 
 class PartSelectView(discord.ui.View):
-    def __init__(self, df_state: DFState, part_cargos_to_display):
+    def __init__(self, df_state: DFState, part_cargos_to_display, is_vendor: bool, page: int):
         self.df_state = df_state
         super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
 
-        self.add_item(UpgradePartSelect(self.df_state, part_cargos_to_display))
+        self.add_item(UpgradePartSelect(self.df_state, part_cargos_to_display, is_vendor=is_vendor, page=page))
 
     async def on_timeout(self):
         await handle_timeout(self.df_state)
 
 class UpgradePartSelect(discord.ui.Select):
-    def __init__(self, df_state: DFState, part_cargos_to_display):
+    def __init__(self, df_state: DFState, part_cargos_to_display, is_vendor: bool, page: int):
         self.df_state = df_state
         self.part_cargos_to_display = part_cargos_to_display
+        self.is_vendor = is_vendor
+        self.page = page
 
         placeholder = 'Which part to install?'
         disabled = False
-        options = [
+        all_options = [
             discord.SelectOption(label=cargo['name'], value=cargo['cargo_id'])
             for cargo in self.part_cargos_to_display
             if cargo.get('parts')
         ]
 
-        if not options:
+        if not all_options:
             placeholder = 'No compatible parts to install'
             disabled = True
-            options = [discord.SelectOption(label='none', value='none')]
+            paginated_options = [discord.SelectOption(label='none', value='none')]
+        else:
+            sorted_options = sorted(all_options, key=lambda opt: opt.label.lower())
+            paginated_options = create_paginated_select_options(sorted_options, self.page)
 
-        sorted_options = sorted(options, key=lambda opt: opt.label.lower())  # Sort options by first letter of label alphabetically
         super().__init__(
-            placeholder=placeholder,
-            options=sorted_options,
+            placeholder=f'{placeholder} (Page {self.page + 1})',
+            options=paginated_options,
             custom_id='select_part',
             disabled=disabled
         )
@@ -344,6 +366,11 @@ class UpgradePartSelect(discord.ui.Select):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
+
+        if self.values[0] in ('prev_page', 'next_page'):
+            self.page += -1 if self.values[0] == 'prev_page' else 1
+            await part_inventory_menu(self.df_state, is_vendor=self.is_vendor, page=self.page)
+            return
 
         all_inventories = self.df_state.vendor_obj['cargo_inventory'] + self.df_state.convoy_obj['all_cargo']
         self.df_state.cargo_obj = next((
@@ -364,44 +391,101 @@ async def part_install_confirm_menu(df_state: DFState):
 
     compatibilities = df_state.cargo_obj['compatibilities'].get(df_state.vehicle_obj['vehicle_id'])
 
+    # Aggregate stat changes from all new parts
+    aggregated_stats = {}
+    if compatibilities:
+        # Sum up all additive stats
+        for part in compatibilities:
+            for key, value in part.items():
+                if key.endswith('_add') and value is not None:
+                    aggregated_stats[key] = aggregated_stats.get(key, 0) + value
+        
+        # Sum up part values for the 'part_value' mod_key
+        total_part_value = sum(part.get('value', 0) for part in compatibilities)
+        aggregated_stats['part_value'] = total_part_value
+
+    # Calculate total installation price
+    total_installation_price = 0
+    if compatibilities:
+        total_installation_price = sum(part.get('installation_price', 0) for part in compatibilities)
+
+    # Check if the part is from the vendor and add its price
+    is_from_vendor_stock = any(
+        c['cargo_id'] == df_state.cargo_obj['cargo_id']
+        for c in df_state.vendor_obj['cargo_inventory']
+    )
+    if is_from_vendor_stock:
+        total_installation_price += df_state.cargo_obj.get('unit_price')
+
     embed = discord.Embed()
     embed = df_embed_author(embed, df_state)
     embed.description = '\n'.join([
         f'# {df_state.vendor_obj['name']}',
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '### Current Part',
+        '### Current Part(s)',
         discord_app.cargo_menus.format_part(current_parts) if current_parts else '- None',
-        '### New Parts',
+        f'### New Part(s) to be installed from {df_state.cargo_obj['name']} | **${df_state.cargo_obj['unit_price']:,.0f}**',
+        f'*{df_state.cargo_obj['base_desc']}*',
         discord_app.cargo_menus.format_part(compatibilities),
+        f'### Total installation price: ${total_installation_price:,.0f}',
         f'### {df_state.vehicle_obj['name']} stats'
     ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, df_state.cargo_obj)
+    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj, aggregated_stats)
 
-    view = InstallConfirmView(df_state)
+    view = InstallConfirmView(df_state, total_installation_price)
 
     await df_state.interaction.response.edit_message(embed=embed, view=view)
 
 class InstallConfirmView(discord.ui.View):
-    def __init__(self, df_state: DFState):
+    def __init__(self, df_state: DFState, total_installation_price: int):
         self.df_state = df_state
         super().__init__(timeout=600)
 
         discord_app.nav_menus.add_nav_buttons(self, df_state)
+        self.add_item(ConfirmInstallButton(df_state, total_installation_price, row=1))
 
-    @discord.ui.button(label='Install part', style=discord.ButtonStyle.green, custom_id='confirm_install_part', row=1)
-    async def confirm_install_button(self, interaction: discord.Interaction, button: discord.Button):
+    async def on_timeout(self):
+        await handle_timeout(self.df_state)
+
+class ConfirmInstallButton(discord.ui.Button):
+    def __init__(self, df_state: DFState, total_installation_price: int, row: int = 1):
+        self.df_state = df_state
+        self.part_to_install = df_state.cargo_obj  # The cargo item selected for installation
+        self.total_cost = total_installation_price
+
+        can_afford = self.df_state.convoy_obj['money'] >= self.total_cost
+        
+        label = f'Install {self.part_to_install['name']}'
+        if self.total_cost > 0:
+            label += f' | ${self.total_cost:,.0f}'
+        
+        disabled = not can_afford
+
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label=label,
+            disabled=disabled,
+            custom_id='confirm_install_part',
+            row=row
+        )
+
+    async def callback(self, interaction: discord.Interaction):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
             return
         self.df_state.interaction = interaction
 
-        self.df_state.convoy_obj = await api_calls.add_part(
-            vendor_id=self.df_state.vendor_obj['vendor_id'],
-            convoy_id=self.df_state.convoy_obj['convoy_id'],
-            vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
-            part_cargo_id=self.df_state.cargo_obj['cargo_id']
-        )
-        # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
+        try:
+            self.df_state.convoy_obj = await api_calls.add_part(
+                vendor_id=self.df_state.vendor_obj['vendor_id'],
+                convoy_id=self.df_state.convoy_obj['convoy_id'],
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                part_cargo_id=self.part_to_install['cargo_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
+        except RuntimeError as e:
+            await interaction.response.send_message(content=e, ephemeral=True)
+            return
 
         self.df_state.vehicle_obj = next((  # Get the updated vehicle from the returned convoy obj
             v for v in self.df_state.convoy_obj['vehicles']
@@ -414,7 +498,7 @@ class InstallConfirmView(discord.ui.View):
 
         embed = discord.Embed()
         embed = df_embed_author(embed, self.df_state)
-        embed.description = '\n'.join([
+        description_str = '\n'.join([
             f'# {self.df_state.vendor_obj['name']}',
             f'## {self.df_state.vehicle_obj['name']}',
             f'*{self.df_state.vehicle_obj['description']}*',
@@ -422,14 +506,12 @@ class InstallConfirmView(discord.ui.View):
             displayable_vehicle_parts,
             f'### {self.df_state.vehicle_obj['name']} stats'
         ])
+        embed.description = description_str[:3600]  # Limit length
         embed = discord_app.vehicle_menus.df_embed_vehicle_stats(self.df_state, embed, self.df_state.vehicle_obj)
 
         view = PostMechView(self.df_state)
 
         await interaction.response.edit_message(embed=embed, view=view)
-
-    async def on_timeout(self):
-        await handle_timeout(self.df_state)
 
 
 async def remove_part_vehicle_menu(df_state: DFState):
@@ -439,20 +521,24 @@ async def remove_part_vehicle_menu(df_state: DFState):
 
     displayable_vehicle_parts = '\n'.join(discord_app.cargo_menus.format_part(part) for part in removable_parts)
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
+    header_embed = df_embed_author(discord.Embed(), df_state)
+    header_embed.description = '\n'.join([
         f'## {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
+    ])
+    
+    parts_embed = discord.Embed(description='\n'.join([
         '## Removable parts',
         displayable_vehicle_parts,
         f'### {df_state.vehicle_obj['name']} stats'
-    ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    ]))
+
+    footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
 
     view = RemovePartView(df_state, removable_parts)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=[header_embed, parts_embed, footer_embed], view=view)
 
 class RemovePartView(discord.ui.View):
     def __init__(self, df_state: DFState, removable_parts):
@@ -537,7 +623,8 @@ class RemoveConfirmView(discord.ui.View):
             vendor_id=self.df_state.vendor_obj['vendor_id'],
             convoy_id=self.df_state.convoy_obj['convoy_id'],
             vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
-            part_id=self.df_state.part_obj['part_id']
+            part_id=self.df_state.part_obj['part_id'],
+            user_id=self.df_state.user_obj['user_id']
         )
         # self.df_state.convoy_obj = remove_items_pending_deletion(self.df_state.convoy_obj)
 
@@ -574,7 +661,10 @@ async def scrap_vehicle_menu(df_state: DFState):
     df_state.append_menu_to_back_stack(func=scrap_vehicle_menu)  # Add this menu to the back stack
 
     try:
-        scrap_check = await api_calls.check_scrap(df_state.vehicle_obj['vehicle_id'])
+        scrap_check = await api_calls.check_scrap(
+            vehicle_id=df_state.vehicle_obj['vehicle_id'],
+            user_id=df_state.user_obj['user_id']
+        )
     except RuntimeError as e:
         await df_state.interaction.response.send_message(content=e, ephemeral=True)
         return
@@ -605,6 +695,7 @@ async def scrap_vehicle_menu(df_state: DFState):
         f'### {df_state.vehicle_obj['name']} stats'
     ])
     embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    embed.description = embed.description[:3600]  # Band-aid fix to truncate this
 
     view = ScrapVehicleView(df_state, scrap_check)
 
@@ -654,7 +745,8 @@ class ScrapVehicleButton(discord.ui.Button):
             self.df_state.convoy_obj = await api_calls.vendor_scrap_vehicle(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

@@ -8,14 +8,18 @@ import                                discord
 from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
-    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji
+    api_calls, handle_timeout, df_embed_author, get_user_metadata, validate_interaction, get_cargo_emoji,
+    split_description_into_embeds
 )
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus
 import discord_app.vehicle_menus
 import discord_app.cargo_menus
 
-from discord_app.vendor_views  import vendor_inv_md, wet_price
+from discord_app.vendor_menus  import (
+    wet_price, vehicles_md, format_basic_cargo, enrich_delivery_info, format_delivery_info, update_wet_unit_price,
+    is_cargo_invalid
+)
 from discord_app.df_state      import DFState
 
 API_SUCCESS_CODE = 200
@@ -28,70 +32,72 @@ async def sell_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_menu)  # Add this menu to the back stack
 
+    sell_embed = discord.Embed()
+    sell_embed = df_embed_author(sell_embed, df_state)
+    sell_embed.description = f'## {df_state.vendor_obj['name']}'
+
+    embeds = [sell_embed]
+
     resources_list = []
     if df_state.vendor_obj.get('fuel'):
-        resources_list.append(f'- Fuel: {df_state.convoy_obj['fuel']:,} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
+        resources_list.append(f'- Fuel ⛽️: {df_state.convoy_obj['fuel']:,} Liters\n  - *${df_state.vendor_obj['fuel_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('water'):
-        resources_list.append(f'- Water: {df_state.convoy_obj['water']:,} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
+        resources_list.append(f'- Water 💧: {df_state.convoy_obj['water']:,} Liters\n  - *${df_state.vendor_obj['water_price']:,.0f} per Liter*')
     if df_state.vendor_obj.get('food'):
-        resources_list.append(f'- Food: {df_state.convoy_obj['food']:,} meals\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
-    displayable_resources = '\n'.join(resources_list) if resources_list else '- None'
+        resources_list.append(f'- Food 🥪: {df_state.convoy_obj['food']:,} meals\n  - *${df_state.vendor_obj['food_price']:,.0f} per Serving*')
+    displayable_resources = '\n'.join(resources_list) if resources_list else None
 
-    vehicle_list = []
-    for vehicle in df_state.convoy_obj['vehicles']:
-        vehicle_str = f'- {vehicle['name']} | *${vehicle['value']:,}*'
-        if not all(c['intrinsic_part_id'] for c in vehicle['cargo']):
-            vehicle_str += '\n  - *contains cargo, cannot be sold*'
-        vehicle_list.append(vehicle_str)
-    displayable_vehicles = '\n'.join(vehicle_list) if vehicle_list else '- None'
+    if displayable_resources:
+        split_description_into_embeds(
+            content_string=displayable_resources,
+            embed_title='### Resources the convoy can sell',
+            target_embeds_list=embeds
+        )
 
-    cargo_list = []
-    for vehicle in df_state.convoy_obj['vehicles']:
-        for cargo in vehicle['cargo']:
-            if cargo.get('intrinsic_part_id'):
-                continue  # Skip parts
+    if df_state.convoy_obj['vehicles'] and df_state.vendor_obj.get('vehicle_inventory'):
+        displayable_vehicles = vehicles_md(df_state.convoy_obj['vehicles'])
+    else:
+        displayable_vehicles = None
 
-            if cargo.get('recipient'):  # It's delivery cargo
-                if not cargo.get('recipient_vendor'):
-                    cargo['recipient_vendor'] = await api_calls.get_vendor(vendor_id=cargo['recipient'])
+    if displayable_vehicles:
+        split_description_into_embeds(
+            content_string=displayable_vehicles,
+            embed_title='### Vehicles the convoy can sell',
+            target_embeds_list=embeds
+        )
 
-                cargo_str = (
-                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}*\n'
-                    f'  - Deliver to *{cargo['recipient_vendor']['name']}* | '
-                    f'*${cargo['unit_delivery_reward']:,.0f}* per item'
-                )
+    if df_state.vendor_obj.get('cargo_inventory'):
+        cargo_list = []
+        for vehicle in df_state.convoy_obj['vehicles']:
+            for cargo in vehicle['cargo']:
+                if is_cargo_invalid(cargo, df_state.vendor_obj):
+                    continue
 
-            else:  # It's normal sellable cargo
-                unit_price = wet_price(cargo, df_state.vendor_obj, quantity=1)  # Single unit price
+                update_wet_unit_price(cargo, df_state.vendor_obj)
 
-                cargo_str = (
-                    f'- {cargo['quantity']:,} **{cargo['name']}**(s) | *{vehicle['name']}* | '
-                    f'*${unit_price:,.0f} each*'
-                )
+                cargo_str = format_basic_cargo(cargo)
 
-            cargo_list.append(cargo_str)
+                if cargo.get('recipient'):  # It's delivery cargo
+                    await enrich_delivery_info(df_state, cargo)
+                    if cargo.get('recipient_vendor'):
+                        cargo_str += format_delivery_info(cargo)
 
-    displayable_cargo = '\n'.join(cargo_list) if cargo_list else '- None'
+                cargo_list.append(cargo_str)
 
-    embed = discord.Embed()
-    embed.description = '\n'.join([
-        f'## {df_state.vendor_obj['name']}',
-        '### Available to sell from convoy:',
-        '**Resources:**',
-        f'{displayable_resources}',
-        '',
-        '**Vehicles:**',
-        f'{displayable_vehicles}',
-        '',
-        '**Cargo:**',
-        f'{displayable_cargo}'
-    ])
+        displayable_cargo = '\n'.join(cargo_list) if cargo_list else None
+    else:
+        displayable_cargo = None
 
-    embed = df_embed_author(embed, df_state)
+    if displayable_cargo:
+        split_description_into_embeds(
+            content_string=displayable_cargo[:5000],
+            embed_title='### Cargo the convoy can sell',
+            target_embeds_list=embeds
+        )
 
     view = SellView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class SellView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -305,7 +311,8 @@ class ResourceConfirmSellButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 resource_type=self.resource_type,
-                quantity=self.sale_quantity
+                quantity=self.sale_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=str(e), ephemeral=True)
@@ -403,15 +410,35 @@ class CargoConfirmSellButton(discord.ui.Button):
         self.df_state = df_state
         self.sale_quantity = sale_quantity
 
+        cargo_name_original = self.df_state.cargo_obj['name']
+        qty_str = str(self.sale_quantity)
+
         if self.df_state.cargo_obj['recipient'] == self.df_state.vendor_obj['vendor_id']:
             sale_price = self.sale_quantity * self.df_state.cargo_obj['unit_delivery_reward']
         else:
             unit_sale_price = wet_price(self.df_state.cargo_obj, self.df_state.vendor_obj, quantity=1)
             sale_price = self.sale_quantity * unit_sale_price
+        price_str = f'{sale_price:,.0f}'
+
+        # Truncate cargo name if label is too long
+        prefix = f'Sell {qty_str} '
+        suffix = f'(s) | ${price_str}'
+        available_length_for_name = 80 - (len(prefix) + len(suffix))
+
+        if len(cargo_name_original) > available_length_for_name:
+            # Ensure there's space for "..." if truncating
+            if available_length_for_name < 3:  # Not enough space for "..."
+                truncated_name = cargo_name_original[:max(0, available_length_for_name)]
+            else:
+                truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."
+        else:
+            truncated_name = cargo_name_original
+        
+        final_label = f'{prefix}{truncated_name}{suffix}'
 
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell {self.sale_quantity} {self.df_state.cargo_obj["name"]}(s) | ${sale_price:,.0f}',
+            label=final_label,
             row=row
         )
 
@@ -425,7 +452,8 @@ class CargoConfirmSellButton(discord.ui.Button):
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
                 cargo_id=self.df_state.cargo_obj['cargo_id'],
-                quantity=self.sale_quantity
+                quantity=self.sale_quantity,
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -476,9 +504,29 @@ class SellAllCargoButton(discord.ui.Button):
                 for cargo in self.sell_list
             )
 
+        # Truncate cargo name if label is too long
+        cargo_name_original = self.df_state.cargo_obj['name']
+        qty_str = str(self.sale_quantity)
+        price_str = f'{self.sale_price:,.0f}'
+
+        prefix = f'Sell all {qty_str} '
+        suffix = f'(s) across convoy | ${price_str}'
+        available_length_for_name = 80 - (len(prefix) + len(suffix))
+
+        if len(cargo_name_original) > available_length_for_name:
+            # Ensure there's space for "..." if truncating
+            if available_length_for_name < 3:  # Not enough space for "..."
+                truncated_name = cargo_name_original[:max(0, available_length_for_name)]
+            else:
+                truncated_name = cargo_name_original[:max(0, available_length_for_name - 3)] + "..."
+        else:
+            truncated_name = cargo_name_original
+
+        final_label = f'{prefix}{truncated_name}{suffix}'
+
         super().__init__(
             style=discord.ButtonStyle.green,
-            label=f'Sell all {self.sale_quantity} {self.df_state.cargo_obj['name']}(s) across convoy | ${self.sale_price:,.0f}',
+            label=final_label,
             row=row
         )
 
@@ -493,7 +541,8 @@ class SellAllCargoButton(discord.ui.Button):
                     vendor_id=self.df_state.vendor_obj['vendor_id'],
                     convoy_id=self.df_state.convoy_obj['convoy_id'],
                     cargo_id=cargo['cargo_id'],
-                    quantity=cargo['quantity']
+                    quantity=cargo['quantity'],
+                    user_id=self.df_state.user_obj['user_id']
                 )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
@@ -514,7 +563,7 @@ class SellAllCargoButton(discord.ui.Button):
         await interaction.response.edit_message(embed=embed, view=view)
 
 def calculate_total_cargo_price(cargo: dict, vendor_obj: dict) -> float:
-    """Calculate the sale price for a single cargo item including resource values."""
+    """ Calculate the sale price for a single cargo item including resource values. """
     base_price = cargo.get('unit_price', 0)
     extra_price = 0
 
@@ -533,6 +582,11 @@ async def sell_vehicle_menu(df_state: DFState):
         await discord_app.vendor_views.vendor_menus.vendor_menu(df_state)
     df_state.append_menu_to_back_stack(func=sell_vehicle_menu)  # Add this menu to the back stack
 
+    header_embed = discord.Embed(description=f'## {df_state.vendor_obj['name']}')
+    header_embed = df_embed_author(header_embed, df_state)
+
+    embeds = [header_embed]
+
     part_list = []
     for part in df_state.vehicle_obj['parts']:
         if not part:  # If the part slot is empty
@@ -542,21 +596,22 @@ async def sell_vehicle_menu(df_state: DFState):
         part_list.append(discord_app.cargo_menus.format_part(part))
     displayable_vehicle_parts = '\n'.join(part_list)
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
-    embed.description = '\n'.join([
+    vehicle_md = '\n'.join([
         f'## {df_state.vendor_obj['name']}',
         f'### {df_state.vehicle_obj['name']} | ${df_state.vehicle_obj['value']:,}',
         f'*{df_state.vehicle_obj['description']}*',
         '### Parts',
-        displayable_vehicle_parts,
-        f'### {df_state.vehicle_obj['name']} stats'
+        displayable_vehicle_parts
     ])
-    embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, embed, df_state.vehicle_obj)
+    split_description_into_embeds(content_string=vehicle_md, target_embeds_list=embeds)
+
+    footer_embed = discord.Embed(description=f'### {df_state.vehicle_obj['name']} stats')
+    footer_embed = discord_app.vehicle_menus.df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
+    embeds.append(footer_embed)
 
     view = VehicleSellConfirmView(df_state)
 
-    await df_state.interaction.response.edit_message(embed=embed, view=view)
+    await df_state.interaction.response.edit_message(embeds=embeds, view=view)
 
 class VehicleSellConfirmView(discord.ui.View):
     def __init__(self, df_state: DFState):
@@ -589,7 +644,8 @@ class SellVehicleButton(discord.ui.Button):
             self.df_state.convoy_obj = await api_calls.sell_vehicle(
                 vendor_id=self.df_state.vendor_obj['vendor_id'],
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                vehicle_id=self.df_state.vehicle_obj['vehicle_id']
+                vehicle_id=self.df_state.vehicle_obj['vehicle_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

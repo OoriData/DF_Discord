@@ -9,7 +9,7 @@ import                                discord
 
 import discord_app.nav_menus
 import discord_app.cargo_menus
-from discord_app               import api_calls, handle_timeout, discord_timestamp, df_embed_author, get_user_metadata
+from discord_app               import api_calls, handle_timeout, discord_timestamp, df_embed_author, get_user_metadata, split_description_into_embeds
 from discord_app.map_rendering import add_map_to_embed
 import discord_app.nav_menus# from discord_app.nav_menus     import add_nav_buttons
 
@@ -35,11 +35,11 @@ def df_embed_vehicle_stats(
         'Weight Capacity 🏋️': ('weight_capacity', '**{:,}**', ' kg', 'weight_capacity_add', ' ({:+} kg)'),
         'Efficiency 🌿': ('efficiency', '**{:.0f}**', ' / {}', 'fuel_efficiency_add', ' ({:+})'),
         'Top Speed 🚀': ('top_speed', '**{:.0f}**', ' / {}', 'top_speed_add', ' ({:+})'),
-        'Off-road Capability 🏔️': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
+        'Off-road Capability 🥾': ('offroad_capability', '**{:.0f}**', ' / {}', 'offroad_capability_add', ' ({:+})'),
         'Weight Class 🥊': ('weight_class', '**{}**', None, None, None),
         'Stat Floor ⌊⌋': ('hard_stat_floor', '**{}**', None, None, None),
         'Stat Soft Cap ⌈⌉': ('soft_stat_cap', '**{}**', None, None, None),
-        'Coupling 🚛': ('coupling', '**{}**', None, None, None),
+        'Couplings 🚛': ('couplings', '**{}**', None, None, None),
         'Passenger Seats 🪑': ('passenger_seats', '**{}**', None, None, None),
         'Armor Class 🛡️': ('ac', '**{}**', None, 'ac_add', ' ({:+})'),
     }
@@ -51,7 +51,6 @@ def df_embed_vehicle_stats(
         powered_by = 'fuel ⛽️'
     elif vehicle.get('electric'):
         powered_by = 'electric 🔋'
-
     fields = {
         **fields,
         'Powertrain ⚙️': ('_powertrain', '**{}**', None, None, None)
@@ -70,7 +69,13 @@ def df_embed_vehicle_stats(
 
     for name, (stat_key, base_format, suffix, mod_key, mod_format) in fields.items():
         base_value = vehicle.get(stat_key)
-        base_value = None if base_value == '' else base_value  # Normalize empty strings to None
+        if isinstance(base_value, list):
+            base_value = ', '.join(  # Normalize lists as a single string
+                val.replace('_', ' ').capitalize()
+                for val in set(base_value)  # Use a set to ensure only unique values
+            )
+        if base_value == '':
+            base_value = None  # Normalize empty strings to None
 
         if base_value is None:
             value_str = 'None'
@@ -112,25 +117,29 @@ async def vehicle_menu(df_state: DFState):
     # Sort the vehicle parts by slot (alphabetically), and then criticality
     sorted_parts = sorted(df_state.vehicle_obj['parts'], key=lambda part: (part['slot'], not part['critical']))
 
-    displayable_vehicle_parts = '\n'.join(
-        discord_app.cargo_menus.format_part(part, verbose=False) for part in sorted_parts
-    )
-    truncated_vehicle_parts = displayable_vehicle_parts[:3750]
-
-    vehicle_embed = discord.Embed()
-    vehicle_embed = df_embed_author(vehicle_embed, df_state)
-    vehicle_embed.description = '\n'.join([
+    header_embed = df_embed_author(discord.Embed(), df_state)
+    header_embed.description = '\n'.join([
         f'# {df_state.vehicle_obj['name']}',
         f'*{df_state.vehicle_obj['description']}*',
-        '## Parts',
-        truncated_vehicle_parts,
-        f'### {df_state.vehicle_obj['name']} stats'
     ])
-    vehicle_embed = df_embed_vehicle_stats(df_state, vehicle_embed, df_state.vehicle_obj)
+
+    embeds = [header_embed]
+
+    split_description_into_embeds(
+        content_string='\n'.join(
+            discord_app.cargo_menus.format_part(part, verbose=False) for part in sorted_parts
+        ),
+        embed_title=f'## {df_state.vehicle_obj['name']} parts',
+        target_embeds_list=embeds,
+    )
+
+    footer_embed = discord.Embed(description=f'## {df_state.vehicle_obj['name']} stats')
+    footer_embed = df_embed_vehicle_stats(df_state, footer_embed, df_state.vehicle_obj)
+    embeds.append(footer_embed)
 
     vehicle_view = VehicleView(df_state=df_state)
 
-    await df_state.interaction.response.edit_message(embed=vehicle_embed, view=vehicle_view, attachments=[])
+    await df_state.interaction.response.edit_message(embeds=embeds, view=vehicle_view, attachments=[])
 
 class VehicleView(discord.ui.View):
     """ Overarching vehicle button menu """

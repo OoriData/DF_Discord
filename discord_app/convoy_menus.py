@@ -13,11 +13,11 @@ from utiloori.ansi_color       import ansi_color
 from discord_app               import (
     api_calls, dialogue_menus, handle_timeout, discord_timestamp, df_embed_author, add_tutorial_embed,
     get_user_metadata, validate_interaction, DF_LOGO_EMOJI, OORI_WHITE, get_vehicle_emoji, get_settlement_emoji,
-    get_cargo_emoji
+    get_cargo_emoji, create_paginated_select_options
 )
 import discord_app.cargo_menus
 import discord_app.vehicle_menus
-import discord_app.vendor_views.buy_menus
+import discord_app.vendor_menus.buy_menus
 from discord_app.map_rendering import add_map_to_embed
 from discord_app.nav_menus     import add_nav_buttons
 from discord_app.df_state      import DFState
@@ -78,12 +78,12 @@ async def make_convoy_embed(
     if get_user_metadata(df_state, 'mobile'):
         convoy_embed.description += '\n' + '\n'.join([
             '### Convoy Stats',
-            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:.0f}L',
-            f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:.0f}L',
-            f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:.0f} meals',
+            f'Fuel ⛽️: **{df_state.convoy_obj['fuel']:,.2f}** / {df_state.convoy_obj['max_fuel']:,.0f}L',
+            f'Water 💧: **{df_state.convoy_obj['water']:,.2f}** / {df_state.convoy_obj['max_water']:,.0f}L',
+            f'Food 🥪: **{df_state.convoy_obj['food']:,.2f}** / {df_state.convoy_obj['max_food']:,.0f} meals',
             f'Efficiency 🌿: **{df_state.convoy_obj['efficiency']:.0f}** / 100',
             f'Top Speed 🚀: **{df_state.convoy_obj['top_speed']:.0f}** / 100',
-            f'Offroad Capability 🏔️: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
+            f'Offroad Capability 🥾: **{df_state.convoy_obj['offroad_capability']:.0f}** / 100'
         ])
     else:
         convoy_embed.add_field(
@@ -108,7 +108,7 @@ async def make_convoy_embed(
             value=f'**{df_state.convoy_obj['top_speed']:.0f}**\n/ 100'
         )
         convoy_embed.add_field(
-            name='Offroad Capability 🏔️',
+            name='Offroad Capability 🥾',
             value=f'**{df_state.convoy_obj['offroad_capability']:.0f}**\n/ 100'
         )
 
@@ -126,7 +126,11 @@ async def make_convoy_embed(
             route_tiles.append((x, y))
             pos += 1
 
-        destination = await api_calls.get_tile(journey['dest_x'], journey['dest_y'])
+        destination = await api_calls.get_tile(
+            x=journey['dest_x'],
+            y=journey['dest_y'],
+            user_id=df_state.user_obj['user_id']
+        )
 
         eta = df_state.convoy_obj['journey']['eta']
         progress_percent = ((journey['progress']) / len(journey['route_x'])) * 100
@@ -178,7 +182,8 @@ async def make_convoy_embed(
 
         destination = await api_calls.get_tile(
             x=prospective_journey_plus_misc['journey']['dest_x'],
-            y=prospective_journey_plus_misc['journey']['dest_y']
+            y=prospective_journey_plus_misc['journey']['dest_y'],
+            user_id=df_state.user_obj['user_id']
         )
 
         delta_t = discord_timestamp(
@@ -297,14 +302,14 @@ def vehicles_embed_str(vehicles: list[dict], verbose: bool | None = False) -> st
     if sorted_vehicles:
         for vehicle in sorted_vehicles:
             vehicle_str = f'**{vehicle['name']}** {get_vehicle_emoji(vehicle['shape'])}'
-            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🏔️ {vehicle['offroad_capability']}'
+            # vehicle_str += f' | 🌿 {vehicle['efficiency']} | 🚀 {vehicle['top_speed']} | 🥾 {vehicle['offroad_capability']}'
             vehicle_str += '\n'
             if verbose:
                 vehicle_str += '\n'.join([
                     f'- AP: **{vehicle['ap']:.0f}** / {vehicle['max_ap']}',
                     f'- Efficiency 🌿: **{vehicle['efficiency']:.0f}** / 100',
                     f'- Top Speed 🚀: **{vehicle['top_speed']:.0f}** / 100',
-                    f'- Offroad Capability 🏔️: **{vehicle['offroad_capability']:.0f}** / 100',
+                    f'- Offroad Capability 🥾: **{vehicle['offroad_capability']:.0f}** / 100',
                     ''
                 ])
 
@@ -393,7 +398,10 @@ class ConvoyView(discord.ui.View):
         deliveries = []
         recipient_coords = []
         for cargo in cargo_for_delivery:  # For each deliverable cargo, get vendor's details and add it to destinations
-            recipient_vendor = await api_calls.get_vendor(cargo['recipient'])
+            recipient_vendor = await api_calls.get_vendor(
+                vendor_id=cargo['recipient'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
             # Grab destination name to display to user
             deliveries.append('\n'.join([
@@ -472,7 +480,8 @@ class JourneyButton(discord.ui.Button):
         else:  # If the convoy is already on a journey
             self.df_state.convoy_obj = await api_calls.cancel_journey(
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                journey_id=self.df_state.convoy_obj['journey']['journey_id']
+                journey_id=self.df_state.convoy_obj['journey']['journey_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
             await convoy_menu(self.df_state)
 
@@ -573,7 +582,7 @@ async def send_convoy_menu(df_state: DFState):
 
     embeds = add_tutorial_embed(embeds, df_state)
 
-    # df_map = await api_calls.get_map()  # TODO: get this from cache somehow instead
+    # df_map = await api_calls.get_map()
     df_map = df_state.map_obj
     view = DestinationView(df_state=df_state, df_map=df_map)
 
@@ -638,46 +647,36 @@ class DestinationSelect(discord.ui.Select):
             and 'tutorial' not in sett['name'].lower()                # Exclude settlements with "tutorial" in their name
         ]
 
-        # Sort settlements, prioritizing cargo destinations and then by distance
         sorted_settlements = sorted(
             settlements,
             key=lambda x: (not x[4], x[3])  # Sort by presence of cargo names (True first), then by distance
         )
 
-        # Paginate the sorted settlements
-        DESTS_PER_PAGE = 23
-        page_start, page_end = self.page * DESTS_PER_PAGE, (self.page + 1) * DESTS_PER_PAGE
-        max_pages = (len(sorted_settlements) - 1) // DESTS_PER_PAGE
-
-        # Create the SelectOption list with pagination controls
-        options = self._create_pagination_options(sorted_settlements[page_start:page_end], self.page, max_pages)
-
-        super().__init__(
-            placeholder=f'Where to? (page {self.page + 1})',
-            options=options,
-            custom_id='destination_select',
-        )
-
-    def _create_pagination_options(self, settlements, current_page, max_pages):
-        options = []
-
-        if current_page > 0:  # Add 'previous page' option if not on the first page
-            options.append(discord.SelectOption(label=f'Page {current_page}', value='prev_page'))
-
-        for sett_name, x, y, _, cargo_names, emoji in settlements:
+        all_options = []
+        for sett_name, x, y, _, cargo_names, emoji in sorted_settlements:
             unique_cargo_names = set(cargo_names) if cargo_names else None  # Use a set to remove duplicate cargo names
             # Label includes settlement name and unique cargo names if this is a cargo destination
             label = f'{sett_name} ({', '.join(unique_cargo_names)})' if unique_cargo_names else sett_name
-            options.append(discord.SelectOption(
+            all_options.append(discord.SelectOption(
                 label=label[:100],  # Only the first 100 chars of the label string
                 value=f'{x},{y}',
                 emoji=DF_LOGO_EMOJI if cargo_names else emoji  # Add the tutorial emoji if cargo destination, else use city based emoji
             ))
 
-        if current_page < max_pages:  # Add 'next page' option if not on the last page
-            options.append(discord.SelectOption(label=f'Page {current_page + 2}', value='next_page'))
+        if len(all_options) > 25:  # If there are more than 25 options
+            paginated_options = create_paginated_select_options(all_options, self.page)
 
-        return options
+            super().__init__(
+                placeholder=f'Where to? (page {self.page + 1})',
+                options=paginated_options,
+                custom_id='destination_select',
+            )
+        else:
+            super().__init__(
+                placeholder=f'Where to? (page {self.page + 1})',
+                options=all_options,
+                custom_id='destination_select',
+            )
 
     async def callback(self, interaction: discord.Interaction):
         if not await validate_interaction(interaction=interaction, df_state=self.df_state):
@@ -712,7 +711,12 @@ async def route_finder(
     if not df_state.interaction.response.is_done():
         await df_state.interaction.response.defer()
 
-    route_choices = await api_calls.find_route(df_state.convoy_obj['convoy_id'], dest_x, dest_y)
+    route_choices = await api_calls.find_route(
+        convoy_id=df_state.convoy_obj['convoy_id'],
+        dest_x=dest_x,
+        dest_y=dest_y,
+        user_id=df_state.user_obj['user_id']
+    )
     await route_menu(
         df_state=df_state,
         dest_x=dest_x,
@@ -755,7 +759,7 @@ async def route_menu(
 
     # --- Resource Constraint Checking ---
     # Lists to store resources that fall below critical or safety thresholds
-    critical_resources = [] # Below minimum required
+    critical_resources = []  # Below minimum required
     safety_resources = []   # Below recommended safety margin (2x required)
 
     for resource in ['fuel', 'water', 'food']:  # Check standard resources constraints
@@ -806,7 +810,7 @@ async def route_menu(
     override_style = None
     override_emoji = None
     safety_margin_emoji = '⚠️'  # Emoji for safety warnings
-    critical_margin_emoji = '🛑' # Emoji for critical warnings
+    critical_margin_emoji = '🛑'  # Emoji for critical warnings
 
     def _create_warning_embed(  # Helper function to create resource warning embeds
         color: discord.Color,
@@ -874,7 +878,7 @@ async def route_menu(
             override_style = discord.ButtonStyle.red
             override_emoji = safety_margin_emoji
         # Ensure emoji reflects the most severe warning (critical takes precedence)
-        override_emoji = override_emoji or safety_margin_emoji # Use safety emoji if no critical emoji set
+        override_emoji = override_emoji or safety_margin_emoji  # Use safety emoji if no critical emoji set
 
         safety_embed = _create_warning_embed(  # Create the safety warning embed using the helper function
             color=discord.Color.yellow(),
@@ -898,8 +902,8 @@ async def route_menu(
     view = SendConvoyConfirmView(  # Create the confirmation view with buttons (Confirm, Next Route, Top Up)
         df_state=df_state,
         prospective_journey_plus_misc=prospective_journey_plus_misc,
-        override_style=override_style, # Pass the determined button style
-        override_emoji=override_emoji, # Pass the determined button emoji
+        override_style=override_style,  # Pass the determined button style
+        override_emoji=override_emoji,  # Pass the determined button emoji
         dest_x=dest_x,
         dest_y=dest_y,
         route_choices=route_choices,
@@ -914,13 +918,13 @@ async def route_menu(
             og_message.id,
             embeds=embeds,
             view=view,
-            attachments=[image_file] # Include the map image file
+            attachments=[image_file]  # Include the map image file
         )
     else:  # If not responded yet, edit the initial deferred response
         await df_state.interaction.response.edit_message(
             embeds=embeds,
             view=view,
-            attachments=[image_file] # Include the map image file
+            attachments=[image_file]  # Include the map image file
         )
 
 class SendConvoyConfirmView(discord.ui.View):
@@ -959,7 +963,7 @@ class SendConvoyConfirmView(discord.ui.View):
             override_style=override_style,
             override_emoji=override_emoji
         ))
-        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(
+        self.add_item(discord_app.vendor_menus.buy_menus.TopUpButton(
             df_state=self.df_state,
             menu=route_finder,
             menu_args={
@@ -1045,7 +1049,8 @@ class ConfirmJourneyButton(discord.ui.Button):
         try:
             self.df_state.convoy_obj = await api_calls.send_convoy(
                 convoy_id=self.df_state.convoy_obj['convoy_id'],
-                journey_id=self.prospective_journey_plus_misc['journey']['journey_id']
+                journey_id=self.prospective_journey_plus_misc['journey']['journey_id'],
+                user_id=self.df_state.user_obj['user_id']
             )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)

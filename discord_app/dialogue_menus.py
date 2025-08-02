@@ -16,7 +16,10 @@ async def dialogue_menu(df_state: DFState, char_a_id: UUID, char_b_id: UUID, pag
         'page': page
     })  # Add this menu to the back stack
 
-    dialogue_obj = await api_calls.get_dialogue_by_char_ids(char_a_id, char_b_id)
+    dialogue_obj = await api_calls.get_dialogue_by_char_ids(
+        char_a_id=char_a_id,
+        char_b_id=char_b_id,
+        user_id=df_state.user_obj['user_id'])
     # TODO: find out who's what, and fetch more relevant details instead
 
     convoy_name = df_state.convoy_obj['name']
@@ -105,7 +108,11 @@ class DialogueView(discord.ui.View):
             return
         self.df_state.interaction = interaction
 
-        dialogue_obj = await api_calls.get_dialogue_by_char_ids(self.char_a_id, self.char_b_id)
+        dialogue_obj = await api_calls.get_dialogue_by_char_ids(
+            char_a_id=self.char_a_id,
+            char_b_id=self.char_b_id,
+            user_id=self.df_state.user_obj['user_id']
+        )
         dialogue_msg = dialogue_obj['messages'][self.page]['content']
 
         await interaction.response.send_modal(SendMessageModal(self.df_state, self.char_a_id, self.char_b_id, dialogue_msg=dialogue_msg))
@@ -145,7 +152,12 @@ class SendMessageModal(discord.ui.Modal):
         self.df_state.interaction = interaction
 
         try:
-            await api_calls.send_message(self.char_a_id, self.char_b_id, self.convoy_name_input.value)
+            await api_calls.send_message(
+                sender_id=self.char_a_id,
+                recipient_id=self.char_b_id,
+                message=self.convoy_name_input.value,
+                user_id=self.df_state.user_obj['user_id']
+            )
         except RuntimeError as e:
             await interaction.response.send_message(content=e, ephemeral=True)
             return
@@ -174,7 +186,10 @@ class RespondToConvoyView(discord.ui.View):
         self.df_state.interaction = interaction
 
         self.df_state.user_obj = await api_calls.get_user_by_discord(self.user_discord_id)
-        self.df_state.convoy_obj = await api_calls.get_convoy(self.user_convoy_id)  # TODO: implement 'next' pattern to fetch this out of user_obj
+        self.df_state.convoy_obj = await api_calls.get_convoy(
+            convoy_id=self.user_convoy_id,
+            user_id=self.df_state.user_obj['user_id']
+        )
         self.df_state.map_obj = await api_calls.get_map()
         self.df_state.user_cache = self.user_cache
 

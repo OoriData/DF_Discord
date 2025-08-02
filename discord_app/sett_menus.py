@@ -9,11 +9,11 @@ from utiloori.ansi_color       import ansi_color
 
 from discord_app               import (
     api_calls, handle_timeout, df_embed_author, add_tutorial_embed, get_user_metadata, validate_interaction,
-    DF_LOGO_EMOJI, get_vendor_emoji
+    DF_LOGO_EMOJI, get_vendor_emoji, split_description_into_embeds
 )
 from discord_app.map_rendering import add_map_to_embed
-import                                discord_app.vendor_views.vendor_menus
-import                                discord_app.vendor_views.buy_menus
+import                                discord_app.vendor_menus.vendor_menus
+import                                discord_app.vendor_menus.buy_menus
 import                                discord_app.warehouse_menus
 import                                discord_app.nav_menus
 import                                discord_app.warehouse_menus
@@ -26,28 +26,35 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
 
     follow_on_embeds = [] if follow_on_embeds is None else follow_on_embeds
 
-    embed = discord.Embed()
-    embed = df_embed_author(embed, df_state)
+    sett_embed = discord.Embed()
+    sett_embed = df_embed_author(sett_embed, df_state)
 
-    tile_obj = await api_calls.get_tile(df_state.convoy_obj['x'], df_state.convoy_obj['y'])
+    tile_obj = await api_calls.get_tile(
+        x=df_state.convoy_obj['x'],
+        y=df_state.convoy_obj['y'],
+        user_id=df_state.user_obj['user_id']
+    )
     if not tile_obj['settlements']:
         await df_state.interaction.response.send_message(content='There aint no settle ments here dawg!!!!!', ephemeral=True, delete_after=10)
         return
     df_state.sett_obj = tile_obj['settlements'][0]
-    embed.description = f'*{df_state.sett_obj['base_desc']}*' if df_state.sett_obj['base_desc'] else ''
+    sett_embed.description = f'*{df_state.sett_obj['base_desc']}*' if df_state.sett_obj['base_desc'] else ''
+
+    embeds = [sett_embed]
 
     df_state.warehouse_obj = next((
         w for w in df_state.user_obj['warehouses']
         if w['sett_id'] == df_state.sett_obj['sett_id']
     ), None)
     if df_state.warehouse_obj:
-        embed.description += '\n' + '\n'.join([
-            f'# {df_state.sett_obj['name']} Warehouse',
-            await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
-        ])
+        warehouse_md = await discord_app.warehouse_menus.warehouse_storage_md(df_state.warehouse_obj)
+        split_description_into_embeds(
+            content_string=warehouse_md[:5000],
+            embed_title=f'# {df_state.sett_obj['name']} Warehouse',
+            target_embeds_list=embeds
+        )
 
     sorted_vendors = sorted(df_state.sett_obj['vendors'], key=lambda x: x['name'])
-    vendor_displayables = []
     for vendor in sorted_vendors:
         displayable_services = []
 
@@ -78,19 +85,13 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         if part_cargo:
             displayable_services.append('- Upgrade parts ⚙️')
 
-        vendor_displayable = '\n'.join([  # Final assembly of the vendor display
-            f'## {vendor['name']} {get_vendor_emoji(vendor)}',
-            '\n'.join(displayable_services)
-        ])
+        embeds.append(discord.Embed(description='\n'.join([  # Final assembly of the vendor display
+            f'## {vendor['name']}',
+            '\n'.join(displayable_services),
+        ])))
 
-        vendor_displayables.append(vendor_displayable)  # Add to the list of vendor displayables
+    embeds.extend(follow_on_embeds)
 
-    embed.description += '\n' + '\n'.join([
-        f'# {df_state.sett_obj['name']} vendors',
-        '\n'.join(vendor_displayables)
-    ])
-
-    embeds = [embed, *follow_on_embeds]
     embeds = add_tutorial_embed(embeds, df_state)
 
     view = SettView(df_state, df_state.sett_obj['vendors'])
@@ -102,7 +103,7 @@ async def sett_menu(df_state: DFState, follow_on_embeds: list[discord.Embed] | N
         else:
             await df_state.interaction.response.edit_message(embeds=embeds, view=view, attachments=[])
     else:
-        await df_state.interaction.followup.send(embed=embed, view=view)
+        await df_state.interaction.followup.send(embeds=embeds, view=view)
 
 class SettView(discord.ui.View):
     """ Overarching settlement button menu """
@@ -112,7 +113,7 @@ class SettView(discord.ui.View):
 
         discord_app.nav_menus.add_nav_buttons(self, self.df_state)
 
-        self.add_item(discord_app.vendor_views.buy_menus.TopUpButton(self.df_state, sett_menu))
+        self.add_item(discord_app.vendor_menus.buy_menus.TopUpButton(self.df_state, sett_menu))
         self.add_item(WarehouseButton(self.df_state))
         self.add_item(SettBannerButton(self.df_state))
         self.add_item(VendorSelect(self.df_state, vendors, row=2))
@@ -165,7 +166,10 @@ class WarehouseButton(discord.ui.Button):
             if w['sett_id'] == self.df_state.sett_obj['sett_id']
         ), None)
         if local_warehouse:
-            self.df_state.warehouse_obj = await api_calls.get_warehouse(local_warehouse['warehouse_id'])
+            self.df_state.warehouse_obj = await api_calls.get_warehouse(
+                warehouse_id=local_warehouse['warehouse_id'],
+                user_id=self.df_state.user_obj['user_id']
+            )
 
         await discord_app.warehouse_menus.warehouse_menu(self.df_state)
 
@@ -251,4 +255,4 @@ class VendorSelect(discord.ui.Select):
             if v['vendor_id'] == self.values[0]
         ), None)
 
-        await discord_app.vendor_views.vendor_menus.vendor_menu(self.df_state)
+        await discord_app.vendor_menus.vendor_menus.vendor_menu(self.df_state)

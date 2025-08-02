@@ -20,10 +20,10 @@ cd ..
 To run the Desolate Frontiers Discord frontend, you can use this command (from the root folder):
 ```sh
 source $HOME/.local/venv/df_discord/bin/activate
-op run --env-file op_discord.env -- python -m discord_app.df_discord
+op run --env-file op.env -- python -m discord_app.df_discord
 ```
-Note: in some debugging scenarios you might want to add the `--no-masking` flag, but do so judiciously.
 
+Note: in some debugging scenarios you might want to add the `--no-masking` flag, but do so judiciously.
 
 ### environment (internal version, remove before open-source)
 To run that discord bot in a test environment, your `op_discord.env` should look something like this:

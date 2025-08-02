@@ -96,7 +96,7 @@ POLITICAL_COLORS = {
     82: '#0d0600',    # Dallas
     83: '#0d0600',    # Houston
     85: '#0d0600',    # Oklahoma City
-    86: '#0d0600',    # Whichita
+    86: '#0d0600',    # Wichita
     87: '#0d0600',    # Corpus Cristy
     89: '#0d0600',    # Republic of Texas
     90: '#0A5394',    # Denver
